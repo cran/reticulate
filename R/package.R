@@ -9,7 +9,7 @@
 #' 
 #' @docType package
 #' @name reticulate
-#' @useDynLib reticulate
+#' @useDynLib reticulate, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 NULL
 
@@ -19,6 +19,7 @@ NULL
 .globals$py_config <- NULL
 .globals$delay_load_module <- NULL
 .globals$suppress_warnings_handlers <- list()
+.globals$class_filters <- list()
 
 
 
@@ -35,24 +36,31 @@ is_python_initialized <- function() {
 
 ensure_python_initialized <- function(required_module = NULL) {
   if (!is_python_initialized()) {
-    if (is.null(required_module))
-      required_module <- .globals$delay_load_module
+     # give delay load modules priority
+     if (!is.null(.globals$delay_load_module)) {
+        required_module <- .globals$delay_load_module
+        .globals$delay_load_module <- NULL # one shot
+     }
     .globals$py_config <- initialize_python(required_module)
   }
 }
 
 initialize_python <- function(required_module = NULL) {
 
+  # resolve top level module for search
+  if (!is.null(required_module))
+    required_module <- strsplit(required_module, ".", fixed = TRUE)[[1]][[1]]
+  
   # find configuration
   config <- py_discover_config(required_module)
 
   # check for basic python prerequsities
   if (is.null(config)) {
     stop("Installation of Python not found, Python bindings not loaded.")
-  } else if (!file.exists(config$libpython)) {
+  } else if (!is_windows() && !file.exists(config$libpython)) {
     stop("Python shared library '", config$libpython, "' not found, Python bindings not loaded.")
   } else if (is_incompatible_arch(config)) {
-    stop("Your current architecture is ", python_arch(), " however this version of ",
+    stop("Your current architecture is ", current_python_arch(), " however this version of ",
          "Python is compiled for ", config$architecture, ".")
   }
 
@@ -63,13 +71,13 @@ initialize_python <- function(required_module = NULL) {
     numpy_load_error <- ""
   
   
-  # add the python bin dir to the PATH for anaconda on windows
-  # (see https://github.com/rstudio/reticulate/issues/20)
-  if (isTRUE(config$anaconda) && is_windows()) {
-    Sys.setenv(PATH = paste(normalizePath(dirname(config$python)), 
-                            Sys.getenv("PATH"),
-                            sep = .Platform$path.sep))  
-  }
+  # add the python bin dir to the PATH (so that any execution of python from 
+  # within the interpreter, from a system call, or from within a terminal 
+  # hosted within the front end will use the same version of python
+  Sys.setenv(PATH = paste(normalizePath(dirname(config$python)), 
+                          Sys.getenv("PATH"),
+                          sep = .Platform$path.sep))  
+  
   
   # initialize python
   py_initialize(config$python,
@@ -77,6 +85,7 @@ initialize_python <- function(required_module = NULL) {
                 config$pythonhome,
                 config$virtualenv_activate,
                 config$version >= "3.0",
+                interactive(),
                 numpy_load_error)
   
   # if we have a virtualenv then set the VIRTUAL_ENV environment variable

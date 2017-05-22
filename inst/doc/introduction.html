@@ -12,7 +12,7 @@
 
 
 
-<title>R Interface to Python</title>
+<title>Introduction to reticulate</title>
 
 
 
@@ -66,7 +66,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 
 
-<h1 class="title toc-ignore">R Interface to Python</h1>
+<h1 class="title toc-ignore">Introduction to reticulate</h1>
 
 
 
@@ -78,6 +78,10 @@ os &lt;-<span class="st"> </span><span class="kw">import</span>(<span class="st"
 os$<span class="kw">chdir</span>(<span class="st">&quot;tests&quot;</span>)
 os$<span class="kw">getcwd</span>()</code></pre></div>
 <p>Functions and other data within Python modules and classes can be accessed via the <code>$</code> operator (analogous to the way you would interact with an R list, environment, or reference class).</p>
+<p>The <strong>reticulate</strong> package is compatible with all versions of Python &gt;= 2.7. Integration with NumPy is optional and requires NumPy &gt;= 1.6.</p>
+</div>
+<div id="type-conversions" class="section level2">
+<h2>Type Conversions</h2>
 <p>When calling into Python, R data types are automatically converted to their equivalent Python types. When values are returned from Python to R they are converted back to R types. Types are converted as follows:</p>
 <table>
 <thead>
@@ -126,57 +130,6 @@ os$<span class="kw">getcwd</span>()</code></pre></div>
 </tbody>
 </table>
 <p>If a Python object of a custom class is returned then an R reference to that object is returned. You can call methods and access properties of the object just as if it was an instance of an R reference class.</p>
-<p>The <strong>reticulate</strong> package is compatible with all versions of Python &gt;= 2.7. Integration with NumPy is optional and requires NumPy &gt;= 1.6.</p>
-</div>
-<div id="installation" class="section level2">
-<h2>Installation</h2>
-<p>You can install reticulate from CRAN as follows:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="st">&quot;reticulate&quot;</span>)</code></pre></div>
-<div id="locating-python" class="section level3">
-<h3>Locating Python</h3>
-<p>If the version of Python you want to use is located on the system <code>PATH</code> then it will be automatically discovered (via <code>Sys.which</code>) and used.</p>
-<p>Alternatively, you can use one of the following functions to specify alternate versions of Python:</p>
-<table>
-<thead>
-<tr class="header">
-<th>Function</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>use_python</td>
-<td>Specify the path a specific Python binary.</td>
-</tr>
-<tr class="even">
-<td>use_virtualenv</td>
-<td>Specify the directory containing a Python virtualenv.</td>
-</tr>
-<tr class="odd">
-<td>use_condaenv</td>
-<td>Specify the name of a Conda environment.</td>
-</tr>
-</tbody>
-</table>
-<p>For example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(reticulate)
-<span class="kw">use_python</span>(<span class="st">&quot;/usr/local/bin/python&quot;</span>)
-<span class="kw">use_virtualenv</span>(<span class="st">&quot;~/myenv&quot;</span>)
-<span class="kw">use_condaenv</span>(<span class="st">&quot;myenv&quot;</span>)</code></pre></div>
-<p>Note that the NumPy features of <strong>reticulate</strong> require NumPy &gt;= 1.6 so versions of Python that satisfy this requirement will be preferred over ones that don’t.</p>
-<p>Also note that the <code>use</code> functions are by default considered only hints as to where to find Python (i.e. they don’t produce errors if the specified version doesn’t exist). You can add the <code>required</code> parameter to ensure that the specified version of Python actually exists:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">use_virtualenv</span>(<span class="st">&quot;~/myenv&quot;</span>, <span class="dt">required =</span> <span class="ot">TRUE</span>)</code></pre></div>
-<p>The order in which versions of Python will be discovered and used is as follows:</p>
-<ol style="list-style-type: decimal">
-<li><p>If specified, at the locations referenced by calls to <code>use_python</code>, <code>use_virtualenv</code>, and <code>use_condaenv</code>.</p></li>
-<li><p>If specified, at the location referenced by the <code>RETICULATE_PYTHON</code> environment variable.</p></li>
-<li><p>At the location of the Python binary discovered on the system <code>PATH</code> (via the <code>Sys.which</code> function).</p></li>
-<li><p>At other customary locations for Python including <code>/usr/local/bin/python</code>, <code>/opt/local/bin/python</code>, etc.</p></li>
-</ol>
-<p>The scanning for and binding to a version of Python typically occurs at the time of the first call to <code>import</code> within an R session. As a result, priority will be given to versions of Python that include the module specified within the call to <code>import</code> (i.e. versions that don’t include it will be skipped).</p>
-<p>You can use the <code>py_config</code> function to query for information about the specific version of Python in use as well as a list of other Python versions discovered on the system:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">py_config</span>()</code></pre></div>
-</div>
 </div>
 <div id="importing-modules" class="section level2">
 <h2>Importing Modules</h2>
@@ -186,7 +139,7 @@ difflib$<span class="kw">ndiff</span>(foo, bar)
 
 filecmp &lt;-<span class="st"> </span><span class="kw">import</span>(<span class="st">&quot;filecmp&quot;</span>)
 filecmp$<span class="kw">cmp</span>(dir1, dir2)</code></pre></div>
-<p>The <code>import_main</code> and <code>import_builtins</code> functions give you access to the main module where code is executed by default and the collection of built in Python functions. For example:</p>
+<p>The <code>import_main()</code> and <code>import_builtins()</code> functions give you access to the main module where code is executed by default and the collection of built in Python functions. For example:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">main &lt;-<span class="st"> </span><span class="kw">import_main</span>()
 
 py &lt;-<span class="st"> </span><span class="kw">import_builtins</span>()
@@ -195,7 +148,7 @@ py$<span class="kw">print</span>(<span class="st">'foo'</span>)</code></pre></di
 <div id="object-conversion" class="section level3">
 <h3>Object Conversion</h3>
 <p>By default when Python objects are returned to R they are converted to their equivalent R types. However, if you’d rather make conversion from Python to R explicit and deal in native Python objects by default you can pass <code>convert = FALSE</code> to the <code>import</code> function. In this case Python to R conversion will be disabled for the module returned from <code>import</code>. For example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># import numpy and speicfy no automatic Python to R conversion</span>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># import numpy and specify no automatic Python to R conversion</span>
 np &lt;-<span class="st"> </span><span class="kw">import</span>(<span class="st">&quot;numpy&quot;</span>, <span class="dt">convert =</span> <span class="ot">FALSE</span>)
 
 <span class="co"># do some array manipulations with NumPy</span>
@@ -204,7 +157,7 @@ sum &lt;-<span class="st"> </span>a$<span class="kw">cumsum</span>()
 
 <span class="co"># convert to R explicitly at the end</span>
 <span class="kw">py_to_r</span>(sum)</code></pre></div>
-<p>As illustrated above, if you need access to an R object at end of your computations you can call the <code>py_to_r</code> function explicitly.</p>
+<p>As illustrated above, if you need access to an R object at end of your computations you can call the <code>py_to_r()</code> function explicitly.</p>
 </div>
 </div>
 <div id="executing-code" class="section level2">
@@ -220,9 +173,9 @@ main$x</code></pre></div>
 <p>The automatic conversion of R types to Python types works well in most cases, but occasionally you will need to be more explicit on the R side to provide Python the type it expects.</p>
 <p>For example, if a Python API requires a list and you pass a single element R vector it will be converted to a Python scalar. To overcome this simply use the R <code>list</code> function explicitly:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">foo$<span class="kw">bar</span>(<span class="dt">indexes =</span> <span class="kw">list</span>(42L))</code></pre></div>
-<p>Similarly, a Python API might require a <code>tuple</code> rather than a list. In that case you can use the <code>tuple</code> function:</p>
+<p>Similarly, a Python API might require a <code>tuple</code> rather than a list. In that case you can use the <code>tuple()</code> function:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">tuple</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>)</code></pre></div>
-<p>R named lists are converted to Python dictionaries however you can also explicitly create a Python dictionary using the <code>dict</code> function:</p>
+<p>R named lists are converted to Python dictionaries however you can also explicitly create a Python dictionary using the <code>dict()</code> function:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">dict</span>(<span class="dt">foo =</span> <span class="st">&quot;bar&quot;</span>, <span class="dt">index =</span> 42L)</code></pre></div>
 <p>This might be useful if you need to pass a dictionary that uses a more complex object (as opposed to a string) as it’s key.</p>
 </div>
@@ -237,22 +190,13 @@ main$x</code></pre></div>
 </div>
 <div id="iterators" class="section level2">
 <h2>Iterators</h2>
-<p>If a Python API returns an <a href="http://anandology.com/python-practice-book/iterators.html">iterator or generator</a> you can interact with it using the <code>iterate</code> function. The <code>iterate</code> function can be used to apply an R function to each item yielded by the iterator:</p>
+<p>If a Python API returns an <a href="http://anandology.com/python-practice-book/iterators.html">iterator or generator</a> you can interact with it using the <code>iterate()</code> function. The <code>iterate()</code> function can be used to apply an R function to each item yielded by the iterator:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">iterate</span>(iter, print)</code></pre></div>
 <p>If you don’t pass a function to <code>iterate</code> the results will be collected into an R vector:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">results &lt;-<span class="st"> </span><span class="kw">iterate</span>(iter)</code></pre></div>
 <p>Note that the <code>Iterators</code> will be drained of their values by <code>iterate()</code>:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">a &lt;-<span class="st"> </span><span class="kw">iterate</span>(iter) <span class="co"># results are not empty</span>
 b &lt;-<span class="st"> </span><span class="kw">iterate</span>(iter) <span class="co"># results are empty since items have already been drained</span></code></pre></div>
-</div>
-<div id="callable-objects" class="section level2">
-<h2>Callable Objects</h2>
-<p>In addition to accessing their methods and properties, some Python objects are also callable (meaning they can be invoked with parameters just like an ordinary function). Callable Python objects are returned to R as objects rather than functions, however, you can still execute the callable function via the <code>$call()</code> method, for example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># get a callable object</span>
-parser &lt;-<span class="st"> </span>spacy$<span class="kw">English</span>()
-
-<span class="co"># call the object as a function</span>
-parser$<span class="kw">call</span>(spacy)</code></pre></div>
 </div>
 <div id="advanced-functions" class="section level2">
 <h2>Advanced Functions</h2>
@@ -269,31 +213,31 @@ parser$<span class="kw">call</span>(spacy)</code></pre></div>
 </thead>
 <tbody>
 <tr class="odd">
-<td>py_has_attr</td>
+<td><code>py_has_attr()</code></td>
 <td>Check if an object has a specified attribute.</td>
 </tr>
 <tr class="even">
-<td>py_get_attr</td>
+<td><code>py_get_attr()</code></td>
 <td>Get an attribute of a Python object.</td>
 </tr>
 <tr class="odd">
-<td>py_set_attr</td>
+<td><code>py_set_attr()</code></td>
 <td>Set an attribute of a Python object.</td>
 </tr>
 <tr class="even">
-<td>py_list_attributes</td>
+<td><code>py_list_attributes()</code></td>
 <td>List all attributes of a Python object.</td>
 </tr>
 <tr class="odd">
-<td>py_call</td>
+<td><code>py_call()</code></td>
 <td>Call a Python callable object with the specified arguments.</td>
 </tr>
 <tr class="even">
-<td>py_to_r</td>
+<td><code>py_to_r()</code></td>
 <td>Convert a Python object to it’s R equivalent</td>
 </tr>
 <tr class="odd">
-<td>r_to_py</td>
+<td><code>r_to_py()</code></td>
 <td>Convert an R object to it’s Python equivalent</td>
 </tr>
 </tbody>
@@ -315,19 +259,19 @@ parser$<span class="kw">call</span>(spacy)</code></pre></div>
 </thead>
 <tbody>
 <tr class="odd">
-<td>py_available</td>
+<td><code>py_available()</code></td>
 <td>Check whether a Python interface is available on this system.</td>
 </tr>
 <tr class="even">
-<td>py_numpy_available</td>
+<td><code>py_numpy_available()</code></td>
 <td>Check whether the R interface to NumPy is available (requires NumPy &gt;= 1.6)</td>
 </tr>
 <tr class="odd">
-<td>py_module_available</td>
+<td><code>py_module_available()</code></td>
 <td>Check whether a Python module is available on this system.</td>
 </tr>
 <tr class="even">
-<td>py_config</td>
+<td><code>py_config()</code></td>
 <td>Get information on the location and version of Python in use.</td>
 </tr>
 </tbody>
@@ -349,11 +293,11 @@ parser$<span class="kw">call</span>(spacy)</code></pre></div>
 </thead>
 <tbody>
 <tr class="odd">
-<td>py_capture_output</td>
+<td><code>py_capture_output()</code></td>
 <td>Capture Python output for the specified expression and return it as an R character vector.</td>
 </tr>
 <tr class="even">
-<td>py_suppress_warnings</td>
+<td><code>py_suppress_warnings()</code></td>
 <td>Execute the specified expression, suppressing the display Python warnings.</td>
 </tr>
 </tbody>
@@ -375,81 +319,33 @@ parser$<span class="kw">call</span>(spacy)</code></pre></div>
 </thead>
 <tbody>
 <tr class="odd">
-<td>py_unicode</td>
+<td><code>py_unicode()</code></td>
 <td>Convert a string to a Python unicode object.</td>
 </tr>
 <tr class="even">
-<td>py_str</td>
+<td><code>py_str()</code></td>
 <td>Get the string representation of Python object.</td>
 </tr>
 <tr class="odd">
-<td>py_is_null_xptr</td>
+<td><code>py_is_null_xptr()</code></td>
 <td>Check whether a Python object is a null externalptr.</td>
 </tr>
 <tr class="even">
-<td>py_validate_xptr</td>
+<td><code>py_validate_xptr()</code></td>
 <td>Check whether a Python object is a null externalptr and throw an error if it is.</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<div id="using-in-a-package" class="section level2">
-<h2>Using in a Package</h2>
-<div id="checking-and-testing-on-cran" class="section level3">
-<h3>Checking and Testing on CRAN</h3>
-<p>If you use <strong>reticulate</strong> in another R package you need to account for the fact that when your package is submitted to CRAN, the CRAN test servers may not have Python, NumPy, or whatever other Python modules you are wrapping in your package. If you don’t do this then your package may fail to load and/or pass it’s tests when run on CRAN.</p>
-<p>There are two things you should do to ensure your package is well behaved on CRAN:</p>
-<ol style="list-style-type: decimal">
-<li><p>When importing Python modules for use inside your package you should use the <code>delay_load</code> option to ensure that the module (and Python) is loaded only on it’s first use. For example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># python 'foo' module I want to use in my package</span>
-foo &lt;-<span class="st"> </span><span class="ot">NULL</span>
-
-.onLoad &lt;-<span class="st"> </span>function(libname, pkgname) {
-  <span class="co"># delay load foo module (will only be loaded when accessed via $)</span>
-  foo &lt;&lt;-<span class="st"> </span><span class="kw">import</span>(<span class="st">&quot;foo&quot;</span>, <span class="dt">delay_load =</span> <span class="ot">TRUE</span>)
-}</code></pre></div></li>
-<li><p>When writing tests, check to see if your module is available and if it isn’t then skip the test. For example, if you are using the <strong>testthat</strong> package, you might do this:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># helper function to skip tests if we don't have the 'foo' module</span>
-skip_if_no_foo &lt;-<span class="st"> </span>function() {
-  have_foo &lt;-<span class="st"> </span><span class="kw">py_module_available</span>(<span class="st">&quot;foo&quot;</span>)
-  if (!have_foo)
-    <span class="kw">skip</span>(<span class="st">&quot;foo not available for testing&quot;</span>)
-}
-
-<span class="co"># then call this function from all of your tests</span>
-<span class="kw">test_that</span>(<span class="st">&quot;Things work as expected&quot;</span>, {
-  <span class="kw">skip_if_no_foo</span>()
-  <span class="co"># test code here...</span>
-})</code></pre></div></li>
-</ol>
-</div>
-<div id="s3-methods" class="section level3">
-<h3>S3 Methods</h3>
-<p>Python objects exposed by <strong>reticulate</strong> carry their Python classes into R, so it’s possible to write S3 methods to customize e.g. the <code>str</code> or <code>print</code> behavior for a given class (note that it’s not typically necessary that you do this since the default <code>str</code> and <code>print</code> methods call <code>PyObject_Str</code>, which typically provides an acceptable default behavior).</p>
-<p>If you do decide to implement custom S3 methods for a Python class it’s important to keep in mind that when an R session ends the connection to Python objects is lost, so when the .RData saved from one R session is restored in a subsequent R session the Python objects are effectively lost (technically they become <code>NULL</code> R <code>externalptr</code> objects).</p>
-<p>This means that you should always use the <code>py_is_null_xptr</code> function on objects before interacting with them in an S3 method. For example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#' @export</span>
-summary.MyPythonClass &lt;-<span class="st"> </span>function(object, ...) {
-  if (<span class="kw">py_is_null_xptr</span>(object))
-    <span class="kw">stop</span>(<span class="st">&quot;Object is NULL&quot;</span>)
-  else
-    <span class="co"># interact with the object to generate the summary</span>
-}</code></pre></div>
-<p>There are a couple of shortcut methods you can use to make this more straightforward. The <code>py_validate_xptr</code> function will do the check and automatically throw an error if it fails. So the example above could be re-written as:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#' @export</span>
-summary.MyPythonClass &lt;-<span class="st"> </span>function(object, ...) {
-  <span class="kw">py_validate_xptr</span>(object)
-  <span class="co"># interact with the object to generate the summary</span>
-}</code></pre></div>
-<p>Finally, the <strong>reticulate</strong> package exports a <code>py_str</code> generic method which is called from the <code>str</code> method only after doing appropriate validation (if the object is NULL then <code>&lt;pointer: 0x0&gt;</code> is returned). You can implement the <code>py_str</code> method as follows:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#' @importFrom reticulate py_str</span>
-<span class="co">#' @export </span>
-py_str.MyPythonClass &lt;-<span class="st"> </span>function(object, ...) {
-  <span class="co"># interact with the object to generate the string</span>
-}</code></pre></div>
-<p>So in short, to provide custom <code>str</code> and <code>print</code> methods, just implement <code>py_str</code>. For other S3 methods be sure to call either <code>py_validate_xptr</code> or <code>py_is_null_xptr</code> before interacting with the object.</p>
-</div>
+<div id="learning-more" class="section level2">
+<h2>Learning More</h2>
+<p>The following articles cover additional aspects of using <strong>reticulate</strong>:</p>
+<ul>
+<li><p><a href="versions.html">Python Version Configuration</a></p></li>
+<li><p><a href="package.html">Using reticulate in an R Package</a></p></li>
+<li><p><a href="arrays.html">Arrays in R and Python</a></p></li>
+</ul>
 </div>
 
 
@@ -459,7 +355,7 @@ py_str.MyPythonClass &lt;-<span class="st"> </span>function(object, ...) {
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
     document.getElementsByTagName("head")[0].appendChild(script);
   })();
 </script>

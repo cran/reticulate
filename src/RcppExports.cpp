@@ -16,6 +16,36 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// py_last_error
+SEXP py_last_error();
+RcppExport SEXP reticulate_py_last_error() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(py_last_error());
+    return rcpp_result_gen;
+END_RCPP
+}
+// py_clear_last_error
+void py_clear_last_error();
+RcppExport SEXP reticulate_py_clear_last_error() {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    py_clear_last_error();
+    return R_NilValue;
+END_RCPP
+}
+// py_is_callable
+bool py_is_callable(PyObjectRef x);
+RcppExport SEXP reticulate_py_is_callable(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< PyObjectRef >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(py_is_callable(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 // r_to_py_impl
 PyObjectRef r_to_py_impl(RObject object, bool convert);
 RcppExport SEXP reticulate_r_to_py_impl(SEXP objectSEXP, SEXP convertSEXP) {
@@ -39,8 +69,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // py_initialize
-void py_initialize(const std::string& python, const std::string& libpython, const std::string& pythonhome, const std::string& virtualenv_activate, bool python3, const std::string& numpy_load_error);
-RcppExport SEXP reticulate_py_initialize(SEXP pythonSEXP, SEXP libpythonSEXP, SEXP pythonhomeSEXP, SEXP virtualenv_activateSEXP, SEXP python3SEXP, SEXP numpy_load_errorSEXP) {
+void py_initialize(const std::string& python, const std::string& libpython, const std::string& pythonhome, const std::string& virtualenv_activate, bool python3, bool interactive, const std::string& numpy_load_error);
+RcppExport SEXP reticulate_py_initialize(SEXP pythonSEXP, SEXP libpythonSEXP, SEXP pythonhomeSEXP, SEXP virtualenv_activateSEXP, SEXP python3SEXP, SEXP interactiveSEXP, SEXP numpy_load_errorSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type python(pythonSEXP);
@@ -48,8 +78,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const std::string& >::type pythonhome(pythonhomeSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type virtualenv_activate(virtualenv_activateSEXP);
     Rcpp::traits::input_parameter< bool >::type python3(python3SEXP);
+    Rcpp::traits::input_parameter< bool >::type interactive(interactiveSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type numpy_load_error(numpy_load_errorSEXP);
-    py_initialize(python, libpython, pythonhome, virtualenv_activate, python3, numpy_load_error);
+    py_initialize(python, libpython, pythonhome, virtualenv_activate, python3, interactive, numpy_load_error);
     return R_NilValue;
 END_RCPP
 }
@@ -73,6 +104,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// py_compare_impl
+bool py_compare_impl(PyObjectRef a, PyObjectRef b, const std::string& op);
+RcppExport SEXP reticulate_py_compare_impl(SEXP aSEXP, SEXP bSEXP, SEXP opSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< PyObjectRef >::type a(aSEXP);
+    Rcpp::traits::input_parameter< PyObjectRef >::type b(bSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type op(opSEXP);
+    rcpp_result_gen = Rcpp::wrap(py_compare_impl(a, b, op));
+    return rcpp_result_gen;
+END_RCPP
+}
 // py_str_impl
 CharacterVector py_str_impl(PyObjectRef x);
 RcppExport SEXP reticulate_py_str_impl(SEXP xSEXP) {
@@ -92,17 +136,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< PyObjectRef >::type x(xSEXP);
     py_print(x);
     return R_NilValue;
-END_RCPP
-}
-// py_is_callable
-bool py_is_callable(PyObjectRef x);
-RcppExport SEXP reticulate_py_is_callable(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< PyObjectRef >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(py_is_callable(x));
-    return rcpp_result_gen;
 END_RCPP
 }
 // py_is_function
@@ -207,6 +240,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// py_ref_to_r_with_convert
+SEXP py_ref_to_r_with_convert(PyObjectRef x, bool convert);
+RcppExport SEXP reticulate_py_ref_to_r_with_convert(SEXP xSEXP, SEXP convertSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< PyObjectRef >::type x(xSEXP);
+    Rcpp::traits::input_parameter< bool >::type convert(convertSEXP);
+    rcpp_result_gen = Rcpp::wrap(py_ref_to_r_with_convert(x, convert));
+    return rcpp_result_gen;
+END_RCPP
+}
 // py_ref_to_r
 SEXP py_ref_to_r(PyObjectRef x);
 RcppExport SEXP reticulate_py_ref_to_r(SEXP xSEXP) {
@@ -302,6 +347,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// py_tuple_length
+int py_tuple_length(PyObjectRef tuple);
+RcppExport SEXP reticulate_py_tuple_length(SEXP tupleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< PyObjectRef >::type tuple(tupleSEXP);
+    rcpp_result_gen = Rcpp::wrap(py_tuple_length(tuple));
+    return rcpp_result_gen;
+END_RCPP
+}
 // py_module_import
 PyObjectRef py_module_import(const std::string& module, bool convert);
 RcppExport SEXP reticulate_py_module_import(SEXP moduleSEXP, SEXP convertSEXP) {
@@ -348,26 +404,87 @@ BEGIN_RCPP
 END_RCPP
 }
 // py_run_string_impl
-PyObjectRef py_run_string_impl(const std::string& code, bool convert);
-RcppExport SEXP reticulate_py_run_string_impl(SEXP codeSEXP, SEXP convertSEXP) {
+SEXP py_run_string_impl(const std::string& code, bool local, bool convert);
+RcppExport SEXP reticulate_py_run_string_impl(SEXP codeSEXP, SEXP localSEXP, SEXP convertSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type code(codeSEXP);
+    Rcpp::traits::input_parameter< bool >::type local(localSEXP);
+    Rcpp::traits::input_parameter< bool >::type convert(convertSEXP);
+    rcpp_result_gen = Rcpp::wrap(py_run_string_impl(code, local, convert));
+    return rcpp_result_gen;
+END_RCPP
+}
+// py_run_file_impl
+SEXP py_run_file_impl(const std::string& file, bool local, bool convert);
+RcppExport SEXP reticulate_py_run_file_impl(SEXP fileSEXP, SEXP localSEXP, SEXP convertSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type file(fileSEXP);
+    Rcpp::traits::input_parameter< bool >::type local(localSEXP);
+    Rcpp::traits::input_parameter< bool >::type convert(convertSEXP);
+    rcpp_result_gen = Rcpp::wrap(py_run_file_impl(file, local, convert));
+    return rcpp_result_gen;
+END_RCPP
+}
+// py_eval_impl
+SEXP py_eval_impl(const std::string& code, bool convert);
+RcppExport SEXP reticulate_py_eval_impl(SEXP codeSEXP, SEXP convertSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type code(codeSEXP);
     Rcpp::traits::input_parameter< bool >::type convert(convertSEXP);
-    rcpp_result_gen = Rcpp::wrap(py_run_string_impl(code, convert));
+    rcpp_result_gen = Rcpp::wrap(py_eval_impl(code, convert));
     return rcpp_result_gen;
 END_RCPP
 }
-// py_run_file_impl
-PyObjectRef py_run_file_impl(const std::string& file, bool convert);
-RcppExport SEXP reticulate_py_run_file_impl(SEXP fileSEXP, SEXP convertSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const std::string& >::type file(fileSEXP);
-    Rcpp::traits::input_parameter< bool >::type convert(convertSEXP);
-    rcpp_result_gen = Rcpp::wrap(py_run_file_impl(file, convert));
-    return rcpp_result_gen;
-END_RCPP
+
+static const R_CallMethodDef CallEntries[] = {
+    {"reticulate_is_python3", (DL_FUNC) &reticulate_is_python3, 0},
+    {"reticulate_py_last_error", (DL_FUNC) &reticulate_py_last_error, 0},
+    {"reticulate_py_clear_last_error", (DL_FUNC) &reticulate_py_clear_last_error, 0},
+    {"reticulate_py_is_callable", (DL_FUNC) &reticulate_py_is_callable, 1},
+    {"reticulate_r_to_py_impl", (DL_FUNC) &reticulate_r_to_py_impl, 2},
+    {"reticulate_py_activate_virtualenv", (DL_FUNC) &reticulate_py_activate_virtualenv, 1},
+    {"reticulate_py_initialize", (DL_FUNC) &reticulate_py_initialize, 7},
+    {"reticulate_py_finalize", (DL_FUNC) &reticulate_py_finalize, 0},
+    {"reticulate_py_is_none", (DL_FUNC) &reticulate_py_is_none, 1},
+    {"reticulate_py_compare_impl", (DL_FUNC) &reticulate_py_compare_impl, 3},
+    {"reticulate_py_str_impl", (DL_FUNC) &reticulate_py_str_impl, 1},
+    {"reticulate_py_print", (DL_FUNC) &reticulate_py_print, 1},
+    {"reticulate_py_is_function", (DL_FUNC) &reticulate_py_is_function, 1},
+    {"reticulate_py_is_null_xptr", (DL_FUNC) &reticulate_py_is_null_xptr, 1},
+    {"reticulate_py_validate_xptr", (DL_FUNC) &reticulate_py_validate_xptr, 1},
+    {"reticulate_py_numpy_available_impl", (DL_FUNC) &reticulate_py_numpy_available_impl, 0},
+    {"reticulate_py_list_attributes_impl", (DL_FUNC) &reticulate_py_list_attributes_impl, 1},
+    {"reticulate_py_has_attr", (DL_FUNC) &reticulate_py_has_attr, 2},
+    {"reticulate_py_get_attr_impl", (DL_FUNC) &reticulate_py_get_attr_impl, 3},
+    {"reticulate_py_set_attr_impl", (DL_FUNC) &reticulate_py_set_attr_impl, 3},
+    {"reticulate_py_get_attribute_types", (DL_FUNC) &reticulate_py_get_attribute_types, 2},
+    {"reticulate_py_ref_to_r_with_convert", (DL_FUNC) &reticulate_py_ref_to_r_with_convert, 2},
+    {"reticulate_py_ref_to_r", (DL_FUNC) &reticulate_py_ref_to_r, 1},
+    {"reticulate_py_call_impl", (DL_FUNC) &reticulate_py_call_impl, 3},
+    {"reticulate_py_dict", (DL_FUNC) &reticulate_py_dict, 3},
+    {"reticulate_py_dict_get_item", (DL_FUNC) &reticulate_py_dict_get_item, 2},
+    {"reticulate_py_dict_set_item", (DL_FUNC) &reticulate_py_dict_set_item, 3},
+    {"reticulate_py_dict_length", (DL_FUNC) &reticulate_py_dict_length, 1},
+    {"reticulate_py_dict_get_keys_as_str", (DL_FUNC) &reticulate_py_dict_get_keys_as_str, 1},
+    {"reticulate_py_tuple", (DL_FUNC) &reticulate_py_tuple, 2},
+    {"reticulate_py_tuple_length", (DL_FUNC) &reticulate_py_tuple_length, 1},
+    {"reticulate_py_module_import", (DL_FUNC) &reticulate_py_module_import, 2},
+    {"reticulate_py_module_proxy_import", (DL_FUNC) &reticulate_py_module_proxy_import, 1},
+    {"reticulate_py_list_submodules", (DL_FUNC) &reticulate_py_list_submodules, 1},
+    {"reticulate_py_iterate", (DL_FUNC) &reticulate_py_iterate, 2},
+    {"reticulate_py_run_string_impl", (DL_FUNC) &reticulate_py_run_string_impl, 3},
+    {"reticulate_py_run_file_impl", (DL_FUNC) &reticulate_py_run_file_impl, 3},
+    {"reticulate_py_eval_impl", (DL_FUNC) &reticulate_py_eval_impl, 2},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_reticulate(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

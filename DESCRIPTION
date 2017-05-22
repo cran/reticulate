@@ -1,14 +1,13 @@
 Package: reticulate
 Type: Package
 Title: R Interface to Python
-Version: 0.7
+Version: 0.8
 Authors@R: c(
-  person("JJ", "Allaire", role = c("aut", "cre"),
-     comment = "R interface", email = "jj@rstudio.com"),
+  person("JJ", "Allaire", role = c("aut", "cre"), email = "jj@rstudio.com"),
   person("Kevin", "Ushey", role = c("ctb"),
          email = "kevin@rstudio.com"),
-  person(family = "RStudio", role = "cph"),
-  person("Yuan", "Tang", role = c("ctb", "cph"),
+  person("RStudio", role = c("cph", "fnd")),
+  person("Yuan", "Tang", role = c("aut", "cph"),
          email = "terrytangyuan@gmail.com"),
   person("Dirk", "Eddelbuettel", role = c("ctb", "cph"),
          email = "edd@debian.org"),
@@ -34,15 +33,15 @@ LinkingTo: Rcpp
 RoxygenNote: 6.0.1
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2017-03-13 16:43:09 UTC; jjallaire
-Author: JJ Allaire [aut, cre] (R interface),
+Packaged: 2017-05-22 13:05:52 UTC; jjallaire
+Author: JJ Allaire [aut, cre],
   Kevin Ushey [ctb],
-  RStudio [cph],
-  Yuan Tang [ctb, cph],
+  RStudio [cph, fnd],
+  Yuan Tang [aut, cph],
   Dirk Eddelbuettel [ctb, cph],
   Bryan Lewis [ctb, cph],
   Marcus Geelnard [aut, cph] (TinyThread library,
     http://tinythreadpp.bitsnbites.eu/)
 Maintainer: JJ Allaire <jj@rstudio.com>
 Repository: CRAN
-Date/Publication: 2017-03-14 08:08:13
+Date/Publication: 2017-05-22 16:13:46 UTC
