@@ -1,4 +1,17 @@
 
+
+#' Documentation for Python Objects
+#' 
+#' @param object Object to print documentation for
+#'
+#' @export
+py_help <- function(object) {
+  help <- py_capture_output(import_builtins()$help(object), type = "stdout")
+  tmp <- tempfile("py_help", fileext = ".txt")
+  writeLines(help, con = tmp)
+  file.show(tmp, title = paste("Python Help:", object$`__name__`), delete.file = TRUE)
+}
+
 #' Register help topics
 #'
 #' Register a set of help topics for dispatching from F1 help

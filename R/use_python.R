@@ -93,6 +93,7 @@ conda_list <- function(conda = "auto") {
   
   # list envs
   conda_envs <- system2(conda, args = c("info", "--envs"), stdout = TRUE)
+  conda_envs <- conda_envs[!grepl("Anaconda Cloud", conda_envs, fixed = TRUE)]
   matches <- regexec(paste0("^([^#][^ ]+)[ \\*]+(.*)$"), conda_envs)
   matches <- regmatches(conda_envs, matches)
   
@@ -208,6 +209,14 @@ conda_binary <- function(conda = "auto") {
   
   # return conda
   conda
+}
+
+
+#' @rdname conda-tools
+#' @export
+conda_version <- function(conda = "auto") {
+  conda_bin <- conda_binary(conda)
+  system2(conda_bin, "--version", stdout = TRUE)
 }
 
 

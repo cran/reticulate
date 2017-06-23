@@ -1,4 +1,28 @@
 
+# reticulate 0.9
+
+- Detect older versions of Anaconda during registry scanning.
+
+- Don't probe python versions on windows when no executable is found
+
+- Poll for interrupts every 500ms rather than 100ms
+
+- Provide sys.stdout and sys.stderr when they are None (e.g. in R GUI)
+
+- Add Scripts directory to PATH on Windows
+
+- Add iter_next function for element-by-element access to iterators
+
+- Eliminate special print method for iterators/generators
+
+- Added `py_help()` function for printing documentation on Python objects
+
+- Added `conda_version()` function.
+
+- Search `dict()` parent frames for symbols; only use symbols which inherit
+  from python.builtin.object as keys.
+
+
 # reticulate 0.8
 
 ## Features

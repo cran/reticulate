@@ -75,8 +75,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>The <strong>reticulate</strong> package provides an R interface to Python modules, classes, and functions. For example, this code imports the Python <code>os</code> module and calls some functions within it:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(reticulate)
 os &lt;-<span class="st"> </span><span class="kw">import</span>(<span class="st">&quot;os&quot;</span>)
-os$<span class="kw">chdir</span>(<span class="st">&quot;tests&quot;</span>)
-os$<span class="kw">getcwd</span>()</code></pre></div>
+os<span class="op">$</span><span class="kw">chdir</span>(<span class="st">&quot;tests&quot;</span>)
+os<span class="op">$</span><span class="kw">getcwd</span>()</code></pre></div>
 <p>Functions and other data within Python modules and classes can be accessed via the <code>$</code> operator (analogous to the way you would interact with an R list, environment, or reference class).</p>
 <p>The <strong>reticulate</strong> package is compatible with all versions of Python &gt;= 2.7. Integration with NumPy is optional and requires NumPy &gt;= 1.6.</p>
 </div>
@@ -135,15 +135,15 @@ os$<span class="kw">getcwd</span>()</code></pre></div>
 <h2>Importing Modules</h2>
 <p>The <code>import</code> function can be used to import any Python module. For example:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">difflib &lt;-<span class="st"> </span><span class="kw">import</span>(<span class="st">&quot;difflib&quot;</span>)
-difflib$<span class="kw">ndiff</span>(foo, bar)
+difflib<span class="op">$</span><span class="kw">ndiff</span>(foo, bar)
 
 filecmp &lt;-<span class="st"> </span><span class="kw">import</span>(<span class="st">&quot;filecmp&quot;</span>)
-filecmp$<span class="kw">cmp</span>(dir1, dir2)</code></pre></div>
+filecmp<span class="op">$</span><span class="kw">cmp</span>(dir1, dir2)</code></pre></div>
 <p>The <code>import_main()</code> and <code>import_builtins()</code> functions give you access to the main module where code is executed by default and the collection of built in Python functions. For example:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">main &lt;-<span class="st"> </span><span class="kw">import_main</span>()
 
 py &lt;-<span class="st"> </span><span class="kw">import_builtins</span>()
-py$<span class="kw">print</span>(<span class="st">'foo'</span>)</code></pre></div>
+py<span class="op">$</span><span class="kw">print</span>(<span class="st">'foo'</span>)</code></pre></div>
 <p>The main module is generally useful if you have executed Python code from a file or string and want to get access to it’s results (see the section below for more details).</p>
 <div id="object-conversion" class="section level3">
 <h3>Object Conversion</h3>
@@ -152,8 +152,8 @@ py$<span class="kw">print</span>(<span class="st">'foo'</span>)</code></pre></di
 np &lt;-<span class="st"> </span><span class="kw">import</span>(<span class="st">&quot;numpy&quot;</span>, <span class="dt">convert =</span> <span class="ot">FALSE</span>)
 
 <span class="co"># do some array manipulations with NumPy</span>
-a &lt;-<span class="st"> </span>np$<span class="kw">array</span>(<span class="kw">c</span>(<span class="dv">1</span>:<span class="dv">4</span>))
-sum &lt;-<span class="st"> </span>a$<span class="kw">cumsum</span>()
+a &lt;-<span class="st"> </span>np<span class="op">$</span><span class="kw">array</span>(<span class="kw">c</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">4</span>))
+sum &lt;-<span class="st"> </span>a<span class="op">$</span><span class="kw">cumsum</span>()
 
 <span class="co"># convert to R explicitly at the end</span>
 <span class="kw">py_to_r</span>(sum)</code></pre></div>
@@ -166,13 +166,19 @@ sum &lt;-<span class="st"> </span>a$<span class="kw">cumsum</span>()
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">py_run_file</span>(<span class="st">&quot;script.py&quot;</span>)
 
 main &lt;-<span class="st"> </span><span class="kw">py_run_string</span>(<span class="st">&quot;x = 10&quot;</span>)
-main$x</code></pre></div>
+main<span class="op">$</span>x</code></pre></div>
+</div>
+<div id="getting-help" class="section level2">
+<h2>Getting Help</h2>
+<p>You can print documentation on any Python object using the <code>py_help()</code> function. For example:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">os &lt;-<span class="st"> </span><span class="kw">import</span>(<span class="st">&quot;os&quot;</span>)
+<span class="kw">py_help</span>(os<span class="op">$</span>chdir)</code></pre></div>
 </div>
 <div id="lists-tuples-and-dictionaries" class="section level2">
 <h2>Lists, Tuples, and Dictionaries</h2>
 <p>The automatic conversion of R types to Python types works well in most cases, but occasionally you will need to be more explicit on the R side to provide Python the type it expects.</p>
 <p>For example, if a Python API requires a list and you pass a single element R vector it will be converted to a Python scalar. To overcome this simply use the R <code>list</code> function explicitly:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">foo$<span class="kw">bar</span>(<span class="dt">indexes =</span> <span class="kw">list</span>(42L))</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">foo<span class="op">$</span><span class="kw">bar</span>(<span class="dt">indexes =</span> <span class="kw">list</span>(42L))</code></pre></div>
 <p>Similarly, a Python API might require a <code>tuple</code> rather than a list. In that case you can use the <code>tuple()</code> function:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">tuple</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>)</code></pre></div>
 <p>R named lists are converted to Python dictionaries however you can also explicitly create a Python dictionary using the <code>dict()</code> function:</p>
@@ -183,8 +189,8 @@ main$x</code></pre></div>
 <h2>With Contexts</h2>
 <p>The R <code>with</code> generic function can be used to interact with Python context manager objects (in Python you use the <code>with</code> keyword to do the same). For example:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">py &lt;-<span class="st"> </span><span class="kw">import_builtins</span>()
-<span class="kw">with</span>(py$<span class="kw">open</span>(<span class="st">&quot;output.txt&quot;</span>, <span class="st">&quot;w&quot;</span>) %as%<span class="st"> </span>file, {
-  file$<span class="kw">write</span>(<span class="st">&quot;Hello, there!&quot;</span>)
+<span class="kw">with</span>(py<span class="op">$</span><span class="kw">open</span>(<span class="st">&quot;output.txt&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="op">%as%</span><span class="st"> </span>file, {
+  file<span class="op">$</span><span class="kw">write</span>(<span class="st">&quot;Hello, there!&quot;</span>)
 })</code></pre></div>
 <p>This example opens a file and ensures that it is automatically closed at the end of the with block. Note the use of the <code>%as%</code> operator to alias the object created by the context manager.</p>
 </div>
@@ -197,6 +203,22 @@ main$x</code></pre></div>
 <p>Note that the <code>Iterators</code> will be drained of their values by <code>iterate()</code>:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">a &lt;-<span class="st"> </span><span class="kw">iterate</span>(iter) <span class="co"># results are not empty</span>
 b &lt;-<span class="st"> </span><span class="kw">iterate</span>(iter) <span class="co"># results are empty since items have already been drained</span></code></pre></div>
+<div id="element-level-iteration" class="section level3">
+<h3>Element Level Iteration</h3>
+<p>You can also iterate on an element-by-element basis using the <code>iter_next()</code> function. For example:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="cf">while</span> (<span class="ot">TRUE</span>) {
+  item &lt;-<span class="st"> </span><span class="kw">iter_next</span>(iter)
+  <span class="cf">if</span> (<span class="kw">is.na</span>(item))
+    <span class="cf">break</span>
+}</code></pre></div>
+<p>By default <code>iter_next()</code> will return <code>NA</code> when the iteration is complete but you can provide a custom value and it will be returned instead. For example:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="cf">while</span> (<span class="ot">TRUE</span>) {
+  item &lt;-<span class="st"> </span><span class="kw">iter_next</span>(iter, <span class="dt">completed =</span> <span class="ot">NULL</span>)
+  <span class="cf">if</span> (<span class="kw">is.null</span>(item))
+    <span class="cf">break</span>
+}</code></pre></div>
+<p>Note that some iterators/genrators in Python are infinite. In that case the caller will need custom logic to determine when to terminate the loop.</p>
+</div>
 </div>
 <div id="advanced-functions" class="section level2">
 <h2>Advanced Functions</h2>

@@ -53,3 +53,17 @@ knitr::opts_chunk$set(eval = FALSE)
 #  a <- iterate(iter) # results are not empty
 #  b <- iterate(iter) # results are empty since items have already been drained
 
+## ------------------------------------------------------------------------
+#  while (TRUE) {
+#    item <- iter_next(iter)
+#    if (is.na(item))
+#      break
+#  }
+
+## ------------------------------------------------------------------------
+#  while (TRUE) {
+#    item <- iter_next(iter, completed = NULL)
+#    if (is.null(item))
+#      break
+#  }
+

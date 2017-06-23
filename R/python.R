@@ -471,9 +471,14 @@ dict <- function(..., convert = FALSE) {
   # evaluate names in parent env to get keys
   frame <- parent.frame()
   keys <- lapply(names, function(name) {
-    if (exists(name, envir = frame, inherits = FALSE))
-      key <- get(name, envir = frame, inherits = FALSE)
-    else {
+    # allow python objects to serve as keys
+    if (exists(name, envir = frame, inherits = TRUE)) {
+      key <- get(name, envir = frame, inherits = TRUE)
+      if (inherits(key, "python.builtin.object"))
+        key
+      else
+        name
+    } else {
       if (grepl("[0-9]+", name))
         name <- as.integer(name)
       else
@@ -633,29 +638,32 @@ with.python.builtin.object <- function(data, expr, as = NULL, ...) {
 
 #' Traverse a Python iterator or generator
 #'
-#' @param x Python iterator or generator
+#' @param it Python iterator or generator
 #' @param f Function to apply to each item. By default applies the
 #'   \code{identity} function which just reflects back the value of the item.
 #' @param simplify Should the result be simplified to a vector if possible?
+#' @param completed Sentinel value to return from `iter_next()` if the iteration
+#'   completes (defaults to `NA` but can be any R value you specify).
 #'
-#' @return List or vector containing the results of calling \code{f} on each
-#'   item in \code{x} (invisibly).
+#' @return For `iterate()`, A list or vector containing the results of calling
+#'   \code{f} on each item in \code{x} (invisibly); For `iter_next()`, the next
+#'   value in the iteration (or the sentinel `completed` value if the iteration
+#'   is complete).
 #'
-#' @details Simplification is only attempted all elements are length 1
-#'  vectors of type "character", "complex", "double", "integer", or
-#'  "logical".
+#' @details Simplification is only attempted all elements are length 1 vectors
+#'   of type "character", "complex", "double", "integer", or "logical".
 #'
 #' @export
-iterate <- function(x, f = base::identity, simplify = TRUE) {
+iterate <- function(it, f = base::identity, simplify = TRUE) {
 
   ensure_python_initialized()
 
   # validate
-  if (!inherits(x, "python.builtin.iterator"))
+  if (!inherits(it, "python.builtin.iterator"))
     stop("iterate function called with non-iterator argument")
 
   # perform iteration
-  result <- py_iterate(x, f)
+  result <- py_iterate(it, f)
 
   # simplify if requested and appropriate
   if (simplify) {
@@ -680,10 +688,20 @@ iterate <- function(x, f = base::identity, simplify = TRUE) {
   invisible(result)
 }
 
+
+
+
+#' @rdname iterate
 #' @export
-print.python.builtin.iterator <- function(x, ...) {
-  str(x, ...)
-  cat("Python iterator/generator (use iterate function to traverse)\n")
+iter_next <- function(it, completed = NA) {
+  
+  # validate
+  if (!inherits(it, "python.builtin.iterator"))
+    stop("iter_next function called with non-iterator argument")
+  
+  # call iterator
+  py_iter_next(it, completed)
+
 }
 
 #' Call a Python callable object
