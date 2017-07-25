@@ -1,4 +1,30 @@
 
+# reticulate 1.0
+
+- Search WORKON_HOME (used by virtualenv_wrapper) for Python environments  
+
+- Support `priority` field for delay loaded modules.
+
+- Use json output from conda_list (handle spaces in path of conda env)
+
+- Look for callable before iterable when converting Python objects to R
+
+- Correct propagation of errors in R functions called from Python
+
+- Support for generators (creating Python iterators from R functions)
+
+- Changed default `completed` value for `iter_next()` to `NULL` (was `NA`)
+
+- Support for converting 16-bit floats (NPY_HALF) to R
+
+- Don't throw error when probing Python <= 2.6 
+
+- Copy Python dictionary before converting to R named list (fixes issue
+  with dictionaries that are mutated during iteration, e.g. sys.modules)
+  
+- Ensure that existing warning filters aren't reset by py_suppress_warnings
+
+
 # reticulate 0.9
 
 - Detect older versions of Anaconda during registry scanning.

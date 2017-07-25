@@ -257,6 +257,7 @@ LIBPYTHON_EXTERN int (*PyDict_Next)(
 LIBPYTHON_EXTERN PyObject* (*PyDict_Keys)(PyObject *mp);
 LIBPYTHON_EXTERN PyObject* (*PyDict_Values)(PyObject *mp);
 LIBPYTHON_EXTERN Py_ssize_t (*PyDict_Size)(PyObject *mp);
+LIBPYTHON_EXTERN PyObject* (*PyDict_Copy)(PyObject *mp);
 
 LIBPYTHON_EXTERN PyObject* (*PyInt_FromLong)(long);
 LIBPYTHON_EXTERN long (*PyInt_AsLong)(PyObject *);
@@ -284,6 +285,8 @@ LIBPYTHON_EXTERN void (*Py_SetPythonHome_v3)(wchar_t *);
 
 LIBPYTHON_EXTERN void (*PySys_SetArgv)(int, char **);
 LIBPYTHON_EXTERN void (*PySys_SetArgv_v3)(int, wchar_t **);
+
+LIBPYTHON_EXTERN void (*PySys_WriteStderr)(const char *format, ...);
 
 #define PyObject_TypeCheck(o, tp) ((PyTypeObject*)Py_TYPE(o) == (tp)) || PyType_IsSubtype((PyTypeObject*)Py_TYPE(o), (tp))
 

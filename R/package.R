@@ -18,6 +18,7 @@ NULL
 .globals$use_python_versions <- c()
 .globals$py_config <- NULL
 .globals$delay_load_module <- NULL
+.globals$delay_load_priority <- 0
 .globals$suppress_warnings_handlers <- list()
 .globals$class_filters <- list()
 
@@ -40,6 +41,7 @@ ensure_python_initialized <- function(required_module = NULL) {
      if (!is.null(.globals$delay_load_module)) {
         required_module <- .globals$delay_load_module
         .globals$delay_load_module <- NULL # one shot
+        .globals$delay_load_priority <- 0
      }
     .globals$py_config <- initialize_python(required_module)
     
@@ -61,7 +63,7 @@ initialize_python <- function(required_module = NULL) {
   # check for basic python prerequsities
   if (is.null(config)) {
     stop("Installation of Python not found, Python bindings not loaded.")
-  } else if (!is_windows() && !file.exists(config$libpython)) {
+  } else if (!is_windows() && (is.null(config$libpython) || !file.exists(config$libpython))) {
     stop("Python shared library '", config$libpython, "' not found, Python bindings not loaded.")
   } else if (is_incompatible_arch(config)) {
     stop("Your current architecture is ", current_python_arch(), " however this version of ",

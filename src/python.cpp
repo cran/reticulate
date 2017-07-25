@@ -6,7 +6,7 @@ using namespace Rcpp;
 
 #include "reticulate_types.h"
 
-#include "interrupt.h"
+#include "event_loop.h"
 
 #include <fstream>
 
@@ -548,6 +548,7 @@ int narrow_array_typenum(int typenum) {
   case NPY_ULONGLONG:
   case NPY_LONG:
   case NPY_LONGLONG:
+  case NPY_HALF:
   case NPY_FLOAT:
   case NPY_DOUBLE:
     typenum = NPY_DOUBLE;
@@ -698,8 +699,9 @@ SEXP py_to_r(PyObject* x, bool convert) {
   // dict
   else if (PyDict_Check(x)) {
     
-    // allocate memory for name and value vectors
-    Py_ssize_t size = PyDict_Size(x);
+    // copy the dict and allocate 
+    PyObjectPtr dict(PyDict_Copy(x));
+    Py_ssize_t size = PyDict_Size(dict);
     std::vector<std::string> names(size);
     Rcpp::List list(size);
     
@@ -707,7 +709,7 @@ SEXP py_to_r(PyObject* x, bool convert) {
     PyObject *key, *value;
     Py_ssize_t pos = 0;
     Py_ssize_t idx = 0;
-    while (PyDict_Next(x, &pos, &key, &value)) {
+    while (PyDict_Next(dict, &pos, &key, &value)) {
       PyObjectPtr str(PyObject_Str(key));
       names[idx] = as_std_string(str);
       list[idx] = py_to_r(value, convert);
@@ -721,6 +723,9 @@ SEXP py_to_r(PyObject* x, bool convert) {
   // numpy array
   else if (isPyArray(x)) {
 
+    // R array to return
+    RObject rArray = R_NilValue;
+    
     // get the array
     PyArrayObject* array = (PyArrayObject*)x;
 
@@ -750,9 +755,6 @@ SEXP py_to_r(PyObject* x, bool convert) {
 
     // ensure we release it within this scope
     PyObjectPtr ptrArray((PyObject*)array);
-
-    // R array to return
-    SEXP rArray = R_NilValue;
 
     // copy the data as required per-type
     switch(typenum) {
@@ -889,16 +891,6 @@ SEXP py_to_r(PyObject* x, bool convert) {
     }
   }
 
-  // iterator/generator
-  else if (PyObject_HasAttrString(x, "__iter__") &&
-           (PyObject_HasAttrString(x, "next") ||
-            PyObject_HasAttrString(x, "__next__"))) {
-
-    // return it raw but add a class so we can create S3 methods for it
-    Py_IncRef(x);
-    return py_ref(x, true, std::string("python.builtin.iterator"));
-  }
-
   // callable
   else if (py_is_callable(x)) {
     
@@ -919,6 +911,16 @@ SEXP py_to_r(PyObject* x, bool convert) {
     
     // return the R function
     return f;
+  }
+  
+  // iterator/generator
+  else if (PyObject_HasAttrString(x, "__iter__") &&
+           (PyObject_HasAttrString(x, "next") ||
+           PyObject_HasAttrString(x, "__next__"))) {
+    
+    // return it raw but add a class so we can create S3 methods for it
+    Py_IncRef(x);
+    return py_ref(x, true, std::string("python.builtin.iterator"));
   }
   
   // default is to return opaque wrapper to python object. we pass convert = true 
@@ -1231,18 +1233,98 @@ extern "C" PyObject* call_r_function(PyObject *self, PyObject* args, PyObject* k
   Function append("append");
   rArgs = append(rArgs, rKeywords);
 
-  // call the R function
-  Function doCall("do.call");
-  RObject result = doCall(rFunction, rArgs);
+  // Some special constants for various special error conditions
+  // (NOTE: these are also defined in call.py so must be changed in both places)
+  const char* const kErrorKey = "F4B07A71E0ED40469929658827023424";
+  const char* const kInterruptError = "E04414EDEA17488B93FE2AE30F1F67AF";
 
-  // return it's result
-  return r_to_py(result, convert);
+  // call the R function
+  std::string err;
+  try {
+    Function doCall("do.call");
+    RObject result = doCall(rFunction, rArgs);
+    return r_to_py(result, convert);
+  } catch(const Rcpp::internal::InterruptedException& e) {
+    err = kInterruptError;
+  } catch(const std::exception& e) {
+    err = e.what();
+  } catch(...) {
+    err = "(Unknown exception occurred)";
+  }
+  
+  // ...we won't reach this code unless an error occurred
+  
+  // Return a special named list which the caller transforms into a python error
+  PyObjectPtr errorDict(PyDict_New());
+  PyObjectPtr errorMsg(as_python_str(err));
+  PyDict_SetItemString(errorDict, kErrorKey, errorMsg);
+  return errorDict.detach();
+}
+
+struct PythonCall {
+  PythonCall(PyObject* func, PyObject* data) : func(func), data(data) {
+    Py_IncRef(func);
+    Py_IncRef(data);
+  }
+  ~PythonCall() {
+    Py_DecRef(func);
+    Py_DecRef(data);
+  }
+  PyObject* func;
+  PyObject* data;
+private:
+  PythonCall(const PythonCall& other); 
+  PythonCall& operator=(const PythonCall&);
+};
+
+int call_python_function(void* data) {
+  
+  // cast to call
+  PythonCall* call = (PythonCall*)data; 
+
+  // call the function
+  PyObject* arg = py_is_none(call->data) ? NULL : call->data;
+  PyObjectPtr res(PyObject_CallFunctionObjArgs(call->func, arg, NULL));
+  
+  // delete the call object (will decref the members)
+  delete call;
+  
+  // return status as per https://docs.python.org/3/c-api/init.html#c.Py_AddPendingCall
+  if (!res.is_null())
+    return 0;
+  else
+    return -1;
+}
+
+
+extern "C" PyObject* call_python_function_on_main_thread(
+                PyObject *self, PyObject* args, PyObject* keywords) {
+  
+  // arguments are the python function to call and an optional data argument
+  // capture them and then incref them so they survive past this call (we'll
+  // decref them in the call_python_function callback)
+  PyObject* func = PyTuple_GetItem(args, 0);
+  PyObject* data = PyTuple_GetItem(args, 1);
+  
+  // create the call object (the func and data will be automaticlaly incref'd then 
+  // decrefed when the call object is destroyed)
+  PythonCall* call = new PythonCall(func, data);
+
+  // schedule calling the function
+  if (Py_AddPendingCall(call_python_function, call) == -1)
+    PySys_WriteStderr("Unexpected error calling Py_AddPendingCall\n");
+  
+  // return none
+  Py_IncRef(Py_None);
+  return Py_None; 
 }
 
 
 PyMethodDef RPYCallMethods[] = {
   { "call_r_function", (PyCFunction)call_r_function,
     METH_VARARGS | METH_KEYWORDS, "Call an R function" },
+  { "call_python_function_on_main_thread", (PyCFunction)call_python_function_on_main_thread,
+    METH_VARARGS | METH_KEYWORDS, "Call a Python function on the main thread" },
   { NULL, NULL, 0, NULL }
 };
 
@@ -1364,8 +1446,8 @@ void py_initialize(const std::string& python,
   else
     s_numpy_load_error = numpy_load_error;
   
-  // poll for interrupts
-  initialize_interrupt_polling();
+  // poll for events while executing python code
+  event_loop::initialize();
 }
 
 // [[Rcpp::export]]
@@ -1873,6 +1955,9 @@ SEXP py_run_file_impl(const std::string& file,
 // [[Rcpp::export]]
 SEXP py_eval_impl(const std::string& code, bool convert = true) {
   
+  // R object to return
+  RObject rObject;
+  
   // compile the code
   PyObjectPtr compiledCode(Py_CompileString(code.c_str(), "reticulate_eval", Py_eval_input));
   if (compiledCode.is_null())
@@ -1889,9 +1974,10 @@ SEXP py_eval_impl(const std::string& code, bool convert = true) {
  // return (convert to R if requested)
  Py_IncRef(res);
  if (convert)
-   return py_to_r(res, convert);
+   rObject = py_to_r(res, convert);
  else
-   return py_ref(res, convert);
+   rObject = py_ref(res, convert);
+ return rObject;
 }
 
 

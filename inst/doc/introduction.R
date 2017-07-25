@@ -56,14 +56,39 @@ knitr::opts_chunk$set(eval = FALSE)
 ## ------------------------------------------------------------------------
 #  while (TRUE) {
 #    item <- iter_next(iter)
-#    if (is.na(item))
+#    if (is.null(item))
 #      break
 #  }
 
 ## ------------------------------------------------------------------------
 #  while (TRUE) {
-#    item <- iter_next(iter, completed = NULL)
-#    if (is.null(item))
+#    item <- iter_next(iter, completed = NA)
+#    if (is.na(item))
 #      break
+#  }
+
+## ------------------------------------------------------------------------
+#  # define a generator function
+#  sequence_generator <-function(start) {
+#    value <- start
+#    function() {
+#      value <<- value + 1
+#      value
+#    }
+#  }
+#  
+#  # convert the function to a python iterator
+#  iter <- py_iterator(sequence_generator(10))
+
+## ------------------------------------------------------------------------
+#  sequence_generator <-function(start) {
+#    value <- start
+#    function() {
+#      value <<- value + 1
+#      if (value < 100)
+#        value
+#      else
+#        NULL
+#    }
 #  }
 

@@ -38,12 +38,15 @@ import <- function(module, as = NULL, convert = TRUE, delay_load = FALSE) {
   }
   
   # resolve delay load
+  delay_load_priority <- 0
   delay_load_functions <- NULL
   if (is.function(delay_load)) {
     delay_load_functions <- list(on_load = delay_load)
     delay_load <- TRUE
   } else if (is.list(delay_load)) {
     delay_load_functions <- delay_load
+    if (!is.null(delay_load$priority))
+      delay_load_priority <- delay_load$priority
     delay_load <- TRUE
   }
   
@@ -59,8 +62,10 @@ import <- function(module, as = NULL, convert = TRUE, delay_load = FALSE) {
   
   # delay load case (wait until first access)
   else {
-    if (is.null(.globals$delay_load_module))
+    if (is.null(.globals$delay_load_module) || (delay_load_priority > .globals$delay_load_priority)) {
       .globals$delay_load_module <- module
+      .globals$delay_load_priority <- delay_load_priority
+    }
     module_proxy <- new.env(parent = emptyenv())
     module_proxy$module <- module
     module_proxy$convert <- convert
@@ -643,7 +648,7 @@ with.python.builtin.object <- function(data, expr, as = NULL, ...) {
 #'   \code{identity} function which just reflects back the value of the item.
 #' @param simplify Should the result be simplified to a vector if possible?
 #' @param completed Sentinel value to return from `iter_next()` if the iteration
-#'   completes (defaults to `NA` but can be any R value you specify).
+#'   completes (defaults to `NULL` but can be any R value you specify).
 #'
 #' @return For `iterate()`, A list or vector containing the results of calling
 #'   \code{f} on each item in \code{x} (invisibly); For `iter_next()`, the next
@@ -693,7 +698,7 @@ iterate <- function(it, f = base::identity, simplify = TRUE) {
 
 #' @rdname iterate
 #' @export
-iter_next <- function(it, completed = NA) {
+iter_next <- function(it, completed = NULL) {
   
   # validate
   if (!inherits(it, "python.builtin.iterator"))
@@ -845,12 +850,7 @@ py_suppress_warnings <- function(expr) {
 
   ensure_python_initialized()
 
-  # ignore python warnings
-  warnings <- import("warnings")
-  warnings$simplefilter("ignore")
-  on.exit(warnings$resetwarnings(), add = TRUE)
-
-  # ignore other warnings
+  # ignore any registered warning output types (e.g. tf warnings)
   contexts <- lapply(.globals$suppress_warnings_handlers, function(handler) {
     handler$suppress()
   })
@@ -863,9 +863,9 @@ py_suppress_warnings <- function(expr) {
     }
   }, add = TRUE)
   
-
-  # evaluate the expression
-  force(expr)
+  # evaluate while ignoring python warnings
+  warnings <- import("warnings")
+  with(warnings$catch_warnings(), expr)
 }
 
 
@@ -1092,6 +1092,7 @@ py_resolve_module_proxy <- function(proxy) {
   
   # clear the global tracking of delay load modules
   .globals$delay_load_module <- NULL
+  .globals$delay_load_priority <- 0
   
   # call on_load if specifed
   if (!is.null(on_load))
