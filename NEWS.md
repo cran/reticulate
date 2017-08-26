@@ -1,4 +1,16 @@
 
+# reticulate 1.1 (unreleased)
+
+- Allow `dict()` function to accept keys with mixed alpha/numeric characters
+
+- Use `conda_list()` to discover conda environments on Windows (slower but
+  much more reliable than scanning the filesystem)
+
+- Add interface for registering F1 help handlers for Python modules
+
+- Provide virtual/conda env hint mechanism for delay loaded imports
+
+
 # reticulate 1.0
 
 - Search WORKON_HOME (used by virtualenv_wrapper) for Python environments  
