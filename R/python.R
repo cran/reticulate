@@ -369,12 +369,16 @@ length.python.builtin.dict <- function(x) {
   if (inherits(x, "python.builtin.dict")) {
     
     names <- py_dict_get_keys_as_str(x)
+    names <- names[substr(names, 1, 1) != '_']
+    Encoding(names) <- "UTF-8"
     types <- rep_len(0L, length(names))
     
   } else {
     # get the names and filter out internal attributes (_*)
     names <- py_suppress_warnings(py_list_attributes(x))
     names <- names[substr(names, 1, 1) != '_']
+    # replace function with `function`
+    names <- sub("^function$", "`function`", names)
     names <- sort(names, decreasing = FALSE)
     
     # get the types
@@ -387,6 +391,7 @@ length.python.builtin.dict <- function(x) {
     name <- py_get_name(x)
     if (!is.null(name)) {
       submodules <- sort(py_list_submodules(name), decreasing = FALSE)
+      Encoding(submodules) <- "UTF-8"
       names <- c(names, submodules)
       types <- c(types, rep_len(5L, length(submodules)))
     }
@@ -787,7 +792,9 @@ py_list_attributes <- function(x) {
   ensure_python_initialized()
   if (py_is_module_proxy(x))
     py_resolve_module_proxy(x)
-  py_list_attributes_impl(x)
+  attrs <- py_list_attributes_impl(x)
+  Encoding(attrs) <- "UTF-8"
+  attrs
 }
 
 
