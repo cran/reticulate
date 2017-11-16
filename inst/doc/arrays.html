@@ -418,11 +418,36 @@ o<span class="op">$</span><span class="kw">sub</span>(np<span class="op">$</span
 ##   [ 0.  0.]]]</code></pre></div>
 <p>The above NumPy arrays are the same, their element-wise difference is zero.</p>
 </div>
+<div id="reshaping-arrays" class="section level3">
+<h3>Reshaping arrays</h3>
+<p>In R you would typically reshape an array using the <code>dim&lt;-()</code> function. For example:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">dim</span>(x) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">1000</span>, <span class="dv">28</span>, <span class="dv">28</span>)</code></pre></div>
+<p>In R, this operation simply changes the “dim” attribute of the array, effectively re-interpreting the array indices as specified using column-major semantics.</p>
+<p>However, the NumPy <code>reshape</code> method uses row-major semantics by default, so if you are mixing R and Python code that reshapes arrays you will find that the reshaping will be inconsistent if you use the R <code>dim&lt;-()</code> function.</p>
+<p>To overcome this inconsistency, there is an <code>array_reshape()</code> function which will reshape an R array using row-major semantics (i.e. will fill the new dimensions in row-major rather than col-major order). The example above would be re-written as:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span><span class="kw">array_reshape</span>(x, <span class="kw">c</span>(<span class="dv">1000</span>, <span class="dv">28</span>, <span class="dv">28</span>))</code></pre></div>
+<p>Here’s a further example to illustrate the difference:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># let's construct a 2x2 array from a vector of 4 elements</span>
+x &lt;-<span class="st"> </span><span class="dv">1</span><span class="op">:</span><span class="dv">4</span>
+
+<span class="co"># rearrange will fill the array row-wise</span>
+<span class="kw">array_reshape</span>(x, <span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))
+<span class="co">#      [,1] [,2]</span>
+<span class="co"># [1,]    1    2</span>
+<span class="co"># [2,]    3    4</span>
+
+<span class="co"># setting the dimensions 'fills' the array col-wise</span>
+<span class="kw">dim</span>(x) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">2</span>)
+x
+<span class="co">#      [,1] [,2]</span>
+<span class="co"># [1,]    1    3</span>
+<span class="co"># [2,]    2    4</span></code></pre></div>
+</div>
 </div>
 <div id="other-differences-warranting-caution" class="section level2">
 <h2>Other differences warranting caution</h2>
 <p>It’s worth noting that analogs of R’s <code>apply()</code> function in Python behave differently. The following excellent Mathesaurus reference <a href="http://mathesaurus.sourceforge.net/r-numpy.html" class="uri">http://mathesaurus.sourceforge.net/r-numpy.html</a> applies well to matrices and vectors, but is misleading for <em>n</em>-d arrays with <em>n &gt; 2</em>.</p>
-<p>In particular, Mathesaurus says that if <em>a</em> is a <em>matrix</em>, then the sum of each column in Python may be computed by <code>a.sum(0)</code>, and in R (among other possible ways) by <code>apply(a, 2, sum)</code>. Although correct for matrices, this is in general not quite right. A more precise R analog of NumPy’s <code>a.sum(0)</code> is <code>apply(a, dim(a)[-1], sum)</code>. In other words, <code>a.sum(0)</code> means sum over the first dimension, returning an array of the same dimensions as <em>a</em> but with the first dimension removed.</p>
+<p>In particular, Mathesaurus says that if <em>a</em> is a <em>matrix</em>, then the sum of each column in Python may be computed by <code>a.sum(0)</code>, and in R (among other possible ways) by <code>apply(a, 2, sum)</code>. Although correct for matrices, this is in general not quite right. A more precise R analog of NumPy’s <code>a.sum(0)</code> is <code>apply(a, seq_along(dim(a))[-1], sum)</code>. In other words, <code>a.sum(0)</code> means sum over the first dimension, returning an array of the same dimensions as <em>a</em> but with the first dimension removed.</p>
 <p>It’s easy to be confused by this, so let’s see an example using a 4x3x2 array, first in Python:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(reticulate)
 np &lt;-<span class="st"> </span><span class="kw">import</span>(<span class="st">&quot;numpy&quot;</span>, <span class="dt">convert=</span><span class="ot">FALSE</span>)

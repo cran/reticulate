@@ -1,4 +1,54 @@
 
+## reticulate 1.3 (CRAN)
+
+- Use existing instance of Python when reticulate is loaded within an 
+  embedded Python environment (e.g. rpy2, rice, etc.)
+
+- Force use of Python specified in PYTHON_SESSION_INITIALIZED (defined by rpy2)
+
+- Define R_SESSION_INITIALIZED (used by rpy2)
+
+- Force use of Python when `required = TRUE` in `use_python` functions
+
+- Force use of Python specified by RETICULATE_PYTHON
+
+- `dict`: Don't scan parent frame for Python objects if a single unnamed list 
+  is passed.
+
+- Wait as long as required for scheduling generator calls on the main thread
+
+- Refine stripping of object addresses from output of `py_str()` method
+
+- Added `py_id()` function to get globally unique ids for Python objects
+
+- Added `py_len()` function and S3 `length()` method for Python lists (already
+  had `length()` methods for dicts, tuples, and NumPy arrays).
+  
+- Exported `py` object (reference to Python main module)
+
+- Added `eng_python()` (knitr engine for Python chunks)
+
+- Improved compatibility with strings containing high unicode characters 
+  when running under Python 2
+
+- Remove `dim` methods for NumPy arrays (semantics of NumPy reshaping are
+  different from R reshaping)
+  
+- Added `array_reshape` function for reshaping R arrays using NumPy (row-major)
+  semantics.
+  
+- Provide mechanism for custom R wrapper objects for Python objects
+
+- Added interface to pickle (`py_save_object()` and `py_load_object()`)
+
+- Catch and print errors which occur in generator functions
+
+- Write using Rprintf when providing custom Python output streams
+  (enables correct handling of terminal control characters)
+
+- Implement `isatty` when providing custom Python output streams
+
+
 ## reticulate 1.2
 
 - Add `np_array` function for creating NumPy arrays and converting the data type, 

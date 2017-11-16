@@ -1,11 +1,10 @@
 
 #' NumPy array
 #'
-#' Create NumPy arrays and convert the data type, dimensions, and in-memory
+#' Create NumPy arrays and convert the data type and in-memory
 #' ordering of existing NumPy arrays.
 #'
 #' @param data Vector or existing NumPy array providing data for the array
-#' @param dim Integer vector with array dimensions.
 #' @param dtype Numpy data type (e.g. "float32", "float64", etc.)
 #' @param order Memory ordering for array. "C" means C order, "F" means Fortran
 #'   order.
@@ -13,7 +12,7 @@
 #' @return A NumPy array object.
 #'
 #' @export
-np_array <- function(data, dim = dim(data), dtype = NULL, order = "C") {
+np_array <- function(data, dtype = NULL, order = "C") {
   
   # convert to numpy if required
   if (!inherits(data, "numpy.ndarray")) {
@@ -30,37 +29,12 @@ np_array <- function(data, dim = dim(data), dtype = NULL, order = "C") {
   if (is.null(dtype))
     dtype <- data$dtype
   
-  # reshape if necessary
-  np <- import("numpy", convert = FALSE)
-  if (!missing(dim))
-    data <- np$reshape(data, as.integer(dim), order = order)
-  
   # convert data as necessary (this will be a no-op and will
   # return the input array if dtype and order are already
   # satisfied)
   data$astype(dtype = dtype, order = order, copy = FALSE)
 }
 
-#' @export
-"dim.numpy.ndarray" <- function(x) {
-  if (py_is_null_xptr(x))
-    NULL
-  else {
-    ndim <- as_r_value(x$ndim)
-    if (ndim == 0)
-      NULL
-    else
-      as.integer(as_r_value(x$shape))
-  }
-}
-
-#' @export
-"dim<-.numpy.ndarray" <- function(x, value) {
-  if (!py_is_null_xptr(x))
-    r_to_py(x$reshape(as.integer(value)))
-  else
-    x
-}
 
 #' @export
 "length.numpy.ndarray" <- function(x) {
@@ -70,10 +44,48 @@ np_array <- function(data, dim = dim(data), dtype = NULL, order = "C") {
     as_r_value(x$size)
 }
 
-as_r_value <- function(x) {
-  if (inherits(x, "python.builtin.object"))
-    py_to_r(x)
-  else
-    x
+#' Reshape an Array
+#' 
+#' Reshape (reindex) a multi-dimensional array, using row-major (C-style) reshaping
+#' semantics by default.
+#' 
+#' This function differs from e.g. `dim(x) <- dim` in a very important way: by
+#' default, `array_reshape()` will fill the new dimensions in row-major (`C`-style)
+#' ordering, while [dim<-()] will fill new dimensions in column-major
+#' (`F`ortran-style) ordering. This is done to be consistent with libraries
+#' like NumPy, Keras, and TensorFlow, which default to this sort of ordering when
+#' reshaping arrays. See the examples for why this difference may be important.
+#' 
+#' @param x An array
+#' @param dim The new dimensions to be set on the array.
+#' @param order The order in which elements of `x` should be read during
+#'   the rearrangement. `"C"` means elements should be read in row-major
+#'   order, with the last index changing fastest; `"F"` means elements should
+#'   be read in column-major order, with the first index changing fastest.
+#' 
+#' @examples \dontrun{
+#' # let's construct a 2x2 array from a vector of 4 elements
+#' x <- 1:4
+#' 
+#' # rearrange will fill the array row-wise
+#' array_reshape(x, c(2, 2))
+#' #      [,1] [,2]
+#' # [1,]    1    2
+#' # [2,]    3    4
+#' # setting the dimensions 'fills' the array col-wise
+#' dim(x) <- c(2, 2)
+#' x
+#' #      [,1] [,2]
+#' # [1,]    1    3
+#' # [2,]    2    4
+#' }
+#' @export
+array_reshape <- function(x, dim, order = c("C", "F")) {
+  np <- import("numpy", convert = FALSE)
+  order <- match.arg(order)
+  reshaped <- np$reshape(x, as.integer(dim), order)
+  if (!inherits(x, "python.builtin.object"))
+    reshaped <- py_to_r(reshaped)
+  reshaped
 }
 

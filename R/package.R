@@ -15,6 +15,7 @@ NULL
 
 # package level mutable global state
 .globals <- new.env(parent = emptyenv())
+.globals$required_python_version <- NULL
 .globals$use_python_versions <- c()
 .globals$py_config <- NULL
 .globals$delay_load_module <- NULL
@@ -23,12 +24,6 @@ NULL
 .globals$suppress_warnings_handlers <- list()
 .globals$class_filters <- list()
 
-
-
-.onUnload <- function(libpath) {
-  if (is_python_initialized())
-    py_finalize();
-}
 
 
 is_python_initialized <- function() {
@@ -113,7 +108,10 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
   py_run_string_impl(paste0("import sys; sys.path.append('",
                        system.file("python", package = "reticulate") ,
                        "')"))
-
+  
+  # set R_SESSION_INITIALIZED flag (used by rpy2)
+  Sys.setenv(R_SESSION_INITIALIZED=sprintf('PID=%s:NAME="reticulate"', Sys.getpid()))
+ 
   # return config
   config
 }

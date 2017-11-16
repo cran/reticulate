@@ -94,6 +94,36 @@ py_module_available <- function(module) {
 #' @export
 py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   
+  
+  # if PYTHON_SESSION_INITIALIZED is specified then use it without scanning 
+  # further (this is a "hard" requirement because an embedding process may
+  # set this to indicate that the python interpreter is already loaded)
+  py_session_initialized <- py_session_initialized_binary()
+  if (!is.null(py_session_initialized)) {
+    python_version <- normalize_python_path(py_session_initialized)$path
+    config <- python_config(python_version, required_module, python_version, forced = "PYTHON_SESSION_INITIALIZED")
+    return(config)
+  }
+  
+  # if RETICULATE_PYTHON is specified then use it without scanning further 
+  reticulate_python_env <- Sys.getenv("RETICULATE_PYTHON", unset = NA)
+  if (!is.na(reticulate_python_env)) {
+    python_version <- normalize_python_path(reticulate_python_env)
+    if (!python_version$exists)
+      stop("Python specified in RETICULATE_PYTHON (", reticulate_python_env, ") does not exist")
+    python_version <- python_version$path
+    config <- python_config(python_version, required_module, python_version, forced = "RETICULATE_PYTHON")
+    return(config)
+  }
+  
+  # next look for a required python version (e.g. use_python("/usr/bin/python", required = TRUE))
+  required_version <- .globals$required_python_version
+  if (!is.null(required_version)) {
+    python_version <- normalize_python_path(required_version)$path
+    config <- python_config(python_version, required_module, python_version, forced = "use_python function")
+    return(config)
+  }
+  
   # create a list of possible python versions to bind to
   # (start with versions specified via environment variable or use_* function)
   python_versions <- reticulate_python_versions()
@@ -247,7 +277,7 @@ python_environments <- function(env_dirs, required_module = NULL) {
 
 
 
-python_config <- function(python, required_module, python_versions) {
+python_config <- function(python, required_module, python_versions, forced = NULL) {
   
   # collect configuration information
   if (!is.null(required_module)) {
@@ -349,7 +379,8 @@ python_config <- function(python, required_module, python_versions) {
     required_module = required_module,
     required_module_path = required_module_path,
     available = FALSE,
-    python_versions = python_versions
+    python_versions = python_versions,
+    forced = forced
   ))
   
 }
@@ -378,6 +409,9 @@ str.py_config <- function(object, ...) {
       out <- paste0(out, x$required_module_path, "\n")
     else
       out <- paste0(out, "[NOT FOUND]\n")
+  }
+  if (!is.null(x$forced)) {
+    out <- paste0(out, "\nNOTE: Python version was forced by ", x$forced, "\n")
   }
   if (length(x$python_versions) > 1) {
     out <- paste0(out, "\npython versions found: \n")
@@ -411,13 +445,9 @@ reticulate_python_versions <- function() {
   # python versions to return
   python_versions <- c()
   
-  # combine registered versions with the RETICULATE_PYTHON environment variable
+  # get versions specified via use_* functions
   reticulate_python_options <- .globals$use_python_versions
-  reticulate_python_env <- Sys.getenv("RETICULATE_PYTHON", unset = NA)
-  if (!is.na(reticulate_python_env))
-    reticulate_python_options <- c(reticulate_python_env, reticulate_python_options)
-  
-  
+ 
   # determine python versions to return
   if (length(reticulate_python_options) > 0) {
     for (i in 1:length(reticulate_python_options)) {
@@ -598,5 +628,37 @@ is_incompatible_arch <- function(config) {
   } else {
     FALSE
   }
+}
+
+
+py_session_initialized_binary <- function() {
+  
+  # binary to return
+  python_binary <- NULL
+  
+  # check environment variable
+  py_session <- Sys.getenv("PYTHON_SESSION_INITIALIZED", unset = NA)
+  if (!is.na(py_session)) {
+    py_session <- strsplit(py_session, ":", fixed = TRUE)[[1]]
+    py_session <- strsplit(py_session, "=", fixed = TRUE)
+    keys <- character()
+    py_session <- lapply(py_session, function(x) {
+      keys <<- c(keys, x[[1]])
+      x[[2]]
+    })
+    if (all(c("current_pid", "sys.executable") %in% keys)) {
+      names(py_session) <- keys
+      # verify it's from the current process
+      if (identical(as.character(Sys.getpid()), py_session$current_pid)) {
+        python_binary <- py_session$sys.executable
+      }
+    } else {
+      warning("PYTHON_SESSION_INITIALIZED does not include current_pid and sys.executable",
+              call. = FALSE)
+    }
+  } 
+  
+  # return
+  python_binary
 }
 

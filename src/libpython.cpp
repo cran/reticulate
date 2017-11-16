@@ -10,6 +10,7 @@
 #endif
 
 #include <string>
+#include <vector>
 #include <iostream>
 #include <sstream>
 
@@ -109,6 +110,20 @@ bool closeLibrary(void* pLib, std::string* pError)
   }
 }
 
+
+bool loadSymbol(void* pLib, const std::vector<std::string>& names, void** ppSymbol, std::string* pError) {
+  
+  // search for a symbol with one of the specified names
+  for (size_t i = 0; i<names.size(); ++i) {
+    std::string name = names[i];
+    if (loadSymbol(pLib, name, ppSymbol, pError))
+      return true;
+  }
+  
+  // return false if nonone found
+  return false;
+}
+
 } // anonymous namespace
 
 
@@ -154,6 +169,7 @@ bool LibPython::loadSymbols(bool python3, std::string* pError)
   bool is64bit = sizeof(size_t) >= 8;
 
   LOAD_PYTHON_SYMBOL(Py_Initialize)
+  LOAD_PYTHON_SYMBOL(Py_IsInitialized)
   LOAD_PYTHON_SYMBOL(Py_AddPendingCall)
   LOAD_PYTHON_SYMBOL(PyErr_SetInterrupt)
   LOAD_PYTHON_SYMBOL(PyExc_KeyboardInterrupt)
@@ -217,6 +233,15 @@ bool LibPython::loadSymbols(bool python3, std::string* pError)
   LOAD_PYTHON_SYMBOL(PyType_IsSubtype)
   LOAD_PYTHON_SYMBOL(PySys_WriteStderr)
 
+  // PyUnicode_AsEncodedString may have several different names depending on the Python
+  // version and the UCS build type 
+  std::vector<std::string> names;
+  names.push_back("PyUnicode_AsEncodedString");
+  names.push_back("PyUnicodeUCS2_AsEncodedString");
+  names.push_back("PyUnicodeUCS4_AsEncodedString");
+  if (!loadSymbol(pLib_, names, (void**)&PyUnicode_AsEncodedString, pError) )
+    return false;
+    
   if (python3) {
     LOAD_PYTHON_SYMBOL(PyModule_Create2)
     LOAD_PYTHON_SYMBOL(PyImport_AppendInittab)
@@ -224,7 +249,6 @@ bool LibPython::loadSymbols(bool python3, std::string* pError)
     LOAD_PYTHON_SYMBOL_AS(Py_SetPythonHome, Py_SetPythonHome_v3)
     LOAD_PYTHON_SYMBOL_AS(PySys_SetArgv, PySys_SetArgv_v3)
     LOAD_PYTHON_SYMBOL(PyUnicode_EncodeLocale)
-    LOAD_PYTHON_SYMBOL(PyUnicode_AsEncodedString)
 #ifdef _WIN32
     LOAD_PYTHON_SYMBOL(PyUnicode_AsMBCSString)
 #endif

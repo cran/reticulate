@@ -508,6 +508,50 @@ o$sub(np$arange(1, 25)$reshape(4L, 3L, 2L), np$array(y))
 The above NumPy arrays are the same, their element-wise difference is zero.
 
 
+### Reshaping arrays
+
+In R you would typically reshape an array using the `dim<-()` function. For example:
+
+```{r, eval=FALSE}
+dim(x) <- c(1000, 28, 28)
+```
+
+In R, this operation simply changes the "dim" attribute of the array, effectively 
+re-interpreting the array indices as specified using column-major semantics.
+
+However, the NumPy `reshape` method uses row-major semantics by default, so if you are mixing
+R and Python code that reshapes arrays you will find that the reshaping will be
+inconsistent if you use the R `dim<-()` function. 
+
+To overcome this inconsistency, there is an `array_reshape()` function which will
+reshape an R array using row-major semantics (i.e. will fill the new dimensions
+in row-major rather than col-major order). The example above would be re-written as:
+
+```{r, eval=FALSE}
+x <- array_reshape(x, c(1000, 28, 28))
+```
+
+Here's a further example to illustrate the difference:
+
+```{r}
+# let's construct a 2x2 array from a vector of 4 elements
+x <- 1:4
+
+# rearrange will fill the array row-wise
+array_reshape(x, c(2, 2))
+#      [,1] [,2]
+# [1,]    1    2
+# [2,]    3    4
+
+# setting the dimensions 'fills' the array col-wise
+dim(x) <- c(2, 2)
+x
+#      [,1] [,2]
+# [1,]    1    3
+# [2,]    2    4
+```
+
+
 ## Other differences warranting caution
 
 It's worth noting that analogs of R's `apply()` function in Python behave
@@ -519,7 +563,7 @@ In particular, Mathesaurus says that if *a* is a _matrix_, then the sum of each
 column in Python may be computed by  `a.sum(0)`, and in R (among other possible
 ways) by `apply(a, 2, sum)`. Although correct for matrices, this is in general
 not quite right. A more precise R analog of NumPy's `a.sum(0)` is
-`apply(a, dim(a)[-1], sum)`.
+`apply(a, seq_along(dim(a))[-1], sum)`.
 In other words, `a.sum(0)` means sum over the first dimension, returning
 an array of the same dimensions as *a* but with the first dimension removed.
 

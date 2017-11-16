@@ -244,6 +244,29 @@ knitr::opts_chunk$set(eval = FALSE)
 #  ##   [ 0.  0.]
 #  ##   [ 0.  0.]]]
 
+## ---- eval=FALSE---------------------------------------------------------
+#  dim(x) <- c(1000, 28, 28)
+
+## ---- eval=FALSE---------------------------------------------------------
+#  x <- array_reshape(x, c(1000, 28, 28))
+
+## ------------------------------------------------------------------------
+#  # let's construct a 2x2 array from a vector of 4 elements
+#  x <- 1:4
+#  
+#  # rearrange will fill the array row-wise
+#  array_reshape(x, c(2, 2))
+#  #      [,1] [,2]
+#  # [1,]    1    2
+#  # [2,]    3    4
+#  
+#  # setting the dimensions 'fills' the array col-wise
+#  dim(x) <- c(2, 2)
+#  x
+#  #      [,1] [,2]
+#  # [1,]    1    3
+#  # [2,]    2    4
+
 ## ------------------------------------------------------------------------
 #  library(reticulate)
 #  np <- import("numpy", convert=FALSE)

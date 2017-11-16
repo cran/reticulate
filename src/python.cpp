@@ -7,6 +7,7 @@ using namespace Rcpp;
 #include "reticulate_types.h"
 
 #include "event_loop.h"
+#include "tinythread.h"
 
 #include <fstream>
 
@@ -128,16 +129,16 @@ PyObject* PyUnicode_AsBytes(PyObject* str) {
   return PyUnicode_AsEncodedString(str, "utf-8", "ignore");
 }
 
+PyObject* as_python_str(const std::string& str);
+
 std::string as_std_string(PyObject* str) {
 
+  // conver to bytes if its unicode
   PyObjectPtr pStr;
-  if (is_python3() && PyUnicode_Check(str)) {
-    // python3 requires that we turn PyUnicode into PyBytes before
-    // we call PyBytes_AsStringAndSize (whereas python2 would
-    // automatically handle unicode in PyBytes_AsStringAndSize)
+  if (PyUnicode_Check(str)) {
     str = PyUnicode_AsBytes(str);
     pStr.assign(str);
-  }
+  } 
 
   char* buffer;
   Py_ssize_t length;
@@ -180,20 +181,8 @@ PyObject* as_python_str(const std::string& str) {
 }
 
 bool has_null_bytes(PyObject* str) {
-
-  PyObjectPtr pStr;
-  if (is_python3()) {
-    // python3 requires that we turn PyUnicode into PyBytes before
-    // we call PyBytes_AsStringAndSize (whereas python2 would
-    // automatically handle unicode in PyBytes_AsStringAndSize)
-    str = PyUnicode_AsBytes(str);
-    pStr.assign(str);
-  }
-
   char* buffer;
-  int res = is_python3() ?
-    PyBytes_AsStringAndSize(str, &buffer, NULL) :
-    PyString_AsStringAndSize(str, &buffer, NULL);
+  int res = PyString_AsStringAndSize(str, &buffer, NULL);
   if (res == -1) {
     py_fetch_error();
     return true;
@@ -204,7 +193,7 @@ bool has_null_bytes(PyObject* str) {
 
 bool is_python_str(PyObject* x) {
 
-  if (PyUnicode_Check(x) && !has_null_bytes(x))
+  if (PyUnicode_Check(x))
     return true;
 
   // python3 doesn't have PyString_* so mask it out (all strings in
@@ -708,8 +697,12 @@ SEXP py_to_r(PyObject* x, bool convert) {
     Py_ssize_t pos = 0;
     Py_ssize_t idx = 0;
     while (PyDict_Next(dict, &pos, &key, &value)) {
-      PyObjectPtr str(PyObject_Str(key));
-      names[idx] = as_utf8_r_string(str);
+      if (is_python_str(key)) {
+        names[idx] = as_utf8_r_string(key);
+      } else {
+        PyObjectPtr str(PyObject_Str(key));
+        names[idx] = as_utf8_r_string(str); 
+      }
       list[idx] = py_to_r(value, convert);
       idx++;
     }
@@ -1308,10 +1301,42 @@ extern "C" PyObject* call_python_function_on_main_thread(
   // decrefed when the call object is destroyed)
   PythonCall* call = new PythonCall(func, data);
 
-  // schedule calling the function
-  if (Py_AddPendingCall(call_python_function, call) == -1)
-    PySys_WriteStderr("Unexpected error calling Py_AddPendingCall\n");
-  
+  // Schedule calling the function. Note that we have at least one report of Py_AddPendingCall 
+  // returning -1, the source code for Py_AddPendingCall is here:
+  // https://github.com/python/cpython/blob/faa135acbfcd55f79fb97f7525c8aa6f5a5b6a22/Python/ceval.c#L321-L361
+  // From this it looks like it can fail if:
+  //
+  //   (a) It can't acquire the _PyRuntime.ceval.pending.lock after 100 tries; or
+  //   (b) There are more than NPENDINGCALLS already queued
+  //
+  // As a result we need to check for failure and then sleep and retry in that case. 
+  //
+  // This could in theory result in waiting "forever" but note that if we never successfully
+  // add the pending call then we will wait forever anyway as the result queue will 
+  // never be signaled, i.e. see this code which waits on the call: 
+  // https://github.com/rstudio/reticulate/blob/b507f954dc08c16710f0fb39328b9770175567c0/inst/python/rpytools/generator.py#L27-L36)
+  //
+  // As a diagnostic for perverse failure to schedule the call, print a message to stderr
+  // every 60 seconds 
+  //
+  const size_t wait_ms = 100;
+  size_t waited_ms = 0;
+  while(true) {
+    
+    // try to schedule the pending call (exit loop on success)
+    if (Py_AddPendingCall(call_python_function, call) == 0)
+      break;
+    
+    // otherwise sleep for wait_ms
+    using namespace tthread;
+    this_thread::sleep_for(chrono::milliseconds(wait_ms));
+    
+    // increment total wait time and print a warning every 60 seconds
+    waited_ms += wait_ms;
+    if ((waited_ms % 60000) == 0)
+      PySys_WriteStderr("Waiting to schedule call on main R interpeter thread...\n");
+  }
+ 
   // return none
   Py_IncRef(Py_None);
   return Py_None; 
@@ -1401,12 +1426,20 @@ void py_initialize(const std::string& python,
     s_pythonhome_v3 = to_wstring(pythonhome);
     Py_SetPythonHome_v3(const_cast<wchar_t*>(s_pythonhome_v3.c_str()));
 
-    // add rpycall module
-    PyImport_AppendInittab("rpycall", &initializeRPYCall);
+    if (Py_IsInitialized()) {
+      // if R is embedded in a python environment, rpycall has to be loaded as a regular
+      // module.
+      PyImport_AddModule("rpycall");
+      PyDict_SetItemString(PyImport_GetModuleDict(), "rpycall", initializeRPYCall());
 
-    // initialize python
-    Py_Initialize();
-    
+    } else {
+      // add rpycall module
+      PyImport_AppendInittab("rpycall", &initializeRPYCall);
+
+      // initialize python
+      Py_Initialize();
+    }
+
     const wchar_t *argv[1] = {s_python_v3.c_str()};
     PySys_SetArgv_v3(1, const_cast<wchar_t**>(argv));
 
@@ -1420,8 +1453,10 @@ void py_initialize(const std::string& python,
     s_pythonhome = pythonhome;
     Py_SetPythonHome(const_cast<char*>(s_pythonhome.c_str()));
 
-    // initialize python
-    Py_Initialize();
+    if (!Py_IsInitialized()) {
+      // initialize python
+      Py_Initialize();
+    }
 
     // add rpycall module
     Py_InitModule4("rpycall", RPYCallMethods, (char *)NULL, (PyObject *)NULL,
@@ -1492,18 +1527,20 @@ bool py_compare_impl(PyObjectRef a, PyObjectRef b, const std::string& op) {
 
 // [[Rcpp::export]]
 CharacterVector py_str_impl(PyObjectRef x) {
-  PyObjectPtr str(PyObject_Str(x));
-  if (str.is_null())
-    stop(py_fetch_error());
-  return CharacterVector::create(as_utf8_r_string(str));
+  
+  if (!is_python_str(x)) {
+    PyObjectPtr str(PyObject_Str(x));
+    if (str.is_null())
+      stop(py_fetch_error());
+    return CharacterVector::create(as_utf8_r_string(str));
+  } else {
+    return CharacterVector::create(as_utf8_r_string(x));
+  }
 }
 
 // [[Rcpp::export]]
 void py_print(PyObjectRef x) {
-  PyObjectPtr str(PyObject_Str(x));
-  if (str.is_null())
-    stop(py_fetch_error());
-  CharacterVector out = CharacterVector::create(as_utf8_r_string(str));
+  CharacterVector out = py_str_impl(x);
   Rf_PrintValue(out);
   Rcout << std::endl;
 }
@@ -1756,10 +1793,15 @@ CharacterVector py_dict_get_keys_as_str(PyObjectRef dict) {
 
   // get the keys as strings
   for (Py_ssize_t i = 0; i<len; i++) {
-    PyObjectPtr str(PyObject_Str(PyList_GetItem(pyKeys, i)));
-    if (str.is_null())
-      stop(py_fetch_error());
-    keys[i] = as_std_string(str);
+    PyObject* item = PyList_GetItem(pyKeys, i);
+    if (is_python_str(item)) {
+      keys[i] = as_utf8_r_string(item);
+    } else {
+      PyObjectPtr str(PyObject_Str(item));
+      if (str.is_null())
+        stop(py_fetch_error());
+      keys[i] = as_utf8_r_string(str);
+    }
   }
   
   // return

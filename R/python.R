@@ -211,8 +211,37 @@ py_to_r <- function(x) {
   if (!inherits(x, "python.builtin.object"))
     stop("Object to convert is not a Python object")
   
-  py_ref_to_r(x)
+  # get the default wrapper
+  x <- py_ref_to_r(x)
+  
+  # allow customization of the wrapper
+  wrapper <- py_to_r_wrapper(x)
+  attributes(wrapper) <- attributes(x)
+  
+  # return the wrapper
+  wrapper 
 }
+
+#' R wrapper for Python objects 
+#' 
+#' S3 method to create a custom R wrapper for a Python object.
+#' The default wrapper is either an R environment or an R function
+#' (for callable python objects).
+#' 
+#' @param x Python object 
+#' 
+#' @export
+py_to_r_wrapper <- function(x) {
+  UseMethod("py_to_r_wrapper")
+}
+
+#' @export
+py_to_r_wrapper.default <- function(x) {
+  x
+}
+
+
+
 
 
 #' @rdname r-py-conversion
@@ -474,9 +503,15 @@ dict <- function(..., convert = FALSE) {
   # get the args 
   values <- list(...)
   
+  # flag indicating whether we should scan the parent frame for python 
+  # objects that should serve as the key (e.g. a Tensor)
+  scan_parent_frame <- TRUE
+  
   # if there is a single element and it's a list then use that
-  if (length(values) == 1 && is.list(values[[1]]))
+  if (length(values) == 1 && is.null(names(values)) && is.list(values[[1]])) {
     values <- values[[1]]
+    scan_parent_frame <- FALSE
+  }
   
   # get names
   names <- names(values)
@@ -485,7 +520,7 @@ dict <- function(..., convert = FALSE) {
   frame <- parent.frame()
   keys <- lapply(names, function(name) {
     # allow python objects to serve as keys
-    if (exists(name, envir = frame, inherits = TRUE)) {
+    if (scan_parent_frame && exists(name, envir = frame, inherits = TRUE)) {
       key <- get(name, envir = frame, inherits = TRUE)
       if (inherits(key, "python.builtin.object"))
         key
@@ -550,6 +585,28 @@ length.python.builtin.tuple <- function(x) {
     0L
   else
     py_tuple_length(x)
+}
+
+#' Length of Python object
+#' 
+#' Get the length of a Python object (equivalent to the Python `len()`
+#' built in function).
+#' 
+#' @param x Python object
+#' 
+#' @return Length as integer 
+#'
+#' @export
+py_len <- function(x) {
+  if (py_is_null_xptr(x) || !py_available())
+    0L
+  else
+    as_r_value(x$`__len__`())
+}
+
+#' @export
+length.python.builtin.list <- function(x) {
+  py_len(x)
 }
 
 
@@ -798,6 +855,28 @@ py_list_attributes <- function(x) {
 }
 
 
+#' Unique identifer for Python object
+#' 
+#' Get a globally unique identifer for a Python object. 
+#' 
+#' @note In the current implementation of CPython this is the 
+#'  memory address of the object.
+#' 
+#' @param object Python object
+#' 
+#' @return Unique identifer (as integer) or `NULL`
+#'
+#' @export
+py_id <- function(object) {
+  if (py_is_null_xptr(object) || !py_available())
+    NULL
+  else {
+    py <- import_builtins()
+    py$id(object)
+  }
+}
+
+
 #' An S3 method for getting the string representation of a Python object
 #' 
 #' @param object Python object
@@ -829,11 +908,9 @@ py_str.python.builtin.object <- function(object, ...) {
   # get default rep
   str <- py_str_impl(object)
   
-  # pick out class name for cases where there is python str method
-  match <- regexpr("[A-Z]\\w+ object at ", str)
-  if (match != -1)
-    str <- gsub(" object at ", "", regmatches(str, match))
-  
+  # remove e.g. 'object at 0x10d084710'
+  str <- gsub(" object at 0x\\w{4,}", "", str)
+
   # return
   str
 }

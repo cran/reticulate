@@ -288,16 +288,42 @@ iter &lt;-<span class="st"> </span><span class="kw">py_iterator</span>(<span cla
 <td>List all attributes of a Python object.</td>
 </tr>
 <tr class="odd">
+<td><code>py_len()</code></td>
+<td>Length of Python object.</td>
+</tr>
+<tr class="even">
 <td><code>py_call()</code></td>
 <td>Call a Python callable object with the specified arguments.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>py_to_r()</code></td>
 <td>Convert a Python object to it’s R equivalent</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>r_to_py()</code></td>
 <td>Convert an R object to it’s Python equivalent</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="pickle" class="section level3">
+<h3>Pickle</h3>
+<p>You can save and load Python objects (via pickle) using the <code>py_save_object</code> and <code>py_load_object</code> functions:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>py_save_object()</code></td>
+<td>Save a Python object to a file with pickle.</td>
+</tr>
+<tr class="even">
+<td><code>py_load_object()</code></td>
+<td>Load a previously saved Python object from a file.</td>
 </tr>
 </tbody>
 </table>
@@ -390,10 +416,14 @@ iter &lt;-<span class="st"> </span><span class="kw">py_iterator</span>(<span cla
 <td>Get the string representation of Python object.</td>
 </tr>
 <tr class="even">
+<td><code>py_id()</code></td>
+<td>Get a unique identifier for a Python object</td>
+</tr>
+<tr class="odd">
 <td><code>py_is_null_xptr()</code></td>
 <td>Check whether a Python object is a null externalptr.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>py_validate_xptr()</code></td>
 <td>Check whether a Python object is a null externalptr and throw an error if it is.</td>
 </tr>

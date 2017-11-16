@@ -31,7 +31,7 @@ By default, the version of Python found on the system `PATH` is checked first, a
 
 There are two ways you can provide hints as to which version of Python should be used:
 
-1. By setting the value of the `RETICULATE_PYTHON` environment variable a Python binary.
+1. By setting the value of the `RETICULATE_PYTHON` environment variable to a Python binary. Note that if you set this environment variable then the specified version of Python will always be used (i.e. this is perscriptive rather than advisory).
 
 2. By calling one of the these functions:
 
@@ -56,7 +56,7 @@ The `use_condaenv` function will use whatever conda binary is found on the syste
 use_condaenv(condaenv = "r-nlp", conda = "/opt/anaconda3/bin/conda")
 ```
 
-Note that the `use` functions are by default considered only hints as to where to find Python (i.e. they don't produce errors if the specified version doesn't exist). You can add the `required` parameter to ensure that the specified version of Python actually exists:
+Note that the `use` functions are by default considered only hints as to where to find Python (i.e. they don't produce errors if the specified version doesn't exist). You can add the `required` parameter to ensure that the specified version of Python is always used (it will be an error if the specified version doesn't exist):
 
 ```{r}
 use_virtualenv("~/myenv", required = TRUE)
