@@ -1,12 +1,12 @@
-d3f75df3625873e6963ed9d60d9386b2 *DESCRIPTION
+bd30d9233acd8d91aa7802eb92940fd3 *DESCRIPTION
 07993876098e9f32ab98b7c4d38e0877 *NAMESPACE
-e4c80ec72abc99529e948737da51f29d *NEWS.md
+eac6a6e9dcb74aa73d9e93152ca892d8 *NEWS.md
 d50d84313a8228410093fa2d5140e187 *R/RcppExports.R
 c8fe1d4bbd84d27b657441e4992167d9 *R/array.R
 a7386ebeba29518c47bd91416688783a *R/config.R
 09fc0cce4690d5262b27ddd04476ea1a *R/generator.R
 eccce6f9af3db8adba94b090e796755e *R/help.R
-2b5681e82a38eea263f063b944e73a27 *R/knitr-engine.R
+3a4b711e740085ecbe38a9295c28958f *R/knitr-engine.R
 f69095ad781391698e23dbccb18eb381 *R/output.R
 0ed6fe64e53266161ca9800d59e24f20 *R/package.R
 d2160333fc8a80d08cd169cf05e17f71 *R/pickle.R
@@ -102,7 +102,7 @@ edb641b4b78d2b802034f778eb6b3fef *src/python.cpp
 25db60afa939cb34d22ea1123c8c62e5 *src/reticulate_types.h
 aa8be7bf0aa452acd5375f35193cb706 *src/tinythread.h
 52191532a01eb03b0b6fe17f5f06dbb1 *tests/testthat.R
-ecbac7d7e3d53bea24fb4bc5a481b6b5 *tests/testthat/resources/example.Rmd
+94623e9a00ced719ff579890bd44fa71 *tests/testthat/resources/example.Rmd
 09b3185c53a7e2c5fbfb51eb66b685de *tests/testthat/resources/example.html
 67e701ed43766b05ae8a4d7139c7296b *tests/testthat/test-examples.R
 aa9752f3f7fedefd6bd5371bb60d2ac8 *tests/testthat/test-python-arrays.R
@@ -114,7 +114,7 @@ e8efc05c7108a84130a0c6a50b95b235 *tests/testthat/test-python-comparisons.R
 d41d8cd98f00b204e9800998ecf8427e *tests/testthat/test-python-engine.R
 412f16ea6f097cf2a7d8300f322dce3e *tests/testthat/test-python-function.R
 81c761a04c8527e25b1899977e2839f9 *tests/testthat/test-python-iterators.R
-f8d811cb0a596f88304fa80e7a1bc879 *tests/testthat/test-python-knitr-engine.R
+80a9f42b0d2d0885b0540dd1e2ed5f6b *tests/testthat/test-python-knitr-engine.R
 ee1fc6433902509e41e0ebeff98190b5 *tests/testthat/test-python-lists.R
 03b59cab76fbbfca95ada60b733997ce *tests/testthat/test-python-numpy.R
 26b1a55e202b86605d66ba923102203d *tests/testthat/test-python-output.R
