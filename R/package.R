@@ -87,7 +87,6 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
                           Sys.getenv("PATH"),
                           sep = .Platform$path.sep))  
   
-  
   # initialize python
   py_initialize(config$python,
                 config$libpython,

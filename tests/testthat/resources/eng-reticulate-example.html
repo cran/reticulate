@@ -160,6 +160,23 @@ print mpg</code></pre>
 <pre class="python"><code>y = &quot;a,b,c&quot;.split(&quot;,&quot;)</code></pre>
 <pre class="python"><code>print y</code></pre>
 <pre><code>## ['a', 'b', 'c']</code></pre>
+<ul>
+<li><h1 id="the-echo-chunk-option-is-respected-for-true-and-false-values.-output-but-not-source-should-show-in-the-following-output.">130: The <code>echo</code> chunk option is respected (for <code>TRUE</code> and <code>FALSE</code> values). Output, but not source, should show in the following output.</h1></li>
+</ul>
+<pre><code>## Chunk with echo = FALSE</code></pre>
+<ul>
+<li><h1 id="the-results-chunk-option-is-respected-for-python-outputs.-source-but-not-output-should-show-in-the-following-output.">130: The <code>results</code> chunk option is respected for Python outputs. Source, but not output, should show in the following output.</h1></li>
+</ul>
+<pre class="python"><code>print &quot;Chunk with results = 'hide'&quot;</code></pre>
+<p>NULL</p>
+<ul>
+<li><h1 id="the-include-chunk-option-is-respected-for-python-outputs.-no-chunk-output-should-appear-following-this-bullet.">130: The <code>include</code> chunk option is respected for Python outputs. No chunk output should appear following this bullet.</h1></li>
+<li><h1 id="the-eval-chunk-option-is-respected-for-python-outputs.">130: The <code>eval</code> chunk option is respected for Python outputs.</h1></li>
+</ul>
+<pre class="python"><code># We have set 'eval = FALSE' here
+r[&quot;abc&quot;] = 1</code></pre>
+<pre class="r"><code>exists(&quot;abc&quot;, envir = globalenv())</code></pre>
+<pre><code>## [1] FALSE</code></pre>
 
 
 
