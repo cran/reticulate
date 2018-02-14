@@ -177,6 +177,14 @@ print mpg</code></pre>
 r[&quot;abc&quot;] = 1</code></pre>
 <pre class="r"><code>exists(&quot;abc&quot;, envir = globalenv())</code></pre>
 <pre><code>## [1] FALSE</code></pre>
+<p>Respect the <code>error=TRUE</code> chunk option – allow execution even after a Python error occurs.</p>
+<pre class="python"><code>raise RuntimeError(&quot;oops!&quot;)</code></pre>
+<pre><code>## RuntimeError: oops!
+## 
+## Detailed traceback: 
+##   File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;</code></pre>
+<pre class="python"><code>print &quot;This line is still reached.&quot;</code></pre>
+<pre><code>## This line is still reached.</code></pre>
 
 
 

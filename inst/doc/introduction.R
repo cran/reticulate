@@ -21,6 +21,16 @@ knitr::opts_chunk$set(eval = FALSE)
 #  py$print('foo')
 
 ## ------------------------------------------------------------------------
+#  source_python('add.py')
+#  add(5, 10)
+
+## ------------------------------------------------------------------------
+#  py_run_file("script.py")
+#  
+#  main <- py_run_string("x = 10")
+#  main$x
+
+## ------------------------------------------------------------------------
 #  # import numpy and specify no automatic Python to R conversion
 #  np <- import("numpy", convert = FALSE)
 #  
@@ -30,12 +40,6 @@ knitr::opts_chunk$set(eval = FALSE)
 #  
 #  # convert to R explicitly at the end
 #  py_to_r(sum)
-
-## ------------------------------------------------------------------------
-#  py_run_file("script.py")
-#  
-#  main <- py_run_string("x = 10")
-#  main$x
 
 ## ------------------------------------------------------------------------
 #  py <- import_builtins()
