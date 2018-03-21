@@ -1,9 +1,9 @@
 ---
-title: "Introduction to reticulate"
+title: "Calling Python from R"
 output: 
   rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{R interface to Python}
+  %\VignetteIndexEntry{Calling Python from R}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -13,20 +13,53 @@ vignette: >
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
+<link rel="stylesheet" type="text/css" href="extra.css"/>
+
+
 ## Overview
 
 The **reticulate** package provides an R interface to Python modules, classes, and functions. For example, this code imports the Python `os` module and calls some functions within it:
 
-```{r}
+```{r, eval=FALSE}
 library(reticulate)
 os <- import("os")
-os$chdir("tests")
-os$getcwd()
+os$listdir(".")
+```
+```
+ [1] ".git"             ".gitignore"       ".Rbuildignore"    ".RData"          
+ [5] ".Rhistory"        ".Rproj.user"      ".travis.yml"      "appveyor.yml"    
+ [9] "DESCRIPTION"      "docs"             "external"         "index.html"      
+[13] "index.Rmd"        "inst"             "issues"           "LICENSE"         
+[17] "man"              "NAMESPACE"        "NEWS.md"          "pkgdown"         
+[21] "R"                "README.md"        "reticulate.Rproj" "src"             
+[25] "tests"            "vignettes"      
 ```
 
 Functions and other data within Python modules and classes can be accessed via the `$` operator (analogous to the way you would interact with an R list, environment, or reference class).
 
 The **reticulate** package is compatible with all versions of Python >= 2.7. Integration with NumPy is optional and requires NumPy >= 1.6.
+
+## Python Version
+
+By default, reticulate uses the version of Python found on your `PATH` (i.e. `Sys.which("python")`). The `use_python()` function enables you to specify an alternate version, for example:
+
+```r
+library(reticulate)
+use_python("/usr/local/bin/python")
+```
+
+The `use_virtualenv()` and `use_condaenv()` functions enable you to specify versions of Python in virtual or conda environments, for example:
+
+```r
+library(reticulate)
+use_virtualenv("myenv")
+```
+
+See the article on [Python Version Configuration](versions.html) for additional details.
+
+## Python Packages
+
+You can install any required Python packages using standard shell tools like `pip` and `conda`. Alternately, reticulate includes a set of functions for managing and installing packages within virtualenvs and Conda environments. See the article on [Installing Python Packages](https://rstudio.github.io/reticulate/articles/python_packages.html) for additional details.
 
 ## Type Conversions
 
@@ -39,6 +72,7 @@ When calling into Python, R data types are automatically converted to their equi
 | List of multiple types  | Tuple  |  `list(1L, TRUE, "foo")`
 | Named list | Dict  |  `list(a = 1L, b = 2.0)`, `dict(x = x_data)`
 | Matrix/Array | NumPy ndarray  | `matrix(c(1,2,3,4), nrow = 2, ncol = 2)`
+| Data Frame | Pandas DataFrame | ` data.frame(x = c(1,2,3), y = c("a", "b", "c"))`  |
 | Function | Python function | `function(x) x + 1`
 | NULL, TRUE, FALSE  | None, True, False  |  `NULL`, `TRUE`, `FALSE`
 
@@ -61,8 +95,8 @@ The `import_main()` and `import_builtins()` functions give you access to the mai
 ```{r}
 main <- import_main()
 
-py <- import_builtins()
-py$print('foo')
+builtins <- import_builtins()
+builtins$print('foo')
 ```
 
 The main module is generally useful if you have executed Python code from a file or string and want to get access to it's results (see the section below for more details).
@@ -71,7 +105,7 @@ The main module is generally useful if you have executed Python code from a file
 
 The `source_python()` function will source a Python script and make the objects it creates available within an R environment (by default the calling environment). For example, consider the following Python script:
 
-```{python}
+```python
 def add(x, y):
   return x + y
 ```
@@ -88,13 +122,17 @@ add(5, 10)
 
 ## Executing Code
 
-You can execute Python code within the main module using the `py_run_file` and `py_run_string` functions. These functions both return a reference to the main Python module so you can access the results of their execution. For example:
+You can execute Python code within the main module using the `py_run_file` and `py_run_string` functions. You can then access any objects created using the `py` object exported by reticulate:
 
 ```{r}
+library(reticulate)
+
 py_run_file("script.py")
 
-main <- py_run_string("x = 10")
-main$x
+py_run_string("x = 10")
+
+# access the python main module via the 'py' object
+py$x
 ```
 
 ## Object Conversion
@@ -125,6 +163,8 @@ os <- import("os")
 py_help(os$chdir)
 ```
 
+
+
 ## Lists, Tuples, and Dictionaries
 
 The automatic conversion of R types to Python types works well in most cases, but occasionally you will need to be more explicit on the R side to provide Python the type it expects.
@@ -149,6 +189,30 @@ dict(foo = "bar", index = 42L)
 
 This might be useful if you need to pass a dictionary that uses a more complex object (as opposed to a string) as it's key.
 
+## Numeric Types and Indexes
+
+R and Python have different default numeric types. If you write `42` in R it is considered a floating point number whereas `42` in Python is considered an integer.
+
+This means that when a Python API expects an integer, you need to be sure to use the `L` suffix within R. For example, if the `foo` function requires an integer as it's `index` argument you would do this:
+
+```r
+foo$bar(index = 42L)
+```
+
+Python collections are addressed using 0-based indices rather than the 1-based indices you might be familiar with from R. So to address the first item of an array in R you would write:
+
+```r
+items[[1]]
+```
+
+Whereas if you are calling a method in Python via reticulate that takes an index you would write this to address the first item:
+
+```r
+items$get(0L)
+```
+
+Note the use of the 0-based index as well as the `L` to indicate t that the value is an integer.
+
 ## Arrays
 
 R matrices and arrays are converted automatically to and from [NumPy](http://www.numpy.org/) arrays. 
@@ -159,10 +223,23 @@ You can also manually convert R arrays to NumPy using the `np_array()` function.
 
 ```r
 a <- np_array(c(1:8), dtype = "float16")
-a <- np_array(c(1:8), dim = c(2,4), order = "C")
+a <- np_array(c(1:8), order = "C")
 ```
 
 Reasoning about arrays which use distinct in-memory orders can be tricky. The [Arrays in R and Python](arrays.html) article provides additional details.
+
+Also, always remember that when calling NumPy methods array indices are 0 rather than 1 based and require the `L` suffix to indicate they are integers.
+
+## Data Frames
+
+R data frames can be automatically converted to and from [Pandas](https://pandas.pydata.org/) DataFrames. By default, columns are converted using the same rules governing R array <-> NumPy array conversion, but a couple extensions are provided:
+
+| R      | Python                                    |
+| ------ | ----------------------------------------- |
+| Factor | Categorical Variable                      |
+| POSIXt | NumPy array with dtype = `datetime64[ns]` |
+
+If the R data frame has row names, the generated Pandas DataFrame will be re-indexed using those row names (and vice versa). Special handling is also available for a `DatetimeIndex` associated with a Pandas DataFrame; however, because R only supports character vectors for row names they are converted to character first.
 
 ## With Contexts
 
@@ -328,7 +405,11 @@ The functions provide miscellaneous other lower-level capabilities:
 
 The following articles cover additional aspects of using **reticulate**:
 
+- [R Markdown Python Engine](r_markdown.html) 
+
 - [Python Version Configuration](versions.html)
+
+- [Installing Python Packages](python_packages.html) 
 
 - [Using reticulate in an R Package](package.html)
 

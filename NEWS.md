@@ -1,5 +1,32 @@
 
-## reticulate 1.5 (CRAN)
+## reticulate 1.6 (CRAN)
+
+- `repl_python()` function implementing a lightweight Python REPL in R.
+
+- Support for converting Pandas objects (`Index`, `Series`, `DataFrame`)
+
+- Support for converting Python `datetime` objects.
+
+- `py_dict()` function to enable creation of dictionaries based on lists of 
+  keys and values.
+
+- Provide default base directory (e.g. '~/.virtualenvs') for environments
+  specified by name in `use_virtualenv()`.
+  
+- Fail when environment not found with `use_condaenv(..., required = TRUE)`
+  
+- Ensure that `use_*` python version is satsified when using `eng_python()`
+
+- Forward `required` argument from `use_virtualenv()` and `use_condaenv()`
+
+- Fix leak which occurred when assigning R objects into Python containers
+
+- Add support for Conda Forge (enabled by default) to `conda_install()`
+
+- Added functions for managing Python virtual environments (virtualenv)
+
+
+## reticulate 1.5
 
 - Remove implicit documentation extraction for Python classes
 

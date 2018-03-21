@@ -2,25 +2,25 @@
 knitr::opts_chunk$set(eval = FALSE)
 
 ## ------------------------------------------------------------------------
-#  # python 'foo' module I want to use in my package
-#  foo <- NULL
+#  # python 'scipy' module I want to use in my package
+#  scipy <- NULL
 #  
 #  .onLoad <- function(libname, pkgname) {
 #    # delay load foo module (will only be loaded when accessed via $)
-#    foo <<- import("foo", delay_load = TRUE)
+#    scipy <<- import("scipy", delay_load = TRUE)
 #  }
 
 ## ------------------------------------------------------------------------
 #  # helper function to skip tests if we don't have the 'foo' module
-#  skip_if_no_foo <- function() {
-#    have_foo <- py_module_available("foo")
-#    if (!have_foo)
-#      skip("foo not available for testing")
+#  skip_if_no_scipy <- function() {
+#    have_scipy <- py_module_available("scipy")
+#    if (!have_scipy)
+#      skip("scipy not available for testing")
 #  }
 #  
 #  # then call this function from all of your tests
 #  test_that("Things work as expected", {
-#    skip_if_no_foo()
+#    skip_if_no_scipy()
 #    # test code here...
 #  })
 

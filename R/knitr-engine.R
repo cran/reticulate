@@ -13,6 +13,8 @@
 #' 
 #' Typically, this will be set within a document's setup chunk, or by the
 #' environment requesting that Python chunks be processed by this engine.
+#' Note that `knitr` (since version 1.18) will use the `reticulate` engine by
+#' default when executing Python chunks within an R Markdown document.
 #' 
 #' @param options
 #'   Chunk options, as provided by `knitr` during chunk execution.
@@ -81,7 +83,11 @@ eng_python <- function(options) {
   # use 'ast.parse()' to parse Python code and collect line numbers, so we
   # can split source code into statements
   pasted <- paste(code, collapse = "\n")
-  parsed <- ast$parse(pasted, "<string>")
+  parsed <- tryCatch(ast$parse(pasted, "<string>"), error = identity)
+  if (inherits(parsed, "error")) {
+    error <- reticulate::py_last_error()
+    stop(error$value, call. = FALSE)
+  }
   
   # iterate over top-level nodes and extract line numbers
   lines <- vapply(parsed$body, function(node) {
@@ -180,6 +186,8 @@ eng_python_initialize <- function(options, context, envir) {
   if (is.character(options$engine.path))
     use_python(options$engine.path[[1]])
   
+  ensure_python_initialized()
+  
   eng_python_initialize_matplotlib(options, context, envir)
 }
 
@@ -224,8 +232,9 @@ eng_python_initialize_matplotlib <- function(options,
 }
 
 # synchronize objects R -> Python
-eng_python_synchronize_before <- function() {
-  
+eng_python_synchronize_before <- function(
+  envir = getOption("reticulate.engine.environment"))
+{
   # define our 'R' class
   py_run_string("class R(object): pass")
   
@@ -234,7 +243,6 @@ eng_python_synchronize_before <- function() {
   R <- main$R
   
   # extract active knit environment
-  envir <- getOption("reticulate.engine.environment")
   if (is.null(envir)) {
     .knitEnv <- yoink("knitr", ".knitEnv")
     envir <- .knitEnv$knit_global

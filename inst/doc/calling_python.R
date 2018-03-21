@@ -1,11 +1,10 @@
 ## ----setup, include=FALSE------------------------------------------------
 knitr::opts_chunk$set(eval = FALSE)
 
-## ------------------------------------------------------------------------
+## ---- eval=FALSE---------------------------------------------------------
 #  library(reticulate)
 #  os <- import("os")
-#  os$chdir("tests")
-#  os$getcwd()
+#  os$listdir(".")
 
 ## ------------------------------------------------------------------------
 #  difflib <- import("difflib")
@@ -17,18 +16,22 @@ knitr::opts_chunk$set(eval = FALSE)
 ## ------------------------------------------------------------------------
 #  main <- import_main()
 #  
-#  py <- import_builtins()
-#  py$print('foo')
+#  builtins <- import_builtins()
+#  builtins$print('foo')
 
 ## ------------------------------------------------------------------------
 #  source_python('add.py')
 #  add(5, 10)
 
 ## ------------------------------------------------------------------------
+#  library(reticulate)
+#  
 #  py_run_file("script.py")
 #  
-#  main <- py_run_string("x = 10")
-#  main$x
+#  py_run_string("x = 10")
+#  
+#  # access the python main module via the 'py' object
+#  py$x
 
 ## ------------------------------------------------------------------------
 #  # import numpy and specify no automatic Python to R conversion

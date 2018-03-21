@@ -56,3 +56,42 @@ defer <- function(expr, envir = parent.frame()) {
   )
   do.call(base::on.exit, list(substitute(call), add = TRUE), envir = envir)
 }
+
+#' @importFrom utils head
+disable_conversion_scope <- function(object) {
+  
+  if (!inherits(object, "python.builtin.object"))
+    return(FALSE)
+  
+  envir <- as.environment(object)
+  if (exists("convert", envir = envir, inherits = FALSE)) {
+    convert <- get("convert", envir = envir)
+    assign("convert", FALSE, envir = envir)
+    defer(assign("convert", convert, envir = envir), envir = parent.frame())
+  }
+  
+  TRUE
+}
+
+new_stack <- function() {
+  
+  (function() {
+    
+    .data <- list()
+    
+    methods <- list(
+      clear  = function() { .data <<- character() },
+      data   = function() { .data },
+      empty  = function() { length(.data) == 0 },
+      length = function() { length(.data) },
+      push   = function(line) { .data[[length(.data) + 1]] <<- line },
+      peek   = function() { .data[[length(.data)]] },
+      pop    = function() { .data <<- utils::head(.data, n = -1) },
+      set    = function(data) { .data <<- data }
+    )
+    
+    list2env(methods)
+    
+  })()
+  
+}

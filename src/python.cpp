@@ -1686,7 +1686,8 @@ PyObjectRef py_get_attr_impl(PyObjectRef x, const std::string& name, bool silent
 
 // [[Rcpp::export]]
 void py_set_attr_impl(PyObjectRef x, const std::string& name, RObject value) {
-  int res = PyObject_SetAttrString(x, name.c_str(), r_to_py(value, x.convert()));
+  PyObjectPtr converted(r_to_py(value, x.convert()));
+  int res = PyObject_SetAttrString(x, name.c_str(), converted);
   if (res != 0)
     stop(py_fetch_error());
 }
@@ -1793,7 +1794,7 @@ SEXP py_call_impl(PyObjectRef x, List args = R_NilValue, List keywords = R_NilVa
 
 
 // [[Rcpp::export]]
-PyObjectRef py_dict(const List& keys, const List& items, bool convert) {
+PyObjectRef py_dict_impl(const List& keys, const List& items, bool convert) {
   PyObject* dict = PyDict_New();
   for (R_xlen_t i = 0; i<keys.length(); i++) {
     PyObjectPtr key(r_to_py(keys.at(i), convert));

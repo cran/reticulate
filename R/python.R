@@ -195,66 +195,6 @@ summary.python.builtin.object <- function(object, ...) {
   str(object)
 }
 
-
-#' Convert between Pyton and R objects
-#' 
-#' @inheritParams import
-#' @param x Object to convert
-#' 
-#' @return Converted object
-#' 
-#' @name r-py-conversion
-#' @export
-py_to_r <- function(x) {
-  
-  ensure_python_initialized()
-  
-  if (!inherits(x, "python.builtin.object"))
-    stop("Object to convert is not a Python object")
-  
-  # get the default wrapper
-  x <- py_ref_to_r(x)
-  
-  # allow customization of the wrapper
-  wrapper <- py_to_r_wrapper(x)
-  attributes(wrapper) <- attributes(x)
-  
-  # return the wrapper
-  wrapper 
-}
-
-#' R wrapper for Python objects 
-#' 
-#' S3 method to create a custom R wrapper for a Python object.
-#' The default wrapper is either an R environment or an R function
-#' (for callable python objects).
-#' 
-#' @param x Python object 
-#' 
-#' @export
-py_to_r_wrapper <- function(x) {
-  UseMethod("py_to_r_wrapper")
-}
-
-#' @export
-py_to_r_wrapper.default <- function(x) {
-  x
-}
-
-
-
-
-
-#' @rdname r-py-conversion
-#' @export
-r_to_py <- function(x, convert = FALSE) {
-  
-  ensure_python_initialized()
-  
-  r_to_py_impl(x, convert = convert)
-}
-
-
 #' @export
 `$.python.builtin.module` <- function(x, name) {
  
@@ -309,7 +249,17 @@ py_has_convert <- function(x) {
   
   # convert
   if (convert || py_is_callable(attrib)) {
-    py_ref_to_r_with_convert(attrib, convert)
+  
+    # capture previous convert for attr
+    attrib_convert <- py_has_convert(attrib)
+    
+    # temporarily change convert so we can call py_to_r and get S3 dispatch
+    envir <- as.environment(attrib)
+    assign("convert", convert, envir = envir)
+    on.exit(assign("convert", attrib_convert, envir = envir), add = TRUE)
+    
+    # call py_to_r
+    py_to_r(attrib) 
   }
   else
     attrib
@@ -486,6 +436,8 @@ plot.numpy.ndarray <- function(x, y, ...) {
 #' 
 #' @param ... Name/value pairs for dictionary (or a single named list to be 
 #'   converted to a dictionary).
+#' @param keys Keys to dictionary (can be Python objects)
+#' @param values Values for dictionary
 #' @param convert `TRUE` to automatically convert Python objects to their R 
 #'   equivalent. If you pass `FALSE` you can do manual conversion using the 
 #'   [py_to_r()] function.
@@ -534,12 +486,18 @@ dict <- function(..., convert = FALSE) {
         name
     }
   })
-  
 
 
   # construct dict
-  py_dict(keys, values, convert = convert)
+  py_dict_impl(keys, values, convert = convert)
 }
+
+#' @rdname dict
+#' @export
+py_dict <- function(keys, values, convert = FALSE) {
+  ensure_python_initialized()
+  py_dict_impl(keys, values, convert = convert)
+} 
 
 #' Create Python tuple
 #' 

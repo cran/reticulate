@@ -1,19 +1,20 @@
 Package: reticulate
 Type: Package
 Title: Interface to 'Python'
-Version: 1.5
+Version: 1.6
 Authors@R: c(
   person("JJ", "Allaire", role = c("aut", "cre"), email = "jj@rstudio.com"),
-  person("Kevin", "Ushey", role = c("ctb"),
+  person("Kevin", "Ushey", role = c("aut"),
          email = "kevin@rstudio.com"),
   person("RStudio", role = c("cph", "fnd")),
   person("Yuan", "Tang", role = c("aut", "cph"),
-         email = "terrytangyuan@gmail.com"),
+         email = "terrytangyuan@gmail.com",
+         comment = c(ORCID = "0000-0001-5243-233X")),
   person("Dirk", "Eddelbuettel", role = c("ctb", "cph"),
          email = "edd@debian.org"),
   person("Bryan", "Lewis", role = c("ctb", "cph"),
          email = "blewis@illposed.net"),
-  person("Marcus", "Geelnard", role = c("aut", "cph"),
+  person("Marcus", "Geelnard", role = c("ctb", "cph"),
          comment = "TinyThread library, http://tinythreadpp.bitsnbites.eu/")
   )
 Description: Interface to 'Python' modules, classes, and functions. When calling
@@ -33,15 +34,15 @@ LinkingTo: Rcpp
 RoxygenNote: 6.0.1
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2018-02-14 13:52:58 UTC; jjallaire
+Packaged: 2018-03-21 15:29:55 UTC; jjallaire
 Author: JJ Allaire [aut, cre],
-  Kevin Ushey [ctb],
+  Kevin Ushey [aut],
   RStudio [cph, fnd],
-  Yuan Tang [aut, cph],
+  Yuan Tang [aut, cph] (<https://orcid.org/0000-0001-5243-233X>),
   Dirk Eddelbuettel [ctb, cph],
   Bryan Lewis [ctb, cph],
-  Marcus Geelnard [aut, cph] (TinyThread library,
+  Marcus Geelnard [ctb, cph] (TinyThread library,
     http://tinythreadpp.bitsnbites.eu/)
 Maintainer: JJ Allaire <jj@rstudio.com>
 Repository: CRAN
-Date/Publication: 2018-02-14 16:37:38 UTC
+Date/Publication: 2018-03-21 22:13:33 UTC
