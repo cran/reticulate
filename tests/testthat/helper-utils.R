@@ -1,7 +1,7 @@
 # import some modules used by the tests
 if (py_available(initialize = TRUE)) {
   test <- import("rpytools.test")
-  inspect <- import("inspect") 
+  inspect <- import("inspect")
   sys <- import("sys")
   builtins <- import_builtins(convert = FALSE)
 }
@@ -33,6 +33,13 @@ skip_if_no_pandas <- function() {
     skip("pandas not available for testing")
 }
 
+skip_if_no_scipy <- function() {
+  skip_on_cran()
+  skip_if_no_python()
+  if (!py_module_available("scipy"))
+    skip("scipy not available for testing")
+}
+
 skip_if_no_test_environments <- function() {
   skip_on_cran()
   skip_if_no_python()
@@ -40,4 +47,3 @@ skip_if_no_test_environments <- function() {
   if (skip)
     skip("python environments not available for testing")
 }
-

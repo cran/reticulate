@@ -1,7 +1,7 @@
 Package: reticulate
 Type: Package
 Title: Interface to 'Python'
-Version: 1.6
+Version: 1.7
 Authors@R: c(
   person("JJ", "Allaire", role = c("aut", "cre"), email = "jj@rstudio.com"),
   person("Kevin", "Ushey", role = c("aut"),
@@ -28,13 +28,13 @@ SystemRequirements: Python (>= 2.7.0)
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.0)
-Imports: utils, graphics, jsonlite, Rcpp (>= 0.12.7)
+Imports: utils, graphics, jsonlite, Rcpp (>= 0.12.7), Matrix
 Suggests: testthat, knitr, callr
 LinkingTo: Rcpp
 RoxygenNote: 6.0.1
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2018-03-21 15:29:55 UTC; jjallaire
+Packaged: 2018-04-28 18:15:05 UTC; jjallaire
 Author: JJ Allaire [aut, cre],
   Kevin Ushey [aut],
   RStudio [cph, fnd],
@@ -45,4 +45,4 @@ Author: JJ Allaire [aut, cre],
     http://tinythreadpp.bitsnbites.eu/)
 Maintainer: JJ Allaire <jj@rstudio.com>
 Repository: CRAN
-Date/Publication: 2018-03-21 22:13:33 UTC
+Date/Publication: 2018-04-28 19:03:04 UTC

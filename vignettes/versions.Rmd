@@ -13,7 +13,6 @@ vignette: >
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
-<link rel="stylesheet" type="text/css" href="extra.css"/>
 
 ## Locating Python
 
@@ -107,6 +106,4 @@ You can also use the `py_discover_config()` function to see what version of Pyth
 ```{r}
 py_discover_config()
 ```
-
-
 

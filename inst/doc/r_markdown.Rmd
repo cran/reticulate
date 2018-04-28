@@ -13,8 +13,6 @@ vignette: >
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
-<link rel="stylesheet" type="text/css" href="extra.css"/>
-
 
 ## Overview
 
@@ -42,6 +40,8 @@ Here's an R Markdown document that demonstrates this:
 
 ![](images/python_chunks.png){.screenshot width="98%"}
 
+Note that the [daily build](https://dailies.rstudio.com) of RStudio includes support for using reticulate to execute Python chunks within R Notebooks. See the [RStudio IDE Tools for reticulate](https://rstudio.github.io/reticulate/articles/rstudio_ide.html) article for additional details.
+
 ## Calling Python from R
 
 All objects created within Python chunks are available to R using the `py` object exported by the reticulate package. For example, the following code demonstrates reading and filtering a CSV file using Pandas then plotting the resulting data frame using ggplot2:
@@ -65,12 +65,4 @@ If you are using a version of knitr prior to 1.18 then add this code to your set
 If you do not wish to use the reticulate Python engine then set the `python.reticulate` chunk option to `FALSE`:
 
 ![](images/reticulate_disable.png){.screenshot width="98%"}
-
-
-
-
-
-
-
-
 

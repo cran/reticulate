@@ -1,6 +1,11 @@
 ## ----setup, include=FALSE------------------------------------------------
 knitr::opts_chunk$set(eval = FALSE)
 
+## ---- eval = FALSE-------------------------------------------------------
+#  install_scipy <- function(method = "auto", conda = "auto") {
+#    reticulate::py_install("scipy", method = method, conda = conda)
+#  }
+
 ## ------------------------------------------------------------------------
 #  # python 'scipy' module I want to use in my package
 #  scipy <- NULL

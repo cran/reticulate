@@ -13,8 +13,6 @@ vignette: >
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
-<link rel="stylesheet" type="text/css" href="extra.css"/>
-
 
 ## Delay Loading Python Modules
 
@@ -47,10 +45,32 @@ Using the `delay_load` flag has two important benefits:
 
 Without the `delay_load`, Python would be loaded immediately and the user's call to `use_virtualenv` would have no effect.
 
+## Installing Python Dependencies
+
+> **NOTE**: The `py_install()` function described below is currently only available in the development version of reticulate. You can install the development version with `devtools::install_github("rstudio/reticulate")`.
+
+Your R package likely depends on the installation of one or more Python packages. As a convenience to your users, you may want to provide a high-level R function to allow users to install these Python packages. It's furthermore beneficial if multiple R packages that depend on Python packages install their dependencies in the same Python environment (so that they can be easily used together). 
+
+The `py_install()` function provides a high-level interface for installing one or more Python packages. The packages will be by default be installed within a virtualenv or Conda environment named "r-reticulate". For example:
+
+```r
+library(reticulate)
+py_install("scipy")
+```
+
+You can document the use of this function along with your package or alternatively provide a wrapper function for `py_install()`. For example:
+
+```{r, eval = FALSE}
+install_scipy <- function(method = "auto", conda = "auto") {
+  reticulate::py_install("scipy", method = method, conda = conda)
+}
+```
+
+While reticulate is capable of binding to [any Python environment](calling_python.html#python-version) available on a system, it's much more straightforward for users if there is a common environment used by R packages with convenient high-level functions provided for installation. We therefore strongly recommend that R package developers use the approach described here.
 
 ## Checking and Testing on CRAN
 
-If you use **reticulate** in another R package you need to account for the fact that when your package is submitted to CRAN, the CRAN test servers may not have Python, NumPy, or whatever other Python modules you are wrapping in your package. If you don't do this then your package may fail to load and/or pass it's tests when run on CRAN.
+If you use **reticulate** in another R package you need to account for the fact that when your package is submitted to CRAN, the CRAN test servers may not have Python, NumPy, or whatever other Python modules you are wrapping in your package. If you don't do this then your package may fail to load and/or pass its tests when run on CRAN.
 
 There are two things you should do to ensure your package is well behaved on CRAN:
 
@@ -135,8 +155,4 @@ If you see that **reticulate** is missing support for conversion of one or more 
 before_install:
   - pip install numpy any_other_dependencies go_here
 ```
-
-
-
-
 

@@ -1,5 +1,24 @@
 
-## reticulate 1.6 (CRAN)
+## reticulate 1.7 (CRAN)
+
+- Improved filtering of non-numeric characters in Python / NumPy versions.
+
+- Added `py_func()` to wrap an R function in a Python function with the same signature as that of the original R function.
+
+- Added support for conversion between `Matrix::dgCMatrix` objects in R and `Scipy` CSC matrices in Python.
+
+- `source_python()` can now source a Python script from a URL into R environments.
+
+- Always run `source_python()` in the main Python module.
+
+- `py_install()` function for installing Python packages into virtualenvs and conda envs
+
+- Automatically create conda environment for `conda_install()`
+
+- Removed `delay_load` parameter from `import_from_path()`
+
+
+## reticulate 1.6
 
 - `repl_python()` function implementing a lightweight Python REPL in R.
 

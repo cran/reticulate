@@ -13,8 +13,6 @@ vignette: >
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
-<link rel="stylesheet" type="text/css" href="extra.css"/>
-
 
 ## Overview
 
@@ -241,6 +239,62 @@ R data frames can be automatically converted to and from [Pandas](https://pandas
 
 If the R data frame has row names, the generated Pandas DataFrame will be re-indexed using those row names (and vice versa). Special handling is also available for a `DatetimeIndex` associated with a Pandas DataFrame; however, because R only supports character vectors for row names they are converted to character first.
 
+## Sparse Matrices
+
+Sparse matrices created by [Matrix R package](https://CRAN.R-project.org/package=Matrix) can be converted [Scipy CSC matrix](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csc_matrix.html), and vice versa. This is often useful when you want to pass sparse matrices to Python functions that accepts Scipy CSC matrix to take advantage of this format, such as efficient column slicing and fast matrix vector products. 
+
+For example, we first create a sparse matrix using `Matrix::sparseMatrix()`:
+
+```
+library(Matrix)
+N <- 5
+dgc_matrix <- sparseMatrix(
+  i = sample(N, N),
+  j = sample(N, N),
+  x = runif(N),
+  dims = c(N, N))
+```
+
+The sparse matrix looks like this:
+
+```
+> dgc_matrix
+5 x 5 sparse Matrix of class "dgCMatrix"
+                                                        
+[1,] 0.2264952 .          .          .         .        
+[2,] .         .          .          .         0.3927282
+[3,] .         .          .          0.9215908 .        
+[4,] .         .          0.01777771 .         .        
+[5,] .         0.05885743 .          .         . 
+```
+
+Let's convert it to Scipy CSC matrix using `r_to_py()`:
+
+```
+> csc_matrix <- r_to_py(x)
+> csc_matrix
+  (0, 0)	0.226495201467
+  (4, 1)	0.0588574311696
+  (3, 2)	0.0177777127828
+  (2, 3)	0.921590822982
+  (1, 4)	0.392728160601
+```
+
+Note that the right-hand side contains the non-zero entries of the matrix while the left-hand side represents their locations in the matrix. 
+
+We can also use `py_to_r()` to convert the CSC matrix back to `Matrix::dgCMatrix` representation that can then be manipulated easily in R which is the same as the original sparse matrix that we created earlier using `Matrix::sparseMatrix()`:
+
+```
+> py_to_r(csc_matrix)
+5 x 5 sparse Matrix of class "dgCMatrix"
+                                                        
+[1,] 0.2264952 .          .          .         .        
+[2,] .         .          .          .         0.3927282
+[3,] .         .          .          0.9215908 .        
+[4,] .         .          0.01777771 .         .        
+[5,] .         0.05885743 .          .         .        
+```
+
 ## With Contexts
 
 The R `with` generic function can be used to interact with Python context manager objects (in Python you use the `with` keyword to do the same). For example:
@@ -337,7 +391,33 @@ sequence_generator <-function(start) {
 
 Note that you can change the value that indicates the end of the iteration using the `completed` parameter (e.g. `py_iterator(func, completed = NA)`).
 
-## Advanced Functions
+## Functions
+
+By default R functions are converted to Python with a generic signature (`function(...)`), where there's neither keyword argument nor default values for arguments.
+
+For example, below we apply `r_to_py()` to an R function and then we use [inspect Python module](https://docs.python.org/3/library/inspect.html) to get the converted function's argument spec. You can see that the signature of the wrapped function looks different than the original R function's signature.
+
+```r
+> inspect <- import("inspect")
+> converted_func <- r_to_py(function(a, b = 1.5) {})
+> inspect$getargspec(converted_func)
+ArgSpec(args=[], varargs='args', keywords='kwargs', defaults=None)
+```
+
+This default conversion typically works fine, however some Python libraries have strict checking on the function signatures of user provided callbacks. In these cases the generic `function(...)` signature will fail this checking.
+
+For these cases you can use `py_func()` to wrap the R function so that the wrapped function has exactly the same signature as that of the original R function, e.g. one argument `a` without default value and another argument `b` with default value 1.5. 
+
+```r
+> wrapped_func <- py_func(function(a, b = 1.5) {})
+> inspect$getargspec(wrapped_func)
+ArgSpec(args=['a', 'b'], varargs=None, keywords=None, defaults=(1.5,))
+```
+
+Note that the signature of the R function must not contain esoteric Python-incompatible constructs. For example, we cannot have R function with signature like `function(a = 1, b)` since Python function requires that arguments without default values appear before arguments with default values.
+
+
+## Advanced 
 
 There are several more advanced functions available that are useful principally when creating high level R interfaces for Python libraries.
 
@@ -414,5 +494,4 @@ The following articles cover additional aspects of using **reticulate**:
 - [Using reticulate in an R Package](package.html)
 
 - [Arrays in R and Python](arrays.html)
-
 
