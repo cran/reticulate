@@ -297,9 +297,6 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </div>
 <div id="simple-installation" class="section level2">
 <h2>Simple Installation</h2>
-<blockquote>
-<p><strong>NOTE</strong>: The <code>py_install()</code> function described below is currently only available in the development version of reticulate. You can install the development version with <code>devtools::install_github(&quot;rstudio/reticulate&quot;)</code>.</p>
-</blockquote>
 <p>The reticulate package includes a <code>py_install()</code> function that can be used to install one or more Python packages. The packages will be by default be installed within a virtualenv or Conda environment named “r-reticulate”. For example:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">library</span>(reticulate)</a>
 <a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">py_install</span>(<span class="st">&quot;pandas&quot;</span>)</a></code></pre></div>

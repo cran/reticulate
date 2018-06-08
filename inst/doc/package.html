@@ -303,9 +303,6 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </div>
 <div id="installing-python-dependencies" class="section level2">
 <h2>Installing Python Dependencies</h2>
-<blockquote>
-<p><strong>NOTE</strong>: The <code>py_install()</code> function described below is currently only available in the development version of reticulate. You can install the development version with <code>devtools::install_github(&quot;rstudio/reticulate&quot;)</code>.</p>
-</blockquote>
 <p>Your R package likely depends on the installation of one or more Python packages. As a convenience to your users, you may want to provide a high-level R function to allow users to install these Python packages. It’s furthermore beneficial if multiple R packages that depend on Python packages install their dependencies in the same Python environment (so that they can be easily used together).</p>
 <p>The <code>py_install()</code> function provides a high-level interface for installing one or more Python packages. The packages will be by default be installed within a virtualenv or Conda environment named “r-reticulate”. For example:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">library</span>(reticulate)</a>

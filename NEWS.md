@@ -1,5 +1,26 @@
 
-## reticulate 1.7 (CRAN)
+## reticulate 1.8 (CRAN)
+
+- `source_python()` now flushes stdout and stderr after running the associated
+  Python script, to ensure that `print()`-ed output is output to the console.
+  (#284)
+
+- Fixed an issue where logical R matrices would not be converted correctly to
+  their NumPy counterpart. (#280)
+
+- Fixed an issue where Python chunks containing multiple statements on the same
+  line would be evaluated and printed multiple times.
+
+- Added `py_get_item()`, `py_set_item()`, and `py_del_item()` as lower-level
+  APIs for directly accessing the items of e.g. a Python dictionary or a Pandas
+  DataFrame.
+
+- Fix issue with Pandas column names that clash with built in methods (e.g. 'pop')
+
+- Improve default `str()` output for Python objects (print `__dict__` if available)
+
+
+## reticulate 1.7
 
 - Improved filtering of non-numeric characters in Python / NumPy versions.
 

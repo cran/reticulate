@@ -157,7 +157,19 @@ py_to_r.datetime.date <- function(x) {
 #' @export
 py_to_r.pandas.core.series.Series <- function(x) {
   disable_conversion_scope(x)
-  py_to_r(x$as_matrix())
+  values <- py_to_r(x$values)
+  index <- py_to_r(x$index)
+  names(values) <- index$format()
+  values
+}
+
+#' @export
+py_to_r.pandas.core.categorical.Categorical <- function(x) {
+  disable_conversion_scope(x)
+  values <- py_to_r(x$get_values())
+  levels <- py_to_r(x$categories$values)
+  ordered <- py_to_r(x$dtype$ordered)
+  factor(values, levels = levels, ordered = ordered)
 }
 
 py_object_shape <- function(object) unlist(as_r_value(object$shape))
@@ -231,11 +243,12 @@ py_to_r.pandas.core.frame.DataFrame <- function(x) {
   np <- import("numpy", convert = TRUE)
 
   # extract numpy arrays associated with each column
-  columns <- py_to_r(x$columns$values)
-  converted <- lapply(columns, function(column) {
-    py_to_r(x[[column]]$as_matrix())
+  columns <- x$columns$values
+  converted <- lapply(seq_along(columns) - 1L, function(i) {
+    column <- columns[[i]]
+    py_to_r(py_get_item(x, column)$values)
   })
-  names(converted) <- columns
+  names(converted) <- py_to_r(x$columns$format())
 
   # clean up converted objects
   for (i in seq_along(converted)) {
@@ -245,20 +258,9 @@ py_to_r.pandas.core.frame.DataFrame <- function(x) {
     if (identical(dim(converted[[i]]), length(converted[[i]]))) {
       dim(converted[[i]]) <- NULL
     }
-
-    # convert categorical variables to factors
-    if (identical(py_to_r(x[[column]]$dtype$name), "category")) {
-      levels <- py_to_r(x[[column]]$values$categories$values)
-      ordered <- py_to_r(x[[column]]$dtype$ordered)
-      converted[[i]] <- factor(converted[[i]], levels = levels, ordered = ordered)
-    }
-
   }
 
-  # re-order based on ordering of pandas DataFrame. note that
-  # as.data.frame() will not handle list columns correctly, so
-  # we construct the data.frame 'by hand'
-  df <- converted[columns]
+  df <- converted
   class(df) <- "data.frame"
   attr(df, "row.names") <- c(NA_integer_, -nrow(x))
 
@@ -271,9 +273,17 @@ py_to_r.pandas.core.frame.DataFrame <- function(x) {
   # try to explicitly whitelist a small family which we can represent
   # effectively in R
   index <- x$index
-  if (inherits(index, "pandas.core.indexes.base.Index")) {
 
-    if (inherits(index, "pandas.core.indexes.range.RangeIndex") &&
+  # tag the returned object with the Python index, in case
+  # the user needs to explicitly access / munge the index
+  # for some need
+  attr(df, "pandas.index") <- index
+
+  if (inherits(index, c("pandas.core.indexes.base.Index",
+                        "pandas.indexes.base.Index"))) {
+
+    if (inherits(index, c("pandas.core.indexes.range.RangeIndex",
+                          "pandas.indexes.range.RangeIndex")) &&
         np$issubdtype(index$dtype, np$number))
     {
       # check for a range index from 0 -> n. in such a case, we don't need
@@ -290,7 +300,8 @@ py_to_r.pandas.core.frame.DataFrame <- function(x) {
       }
     }
 
-    else if (inherits(index, "pandas.core.indexes.datetimes.DatetimeIndex")) {
+    else if (inherits(index, c("pandas.core.indexes.datetimes.DatetimeIndex",
+                               "pandas.tseries.index.DatetimeIndex"))) {
 
       converted <- tryCatch(py_to_r(index$values), error = identity)
 
@@ -308,8 +319,14 @@ py_to_r.pandas.core.frame.DataFrame <- function(x) {
 
     else {
       converted <- tryCatch(py_to_r(index$values), error = identity)
-      if (is.character(converted) || is.numeric(converted))
-        rownames(df) <- converted
+      if (is.character(converted) || is.numeric(converted)) {
+        if (any(duplicated(converted))) {
+          warning("index contains duplicated values: row names not set")
+        } else {
+          rownames(df) <- converted
+        }
+      }
+
     }
   }
 
