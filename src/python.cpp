@@ -154,13 +154,6 @@ std::string as_std_string(PyObject* str) {
 
 #define as_utf8_r_string(str) Rcpp::String(as_std_string(str))
 
-PyObject* as_python_bytes(Rbyte* bytes, size_t len) {
-  if (is_python3())
-    return PyBytes_FromStringAndSize((const char*)bytes, len);
-  else
-    return PyString_FromStringAndSize((const char*)bytes, len);
-}
-
 PyObject* as_python_str(SEXP strSEXP) {
   if (is_python3()) {
     // python3 doesn't have PyString and all strings are unicode so
@@ -294,13 +287,18 @@ std::string as_r_class(PyObject* classPtr) {
   PyObjectPtr modulePtr(PyObject_GetAttrString(classPtr, "__module__"));
   PyObjectPtr namePtr(PyObject_GetAttrString(classPtr, "__name__"));
   std::ostringstream ostr;
-  std::string module = as_std_string(modulePtr) + ".";
-  std::string builtin("__builtin__");
-  if (module.find(builtin) == 0)
-    module.replace(0, builtin.length(), "python.builtin");
-  std::string builtins("builtins");
-  if (module.find(builtins) == 0)
-    module.replace(0, builtins.length(), "python.builtin");
+  std::string module;
+  if (!modulePtr.is_null()) {
+    module = as_std_string(modulePtr) + ".";
+    std::string builtin("__builtin__");
+    if (module.find(builtin) == 0)
+      module.replace(0, builtin.length(), "python.builtin");
+    std::string builtins("builtins");
+    if (module.find(builtins) == 0)
+      module.replace(0, builtins.length(), "python.builtin");
+  } else {
+    module = "python.builtin.";
+  }
   ostr << module << as_std_string(namePtr);
   return ostr.str();
 }
@@ -926,6 +924,15 @@ SEXP py_to_r(PyObject* x, bool convert) {
     return py_ref(x, true, std::string("python.builtin.iterator"));
   }
 
+  // bytearray
+  else if (PyByteArray_Check(x)) {
+    if (PyByteArray_Size(x) > 0)
+      return Rcpp::RawVector(PyByteArray_AsString(x),
+                             PyByteArray_AsString(x) + PyByteArray_Size(x));
+    else
+      return Rcpp::RawVector();
+  }
+
   // default is to return opaque wrapper to python object. we pass convert = true
   // because if we hit this code then conversion has been either implicitly
   // or explicitly requested.
@@ -935,9 +942,30 @@ SEXP py_to_r(PyObject* x, bool convert) {
   }
 }
 
+PyObject* r_to_py(RObject x, bool convert) {
+
+  // get a static reference to the R version of r_to_py
+  Rcpp::Environment pkgEnv = Rcpp::Environment::namespace_env("reticulate");
+  Rcpp::Function r_to_py_fn = pkgEnv["r_to_py"];
+
+  // call the R version and hold the return value in a PyObjectRef (SEXP wrapper)
+  // this object will be released when the function returns
+  PyObjectRef ref(r_to_py_fn(x, convert));
+
+  // get the underlying Python object and call Py_IncRef before returning it
+  // this allows this function to provide the same memory sematnics as the
+  // previous C++ version of r_to_py (which is now r_to_py_cpp), which always
+  // calls Py_IncRef on Python objects before returning them
+  PyObject* obj = ref.get();
+  Py_IncRef(obj);
+
+  // return the Python object
+  return obj;
+}
+
 // convert an R object to a python object (the returned object
 // will have an active reference count on it)
-PyObject* r_to_py(RObject x, bool convert) {
+PyObject* r_to_py_cpp(RObject x, bool convert) {
 
   int type = x.sexp_type();
   SEXP sexp = x.get__();
@@ -1141,7 +1169,11 @@ PyObject* r_to_py(RObject x, bool convert) {
   // bytes
   } else if (type == RAWSXP) {
 
-    return as_python_bytes(RAW(sexp), Rf_length(sexp));
+    Rcpp::RawVector raw(sexp);
+    if (raw.size() > 0)
+      return PyByteArray_FromStringAndSize((const char*)&raw[0], raw.size());
+    else
+      return PyByteArray_FromStringAndSize(NULL, 0);
 
   // list
   } else if (type == VECSXP) {
@@ -1205,7 +1237,7 @@ PyObject* r_to_py(RObject x, bool convert) {
 
 // [[Rcpp::export]]
 PyObjectRef r_to_py_impl(RObject object, bool convert) {
-  return py_ref(r_to_py(object, convert), convert);
+  return py_ref(r_to_py_cpp(object, convert), convert);
 }
 
 // custom module used for calling R functions from python wrappers

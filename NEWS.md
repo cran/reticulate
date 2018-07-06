@@ -1,5 +1,20 @@
 
-## reticulate 1.8 (CRAN)
+## reticulate 1.9 (CRAN)
+
+- Detect python 3 in environments where there is no python 2 (e.g. Ubuntu 18.04)
+
+- Always call r_to_py S3 method when converting objects from Python to R
+
+- Handle NULL module name when determining R class for Python objects
+
+- Convert RAW vectors to Python bytearray; Convert Python bytearray to RAW
+
+- Use importlib for detecting modules (rather than imp) for Python >= 3.4
+
+- Close text connection used for reading Python configuration probe
+
+
+## reticulate 1.8
 
 - `source_python()` now flushes stdout and stderr after running the associated
   Python script, to ensure that `print()`-ed output is output to the console.
