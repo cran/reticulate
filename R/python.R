@@ -4,7 +4,10 @@
 #' Import the specified Python module for calling from R.
 #'
 #' @param module Module name
-#' @param as Alias for module name (affects names of R classes)
+#' @param as Alias for module name (affects names of R classes). Note that
+#'  this is an advanced parameter that should generally only be used
+#'  in package development (since it affects the S3 name of the imported
+#'  class and can therefore interfere with S3 method dispatching).
 #' @param path Path to import from
 #' @param convert `TRUE` to automatically convert Python objects to their R
 #'   equivalent. If you pass `FALSE` you can do manual conversion using the
@@ -646,10 +649,7 @@ with.python.builtin.object <- function(data, expr, as = NULL, ...) {
     envir <- parent.frame()
 
   # assign the context if we have an as parameter
-  asRestore <- NULL
   if (!is.null(as)) {
-    if (exists(as, envir = envir))
-      asRestore <- get(as, envir = envir)
     assign(as, context, envir = envir)
   }
 
@@ -657,11 +657,6 @@ with.python.builtin.object <- function(data, expr, as = NULL, ...) {
   tryCatch(force(expr),
            finally = {
              data$`__exit__`(NULL, NULL, NULL)
-             if (!is.null(as)) {
-               remove(list = as, envir = envir)
-               if (!is.null(asRestore))
-                 assign(as, asRestore, envir = envir)
-             }
            }
           )
 }
@@ -686,6 +681,7 @@ with.python.builtin.object <- function(data, expr, as = NULL, ...) {
 
 #' Traverse a Python iterator or generator
 #'
+#' @param x Python iterator or iterable
 #' @param it Python iterator or generator
 #' @param f Function to apply to each item. By default applies the
 #'   \code{identity} function which just reflects back the value of the item.
@@ -706,9 +702,8 @@ iterate <- function(it, f = base::identity, simplify = TRUE) {
 
   ensure_python_initialized()
 
-  # validate
-  if (!inherits(it, "python.builtin.iterator"))
-    stop("iterate function called with non-iterator argument")
+  # resolve iterator
+  it <- as_iterator(it)
 
   # perform iteration
   result <- py_iterate(it, f)
@@ -737,20 +732,30 @@ iterate <- function(it, f = base::identity, simplify = TRUE) {
 }
 
 
-
-
 #' @rdname iterate
 #' @export
 iter_next <- function(it, completed = NULL) {
 
-  # validate
+  # check for iterator
   if (!inherits(it, "python.builtin.iterator"))
-    stop("iter_next function called with non-iterator argument")
+    stop("iterator function called with non-iterator argument", call. = FALSE)
 
   # call iterator
   py_iter_next(it, completed)
-
 }
+
+
+#' @rdname iterate
+#' @export
+as_iterator <- function(x) {
+  if (inherits(x, "python.builtin.iterator"))
+    x
+  else if (py_has_attr(x, "__iter__"))
+    x$`__iter__`()
+  else
+    stop("iterator function called with non-iterator argument", call. = FALSE)
+}
+
 
 #' Call a Python callable object
 #'

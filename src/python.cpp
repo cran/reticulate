@@ -284,11 +284,11 @@ PyObject* py_import(const std::string& module) {
 }
 
 std::string as_r_class(PyObject* classPtr) {
-  PyObjectPtr modulePtr(PyObject_GetAttrString(classPtr, "__module__"));
   PyObjectPtr namePtr(PyObject_GetAttrString(classPtr, "__name__"));
   std::ostringstream ostr;
   std::string module;
-  if (!modulePtr.is_null()) {
+  if (PyObject_HasAttrString(classPtr, "__module__")) {
+    PyObjectPtr modulePtr(PyObject_GetAttrString(classPtr, "__module__"));
     module = as_std_string(modulePtr) + ".";
     std::string builtin("__builtin__");
     if (module.find(builtin) == 0)
@@ -538,7 +538,7 @@ int r_scalar_type(PyObject* x) {
 
   // double
   else if (PyFloat_Check(x))
-    return REALSXP;// [[Rcpp::export]]
+    return REALSXP;
 
   // complex
   else if (PyComplex_Check(x))
@@ -978,7 +978,8 @@ PyObject* r_to_py_cpp(RObject x, bool convert) {
 
   // use py_object attribute if we have it
   } else if (x.hasAttribute("py_object")) {
-    PyObjectRef obj = as<PyObjectRef>(x.attr("py_object"));
+    Rcpp::RObject py_object = x.attr("py_object");
+    PyObjectRef obj = as<PyObjectRef>(py_object);
     Py_IncRef(obj.get());
     return obj.get();
 
@@ -1946,7 +1947,8 @@ PyObjectRef py_module_import(const std::string& module, bool convert) {
 // [[Rcpp::export]]
 void py_module_proxy_import(PyObjectRef proxy) {
   if (proxy.exists("module")) {
-    std::string module = as<std::string>(proxy.getFromEnvironment("module"));
+    Rcpp::RObject r_module = proxy.getFromEnvironment("module");
+    std::string module = as<std::string>(r_module);
     PyObject* pModule = py_import(module);
     if (pModule == NULL)
       stop(py_fetch_error());
