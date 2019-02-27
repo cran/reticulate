@@ -155,6 +155,19 @@ as.character.python.builtin.object <- function(x, ...) {
   py_str(x)
 }
 
+#' Convert Python bytes to an R character vector
+#'
+#' @inheritParams base::as.character
+#'
+#' @param encoding Encoding to use for conversion (defaults to utf-8)
+#' @param errors Policy for handling conversion errors. Default is 'strict'
+#'  which raises an error. Other possible values are 'ignore' and 'replace'
+#'
+#' @export
+as.character.python.builtin.bytes <- function(x, encoding = "utf-8", errors = "strict", ...) {
+  x$decode(encoding = encoding, errors = errors)
+}
+
 #' @export
 "==.python.builtin.object" <- function(a, b) {
   py_compare(a, b, "==")
@@ -466,7 +479,7 @@ plot.numpy.ndarray <- function(x, y, ...) {
 #'
 #' @return A Python dictionary
 #'
-#' @note The returned dictionary will not automatically convert it's elements
+#' @note The returned dictionary will not automatically convert its elements
 #'   from Python to R. You can do manual converstion with the [py_to_r()]
 #'   function or pass `convert = TRUE` to request automatic conversion.
 #'
@@ -529,7 +542,7 @@ py_dict <- function(keys, values, convert = FALSE) {
 #' @param ... Values for tuple (or a single list to be converted to a tuple).
 #'
 #' @return A Python tuple
-#' @note The returned tuple will not automatically convert it's elements from
+#' @note The returned tuple will not automatically convert its elements from
 #'   Python to R. You can do manual converstion with the [py_to_r()] function or
 #'   pass `convert = TRUE` to request automatic conversion.
 #'
@@ -1332,7 +1345,8 @@ py_inject_r <- function(envir) {
 
   # define the getters, setters we'll attach to the Python class
   getter <- function(self, code) {
-    r_to_py(eval(parse(text = as_r_value(code)), envir = envir))
+    object <- eval(parse(text = as_r_value(code)), envir = envir)
+    r_to_py(object, convert = is.function(object))
   }
 
   setter <- function(self, name, value) {

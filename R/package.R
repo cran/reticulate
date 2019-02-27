@@ -65,8 +65,8 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
   # check for basic python prerequsities
   if (is.null(config)) {
     stop("Installation of Python not found, Python bindings not loaded.")
-  } else if (!is_windows() && (is.null(config$libpython) || !file.exists(config$libpython))) {
-    stop("Python shared library '", config$libpython, "' not found, Python bindings not loaded.")
+  } else if (!is_windows() && is.null(config$libpython)) {
+    stop("Python shared library not found, Python bindings not loaded.")
   } else if (is_incompatible_arch(config)) {
     stop("Your current architecture is ", current_python_arch(), " however this version of ",
          "Python is compiled for ", config$architecture, ".")
@@ -108,18 +108,36 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
                           Sys.getenv("PATH"),
                           sep = .Platform$path.sep))
 
-  # initialize python
-  py_initialize(config$python,
-                config$libpython,
-                config$pythonhome,
-                config$virtualenv_activate,
-                config$version >= "3.0",
-                interactive(),
-                numpy_load_error)
+  # if we're a virtual environment then set VIRTUAL_ENV (need to
+  # set this before initializing Python so that module paths are
+  # set as appropriate)
+  if (nzchar(config$virtualenv))
+    Sys.setenv(VIRTUAL_ENV = config$virtualenv)
+  
+  # set R_SESSION_INITIALIZED flag (used by rpy2)
+  curr_session_env <- Sys.getenv("R_SESSION_INITIALIZED", unset = NA)
+  Sys.setenv(R_SESSION_INITIALIZED = sprintf('PID=%s:NAME="reticulate"', Sys.getpid()))
 
-  # if we have a virtualenv then set the VIRTUAL_ENV environment variable
-  if (nzchar(config$virtualenv_activate))
-    Sys.setenv(VIRTUAL_ENV = path.expand(dirname(dirname(config$virtualenv_activate))))
+  # initialize python
+  tryCatch(
+    {
+      py_initialize(config$python,
+                    config$libpython,
+                    config$pythonhome,
+                    config$virtualenv_activate,
+                    config$version >= "3.0",
+                    interactive(),
+                    numpy_load_error)
+    },
+    error = function(e) {
+      if (is.na(curr_session_env)) {
+        Sys.unsetenv("R_SESSION_INITIALIZED")
+      } else {
+        Sys.setenv(R_SESSION_INITIALIZED = curr_session_env)
+      }
+      stop(e)
+    }
+  )
 
   # set available flag indicating we have py bindings
   config$available <- TRUE
@@ -129,8 +147,8 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
                        system.file("python", package = "reticulate") ,
                        "')"))
 
-  # set R_SESSION_INITIALIZED flag (used by rpy2)
-  Sys.setenv(R_SESSION_INITIALIZED=sprintf('PID=%s:NAME="reticulate"', Sys.getpid()))
+  # ensure modules can be imported from the current working directory
+  py_run_string_impl("import sys; sys.path.insert(0, '')")
 
   # return config
   config
