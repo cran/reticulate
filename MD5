@@ -1,6 +1,6 @@
-379b7f18336a37820967e17fc4a426b6 *DESCRIPTION
+76ed0473cd57e2290ca7f3041a89e976 *DESCRIPTION
 83652231acc8cb5b27054df67ca30cf1 *NAMESPACE
-a0acceca4cb8f0f6ded04076f627f6e9 *NEWS.md
+0e56cd389e894293dfea7157fcdd01c2 *NEWS.md
 e9284e02e2bec1f3691f4d9d39730c3b *R/RcppExports.R
 4e6caa3a6e729e5e3a112c23e2f47e69 *R/array.R
 f665be340848046ffdf1ac86e287689f *R/conda.R
@@ -158,7 +158,7 @@ fbb8b1fdef92bce24cbb224e228c3ce9 *tests/testthat/test-python-scipy-sparse-matrix
 1e1488c296f43a47cd36e5b82e9e169c *tests/testthat/test-python-source.R
 5553e20c9cd8f12bcf379944ab8ce0a7 *tests/testthat/test-python-strings.R
 f3b4e1903303a716e46c60dc9f9a87ef *tests/testthat/test-python-vectors.R
-3d6b76a186d4c36bfdee71bb2fee57ff *tests/testthat/test-python-virtual-environments.R
+bb5db2c1373eb7821ebcd51f4a71e2a5 *tests/testthat/test-python-virtual-environments.R
 96697c7e525cdedaa853ed5cc189c899 *vignettes/arrays.Rmd
 b3c9f89d123a450bda4a3b8971c158de *vignettes/calling_python.Rmd
 013531f7d6b2fa3bebb438f310d48a94 *vignettes/extra.css

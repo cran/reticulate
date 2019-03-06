@@ -1,4 +1,8 @@
 
+## reticulate 1.11.1 (CRAN)
+
+- Fixed a failing virtual environment test on CRAN.
+
 ## reticulate 1.11 (CRAN)
 
 - Fixed an issue where attempts to activate virtual environments created with
