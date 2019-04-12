@@ -1,9 +1,24 @@
 
-## reticulate 1.11.1 (CRAN)
+## reticulate 1.12.0 (CRAN)
+
+- Fixed an issue where Python objects within Python lists would not be
+  converted to R objects as expected.
+
+- Fixed an issue where single-row data.frames with row names could not
+  be converted. (#468)
+
+- Fixed an issue where `reticulate` could fail to query Anaconda environment
+  names with Anaconda 3.7.
+
+- Fixed an issue where vectors of R Dates were not converted correctly. (#454)
+
+- Fixed an issue where R Dates could not be passed to Python functions. (#458)
+
+## reticulate 1.11.1
 
 - Fixed a failing virtual environment test on CRAN.
 
-## reticulate 1.11 (CRAN)
+## reticulate 1.11
 
 - Fixed an issue where attempts to activate virtual environments created with
   virtualenv 16.4.1 would fail. (#437)

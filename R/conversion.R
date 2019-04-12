@@ -51,7 +51,10 @@ r_to_py.list <- function(x, convert = FALSE) {
 
 #' @export
 py_to_r.python.builtin.list <- function(x) {
-  disable_conversion_scope(x)
+
+  # NOTE: we don't disable conversion in this context
+  # as we want to ensure sub-objects inherit convert-ability
+  # see e.g. https://github.com/rstudio/keras/issues/732
 
   # give internal code a chance to perform efficient
   # conversion of e.g. numeric vectors and the like
@@ -136,7 +139,7 @@ r_to_py.POSIXt <- function(x, convert = FALSE) {
   if (py_module_available("numpy"))
     return(np_array(as.numeric(x) * 1E9, dtype = "datetime64[ns]"))
 
-  datetime <- import("datetime", convert = convert)
+  datetime <- import("datetime", convert = FALSE)
   datetime$datetime$fromtimestamp(as.double(x))
 }
 
@@ -154,9 +157,9 @@ py_to_r.datetime.datetime <- function(x) {
 #' @export
 r_to_py.Date <- function(x, convert = FALSE) {
 
-  datetime <- import("datetime", convert = convert)
+  datetime <- import("datetime", convert = FALSE)
   items <- lapply(x, function(item) {
-    iso <- strsplit(format(x), "-", fixed = TRUE)[[1]]
+    iso <- strsplit(format(item), "-", fixed = TRUE)[[1]]
     year <- as.integer(iso[[1]])
     month <- as.integer(iso[[2]])
     day <- as.integer(iso[[3]])
@@ -262,8 +265,11 @@ r_to_py.data.frame <- function(x, convert = FALSE) {
 
   # copy over row names if they exist
   rni <- .row_names_info(x, type = 0L)
-  if (is.character(rni))
+  if (is.character(rni)) {
+    if (length(rni) == 1)
+      rni <- as.list(rni)
     pdf$index <- rni
+  }
 
   # re-order based on original columns
   if (length(x) > 1)

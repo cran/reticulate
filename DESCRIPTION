@@ -1,11 +1,11 @@
 Package: reticulate
 Type: Package
 Title: Interface to 'Python'
-Version: 1.11.1
+Version: 1.12
 Authors@R: c(
-  person("JJ", "Allaire", role = c("aut", "cre"), email = "jj@rstudio.com"),
-  person("Kevin", "Ushey", role = c("aut"),
+  person("Kevin", "Ushey", role = c("aut", "cre"),
          email = "kevin@rstudio.com"),
+  person("JJ", "Allaire", role = c("aut"), email = "jj@rstudio.com"),
   person("RStudio", role = c("cph", "fnd")),
   person("Yuan", "Tang", role = c("aut", "cph"),
          email = "terrytangyuan@gmail.com",
@@ -34,15 +34,15 @@ LinkingTo: Rcpp
 RoxygenNote: 6.1.1
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2019-03-05 00:08:30 UTC; kevin
-Author: JJ Allaire [aut, cre],
-  Kevin Ushey [aut],
+Packaged: 2019-04-09 20:23:08 UTC; kevin
+Author: Kevin Ushey [aut, cre],
+  JJ Allaire [aut],
   RStudio [cph, fnd],
   Yuan Tang [aut, cph] (<https://orcid.org/0000-0001-5243-233X>),
   Dirk Eddelbuettel [ctb, cph],
   Bryan Lewis [ctb, cph],
   Marcus Geelnard [ctb, cph] (TinyThread library,
     http://tinythreadpp.bitsnbites.eu/)
-Maintainer: JJ Allaire <jj@rstudio.com>
+Maintainer: Kevin Ushey <kevin@rstudio.com>
 Repository: CRAN
-Date/Publication: 2019-03-06 12:50:03 UTC
+Date/Publication: 2019-04-12 06:55:02 UTC

@@ -137,3 +137,40 @@ py_last_value <- function() {
     error = function(e) r_to_py(NULL)
   )
 }
+
+python_binary_path <- function(dir) {
+
+  # check for condaenv
+  if (is_condaenv(dir)) {
+    suffix <- if (is_windows()) "python.exe" else "bin/python"
+    return(file.path(dir, suffix))
+  }
+
+  # check for virtualenv
+  if (is_virtualenv(dir)) {
+    suffix <- if (is_windows()) "Scripts/python.exe" else "bin/python"
+    return(file.path(dir, suffix))
+  }
+
+  # check for directory containing Python
+  suffix <- if (is_windows()) "python.exe" else "python"
+  if (file.exists(file.path(dir, suffix)))
+    return(file.path(dir, suffix))
+
+  stop("failed to discover Python binary associated with path '", dir, "'")
+
+}
+
+# prepends entries to the PATH (either moving or adding them as appropriate)
+# and returns the previously-set PATH
+path_prepend <- function(entries) {
+  oldpath <- Sys.getenv("PATH")
+  if (length(entries)) {
+    entries <- path.expand(entries)
+    splat <- strsplit(oldpath, split = .Platform$path.sep, fixed = TRUE)[[1]]
+    newpath <- c(entries, setdiff(splat, entries))
+    Sys.setenv(PATH = paste(newpath, collapse = .Platform$path.sep))
+  }
+  oldpath
+}
+
