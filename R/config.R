@@ -184,6 +184,14 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   if (length(python_versions) > 0)
     python_versions <- python_versions[file.exists(python_versions)]
 
+  # remove 'fake' / inaccessible python executables
+  # https://github.com/rstudio/reticulate/issues/534
+  if (is_windows()) {
+    info <- suppressWarnings(file.info(python_versions))
+    size <- ifelse(is.na(info$size), 0, info$size)
+    python_versions <- python_versions[size != 0]
+  }
+
   # scan until we find a version of python that meets our qualifying conditions
   valid_python_versions <- c()
   for (python_version in python_versions) {
@@ -353,7 +361,8 @@ python_config <- function(python, required_module, python_versions, forced = NUL
   }
 
   config_script <- system.file("config/config.py", package = "reticulate")
-  config <- system2(command = python, args = paste0('"', config_script, '"'), stdout = TRUE)
+  # It seems that Windows in R3.6 returns the configuration from the python file only in stderr and not in stdout
+  config <- system2(command = python, args = paste0('"', config_script, '"'), stdout = TRUE, stderr = FALSE)
   status <- attr(config, "status")
   if (!is.null(status)) {
     errmsg <- attr(config, "errmsg")
@@ -383,7 +392,7 @@ python_config <- function(python, required_module, python_versions, forced = NUL
     python_libdir_config <- function(var) {
       python_libdir <- config[[var]]
       ext <- switch(Sys.info()[["sysname"]], Darwin = ".dylib", Windows = ".dll", ".so")
-      pattern <- paste0("^libpython", version, "m?", ext)
+      pattern <- paste0("^libpython", version, "d?m?", ext)
       libpython <- list.files(python_libdir, pattern = pattern, full.names = TRUE)
     }
     for (libsrc in c("LIBPL", "LIBDIR")) {

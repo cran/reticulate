@@ -1424,7 +1424,7 @@ static struct PyModuleDef RPYCallModuleDef = {
 };
 
 extern "C" PyObject* initializeRPYCall(void) {
-  return PyModule_Create2(&RPYCallModuleDef, _PYTHON3_ABI_VERSION);
+  return PyModule_Create(&RPYCallModuleDef, _PYTHON3_ABI_VERSION);
 }
 
 // forward declare py_run_file
@@ -1846,8 +1846,7 @@ SEXP py_call_impl(PyObjectRef x, List args = R_NilValue, List keywords = R_NilVa
     stop(py_fetch_error());
 
   // return
-  Py_IncRef(res);
-  return py_ref(res, x.convert());
+  return py_ref(res.detach(), x.convert());
 }
 
 
@@ -1886,6 +1885,11 @@ void py_dict_set_item(PyObjectRef dict, RObject item, RObject value) {
 // [[Rcpp::export]]
 int py_dict_length(PyObjectRef dict) {
   return PyDict_Size(dict);
+}
+
+// [[Rcpp::export]]
+PyObjectRef py_dict_get_keys(PyObjectRef dict) {
+  return py_ref(PyDict_Keys(dict), dict.convert());
 }
 
 // [[Rcpp::export]]
@@ -2011,13 +2015,16 @@ List py_iterate(PyObjectRef x, Function f) {
     }
 
     // call the function
-    SEXP param = x.convert() ? py_to_r(item, x.convert()) : py_ref(item, false);
+    SEXP param = x.convert()
+      ? py_to_r(item, x.convert())
+      : py_ref(item.detach(), false);
+
     list.push_back(f(param));
   }
 
   // return the list
   List rList(list.size());
-  for (size_t i = 0; i<list.size(); i++)
+  for (size_t i = 0; i < list.size(); i++)
     rList[i] = list[i];
   return rList;
 }
@@ -2039,7 +2046,9 @@ SEXP py_iter_next(PyObjectRef iterator, RObject completed) {
   } else {
 
     // return R object
-    return iterator.convert() ? py_to_r(item, true) : py_ref(item, false);
+    return iterator.convert()
+      ? py_to_r(item, true)
+      : py_ref(item.detach(), false);
 
   }
 }
@@ -2097,27 +2106,24 @@ SEXP py_run_file_impl(const std::string& file,
 // [[Rcpp::export]]
 SEXP py_eval_impl(const std::string& code, bool convert = true) {
 
-  // R object to return
-  RObject rObject;
-
   // compile the code
   PyObjectPtr compiledCode(Py_CompileString(code.c_str(), "reticulate_eval", Py_eval_input));
   if (compiledCode.is_null())
     stop(py_fetch_error());
 
- // execute the code
- PyObject* main = PyImport_AddModule("__main__");
- PyObject* dict = PyModule_GetDict(main);
- PyObjectPtr local_dict(PyDict_New());
- PyObjectPtr res(PyEval_EvalCode(compiledCode, dict, local_dict));
- if (res.is_null())
-   stop(py_fetch_error());
+  // execute the code
+  PyObject* main = PyImport_AddModule("__main__");
+  PyObject* dict = PyModule_GetDict(main);
+  PyObjectPtr local_dict(PyDict_New());
+  PyObjectPtr res(PyEval_EvalCode(compiledCode, dict, local_dict));
+  if (res.is_null())
+    stop(py_fetch_error());
 
- // return (convert to R if requested)
- Py_IncRef(res);
- if (convert)
-   rObject = py_to_r(res, convert);
- else
-   rObject = py_ref(res, convert);
- return rObject;
+  // return (convert to R if requested)
+  RObject result = convert
+    ? py_to_r(res, convert)
+    : py_ref(res.detach(), convert);
+
+  return result;
+
 }

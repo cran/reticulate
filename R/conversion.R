@@ -74,6 +74,9 @@ py_to_r.python.builtin.list <- function(x) {
   converted
 }
 
+#' @export
+py_to_r.python.builtin.tuple <- py_to_r.python.builtin.list
+
 #' R wrapper for Python objects
 #'
 #' S3 method to create a custom R wrapper for a Python object.
@@ -182,11 +185,15 @@ py_to_r.datetime.date <- function(x) {
 
 #' @export
 py_to_r.collections.OrderedDict <- function(x) {
-  keys <- names(x)
-  names(keys) <- keys
-  lapply(keys, function(key) {
-    x[[key]]
+  disable_conversion_scope(x)
+
+  keys <- py_dict_get_keys(x)
+  result <- lapply(seq_len(length(keys)) - 1L, function(i) {
+    py_to_r(py_dict_get_item(x, keys[i]))
   })
+
+  names(result) <- py_dict_get_keys_as_str(x)
+  result
 }
 
 
