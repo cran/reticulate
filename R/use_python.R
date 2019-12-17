@@ -21,10 +21,8 @@ use_python <- function(python, required = FALSE) {
   # if required == TRUE and python is already initialized then confirm that we
   # are using the correct version
   if (required && is_python_initialized()) {
-    normalize <- function(path) {
-      normalizePath(normalize_python_path(path)$path, winslash = "/")
-    }
-    if (!identical(normalize(py_config()$python), normalize(python))) {
+    
+    if (!file_same(py_config()$python, python)) {
 
       fmt <- paste(
         "ERROR: The requested version of Python ('%s') cannot be used, as",
@@ -72,7 +70,7 @@ use_condaenv <- function(condaenv = NULL, conda = "auto", required = FALSE) {
 
   # check for condaenv supplied by path
   condaenv <- condaenv_resolve(condaenv)
-  if (grepl("[/\\]", condaenv, fixed = TRUE) && is_condaenv(condaenv)) {
+  if (grepl("[/\\]", condaenv) && is_condaenv(condaenv)) {
     python <- conda_python(condaenv)
     use_python(python, required = required)
     return(invisible(NULL))
@@ -87,7 +85,32 @@ use_condaenv <- function(condaenv = NULL, conda = "auto", required = FALSE) {
     stop("Unable to locate conda environment '", condaenv, "'.")
 
   if (!is.null(condaenv))
-    use_python(conda_env_python, required = required)
+    use_python(conda_env_python[[1]], required = required)
 
   invisible(NULL)
+}
+
+#' @rdname use_python
+#' @export
+use_miniconda <- function(condaenv = NULL, required = FALSE) {
+  
+  # check that Miniconda is installed
+  if (!miniconda_exists()) {
+    
+    msg <- paste(
+      "Miniconda is not installed.",
+      "Use reticulate::install_miniconda() to install Miniconda.",
+      sep = "\n"
+    )
+    stop(msg)
+    
+  }
+  
+  # use it
+  use_condaenv(
+    condaenv = condaenv,
+    conda = miniconda_conda(),
+    required = required
+  )
+  
 }
