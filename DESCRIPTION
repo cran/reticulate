@@ -1,7 +1,7 @@
 Package: reticulate
 Type: Package
 Title: Interface to 'Python'
-Version: 1.14
+Version: 1.15
 Authors@R: c(
   person("Kevin", "Ushey", role = c("aut", "cre"),
          email = "kevin@rstudio.com"),
@@ -14,6 +14,8 @@ Authors@R: c(
          email = "edd@debian.org"),
   person("Bryan", "Lewis", role = c("ctb", "cph"),
          email = "blewis@illposed.net"),
+  person("Sigrid", "Keydana", role = c("ctb"),
+         email = "sigrid@rstudio.com"),
   person("Ryan", "Hafen", role = c("ctb", "cph"),
          email = "rhafen@gmail.com"),
   person("Marcus", "Geelnard", role = c("ctb", "cph"),
@@ -34,19 +36,20 @@ Imports: graphics, jsonlite, Matrix, methods, rappdirs, Rcpp (>=
         0.12.7), utils
 Suggests: callr, knitr, rmarkdown, testthat
 LinkingTo: Rcpp
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2019-12-16 21:35:53 UTC; kevinushey
+Packaged: 2020-04-02 19:20:56 UTC; kevinushey
 Author: Kevin Ushey [aut, cre],
   JJ Allaire [aut],
   RStudio [cph, fnd],
   Yuan Tang [aut, cph] (<https://orcid.org/0000-0001-5243-233X>),
   Dirk Eddelbuettel [ctb, cph],
   Bryan Lewis [ctb, cph],
+  Sigrid Keydana [ctb],
   Ryan Hafen [ctb, cph],
   Marcus Geelnard [ctb, cph] (TinyThread library,
     http://tinythreadpp.bitsnbites.eu/)
 Maintainer: Kevin Ushey <kevin@rstudio.com>
 Repository: CRAN
-Date/Publication: 2019-12-17 13:40:02 UTC
+Date/Publication: 2020-04-02 20:00:02 UTC

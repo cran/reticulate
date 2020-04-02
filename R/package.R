@@ -46,11 +46,11 @@ ensure_python_initialized <- function(required_module = NULL) {
 
     .globals$py_config <- initialize_python(required_module, use_environment)
 
-    # generate 'R' helper object
-    py_inject_r(envir = globalenv())
-
     # remap output streams to R output handlers
     remap_output_streams()
+    
+    # generate 'R' helper object
+    py_inject_r(envir = globalenv())
     
     # inject hooks
     py_inject_hooks()
@@ -63,6 +63,12 @@ ensure_python_initialized <- function(required_module = NULL) {
 
 initialize_python <- function(required_module = NULL, use_environment = NULL) {
 
+  # disallow initialization of Python within .onLoad()
+  
+  # NOTE: disabled for this release of reticulate as there are too many packages
+  # already forcing initialization of Python on load
+  # check_forbidden_initialization()
+  
   # provide hint to install Miniconda if no Python is found
   python_not_found <- function(msg) {
     hint <- "Use reticulate::install_miniconda() if you'd like to install a Miniconda Python environment."
@@ -98,7 +104,7 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
   # set as appropriate)
   if (nzchar(config$virtualenv))
     Sys.setenv(VIRTUAL_ENV = config$virtualenv)
-
+  
   # set R_SESSION_INITIALIZED flag (used by rpy2)
   curr_session_env <- Sys.getenv("R_SESSION_INITIALIZED", unset = NA)
   Sys.setenv(R_SESSION_INITIALIZED = sprintf('PID=%s:NAME="reticulate"', Sys.getpid()))
@@ -170,10 +176,61 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
     }
 
   })
+  
+  # notify front-end (if any) that Python has been initialized
+  callback <- getOption("reticulate.initialized")
+  if (is.function(callback))
+    callback()
 
   # return config
   config
 }
 
-
-
+check_forbidden_initialization <- function() {
+  
+  if (is_python_initialized())
+    return(FALSE)
+  
+  override <- getOption(
+    "reticulate.allow.package.initialization",
+    default = FALSE
+  )
+  
+  if (identical(override, TRUE))
+    return(FALSE)
+  
+  calls <- sys.calls()
+  frames <- sys.frames()
+  
+  for (i in seq_along(calls)) {
+  
+    call <- calls[[i]]
+    frame <- frames[[i]]
+    if (!identical(call[[1]], as.name("runHook")))
+      next
+    
+    bad <-
+      identical(call[[2]], ".onLoad") ||
+      identical(call[[2]], ".onAttach")
+    
+    if (!bad)
+      next
+    
+    pkgname <- tryCatch(
+        get("pkgname", envir = frame),
+        error = function(e) "<unknown>"
+      )
+      
+    fmt <- paste(
+      "package '%s' attempted to initialize Python in %s().",
+      "Packages should not initialize Python themselves; rather, Python should",
+      "be loaded on-demand as requested by the user of the package. Please see",
+      "vignette(\"python_dependencies\", package = \"reticulate\") for more details."
+    )
+    
+    msg <- sprintf(fmt, pkgname, call[[2]])
+    warning(msg)
+    
+  }
+  
+}

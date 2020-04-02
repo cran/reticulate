@@ -1159,6 +1159,21 @@ PyObject* r_to_py(RObject x, bool convert) {
   return obj;
 }
 
+// Python capsule wrapping an R's external pointer object
+static void free_r_extptr_capsule(PyObject* capsule) {
+  SEXP sexp = (SEXP)PyCapsule_GetContext(capsule);
+  ::R_ReleaseObject(sexp);
+}
+static PyObject* r_extptr_capsule(SEXP sexp) {
+  // underlying pointer
+  void* ptr = R_ExternalPtrAddr(sexp);
+  if (ptr == NULL) stop("Invalid pointer");
+  ::R_PreserveObject(sexp);
+  PyObject* capsule = PyCapsule_New(ptr, NULL, free_r_extptr_capsule);
+  PyCapsule_SetContext(capsule, (void*)sexp);
+  return capsule;
+}
+
 // convert an R object to a python object (the returned object
 // will have an active reference count on it)
 PyObject* r_to_py_cpp(RObject x, bool convert) {
@@ -1336,6 +1351,9 @@ PyObject* r_to_py_cpp(RObject x, bool convert) {
     // return the wrapper
     return wrapper.detach();
 
+  // externalptr
+  } else if (type == EXTPTRSXP) {
+    return r_extptr_capsule(sexp);
   } else {
     Rcpp::print(sexp);
     stop("Unable to convert R object to Python type");
@@ -2418,7 +2436,16 @@ SEXP py_convert_pandas_series(PyObjectRef series) {
      // convert to POSIX timestamp, taking into account time zone (if set)
      PyObjectPtr timestamp(PyObject_CallMethod(values, "timestamp", NULL));
      
-     Datetime R_timestamp = py_to_r(timestamp, true);
+     Datetime R_timestamp;
+     
+     // NaT will have thrown "NaTType does not support timestamp"
+     if (PyErr_Occurred()) {
+       R_timestamp = R_NaN;
+       PyErr_Clear();
+     } else {
+       R_timestamp = py_to_r(timestamp, true);
+     }
+     
      posixct.push_back(R_timestamp);
     }
     

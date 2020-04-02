@@ -23,6 +23,9 @@
 #'   packages available in the site libraries are ignored and hence packages
 #'   are installed into the virtual environment.)
 #'
+#' @param pip_options An optional character vector of additional command line
+#'   arguments to be passed to `pip`.
+#'
 #' @param confirm Boolean; confirm before removing packages or virtual
 #'   environments?
 #'
@@ -98,6 +101,7 @@ virtualenv_create <- function(envname = NULL, python = NULL) {
 virtualenv_install <- function(envname = NULL,
                                packages,
                                ignore_installed = FALSE,
+                               pip_options = character(),
                                ...)
 {
   # create virtual environment on demand
@@ -116,14 +120,12 @@ virtualenv_install <- function(envname = NULL,
 
   # ensure that pip + friends are up-to-date / recent enough
   python <- virtualenv_python(envname)
-  if (pip_version(python) < "8.1") {
-    pip_install(python, "pip")
-    pip_install(python, "wheel")
-    pip_install(python, "setuptools")
-  }
-
+  if (pip_version(python) < "8.1")
+    pip_install(python, c("pip", "wheel", "setuptools"))
+  
   # now install the requested package
-  pip_install(python, packages, ignore_installed = ignore_installed)
+  pip_install(python, packages, ignore_installed = ignore_installed,
+              pip_options = pip_options)
 }
 
 
@@ -192,7 +194,8 @@ virtualenv_root <- function() {
 #' @export
 virtualenv_python <- function(envname = NULL) {
   path <- virtualenv_path(envname)
-  path.expand(file.path(path, "bin/python"))
+  suffix <- if (is_windows()) "Scripts/python.exe" else "bin/python"
+  path.expand(file.path(path, suffix))
 }
 
 
@@ -204,9 +207,7 @@ virtualenv_exists <- function(envname = NULL) {
   if (inherits(path, "error"))
     return(FALSE)
 
-  # check for expected files for virtualenv / venv
-  files <- c("bin/activate_this.py", "bin/pyvenv.cfg", "pyvenv.cfg")
-  any(file.exists(file.path(path, files)))
+  is_virtualenv(path)
 
 }
 
@@ -224,7 +225,8 @@ virtualenv_path <- function(envname = NULL) {
 
 virtualenv_pip <- function(envname) {
   path <- virtualenv_path(envname)
-  file.path(path, "bin/pip")
+  suffix <- if (is_windows()) "Scripts/pip.exe" else "bin/python"
+  path.expand(file.path(path, suffix))
 }
 
 
@@ -327,6 +329,17 @@ virtualenv_module <- function(python) {
 
 
 is_virtualenv <- function(dir) {
-  files <- c("bin/activate_this.py", "bin/pyvenv.cfg", "pyvenv.cfg")
-  any(file.exists(file.path(dir, files)))
+  
+  # check for expected files for virtualenv / venv
+  subdir <- if (is_windows()) "Scripts" else "bin"
+  
+  files <- c(
+    file.path(subdir, "activate_this.py"),
+    file.path(subdir, "pyvenv.cfg"),
+    "pyvenv.cfg"
+  )
+  
+  paths <- file.path(dir, files)
+  any(file.exists(paths))
+  
 }

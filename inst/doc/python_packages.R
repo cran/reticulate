@@ -1,7 +1,7 @@
-## ----setup, include=FALSE------------------------------------------------
+## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(eval = FALSE)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 #  library(reticulate)
 #  
 #  # create a new environment
@@ -13,7 +13,7 @@ knitr::opts_chunk$set(eval = FALSE)
 #  # import SciPy (it will be automatically discovered in "r-reticulate")
 #  scipy <- import("scipy")
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 #  library(reticulate)
 #  
 #  # indicate that we want to use a specific condaenv
@@ -22,7 +22,7 @@ knitr::opts_chunk$set(eval = FALSE)
 #  # import SciPy (will use "r-reticulate" as per call to use_condaenv)
 #  scipy <- import("scipy")
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 #  library(reticulate)
 #  
 #  # create a new environment
@@ -34,7 +34,7 @@ knitr::opts_chunk$set(eval = FALSE)
 #  # import SciPy (it will be automatically discovered in "r-reticulate")
 #  scipy <- import("scipy")
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 #  library(reticulate)
 #  
 #  # indicate that we want to use a specific virtualenv

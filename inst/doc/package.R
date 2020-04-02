@@ -1,12 +1,12 @@
-## ----setup, include=FALSE------------------------------------------------
+## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(eval = FALSE)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  install_scipy <- function(method = "auto", conda = "auto") {
 #    reticulate::py_install("scipy", method = method, conda = conda)
 #  }
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 #  # python 'scipy' module I want to use in my package
 #  scipy <- NULL
 #  
@@ -15,7 +15,7 @@ knitr::opts_chunk$set(eval = FALSE)
 #    scipy <<- import("scipy", delay_load = TRUE)
 #  }
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 #  # helper function to skip tests if we don't have the 'foo' module
 #  skip_if_no_scipy <- function() {
 #    have_scipy <- py_module_available("scipy")
@@ -29,7 +29,7 @@ knitr::opts_chunk$set(eval = FALSE)
 #    # test code here...
 #  })
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 #  method.MyModule.MyPythonClass <- function(x, y, ...) {
 #    if (py_is_null_xptr(x))
 #      # whatever is appropriate
@@ -37,7 +37,7 @@ knitr::opts_chunk$set(eval = FALSE)
 #      # interact with the object
 #  }
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 #  #' @importFrom reticulate py_str
 #  #' @export
 #  py_str.MyModule.MyPythonClass <- function(object, ...) {

@@ -1161,11 +1161,14 @@ py_flush_output <- function() {
     return()
 
   sys <- import("sys", convert = TRUE)
-  sys$stdout$flush()
-  sys$stderr$flush()
+  
+  if (!is.null(sys$stdout) && is.function(sys$stdout$flush))
+    sys$stdout$flush()
+  
+  if (!is.null(sys$stderr) && is.function(sys$stderr$flush))
+    sys$stderr$flush()
 
 }
-
 
 
 
@@ -1205,6 +1208,14 @@ py_run_file <- function(file, local = FALSE, convert = TRUE) {
 py_eval <- function(code, convert = TRUE) {
   ensure_python_initialized()
   py_eval_impl(code, convert)
+}
+
+#' The builtin constant Ellipsis
+#' 
+#' @export
+py_ellipsis <- function() {
+  builtins <- import_builtins(convert = FALSE)
+  builtins$Ellipsis
 }
 
 py_callable_as_function <- function(callable, convert) {
@@ -1377,7 +1388,7 @@ py_inject_hooks <- function() {
   
   builtins <- import_builtins(convert = TRUE)
   
-  input <- function(prompt) {
+  input <- function(prompt = "") {
     
     response <- tryCatch(
       readline(prompt),

@@ -379,6 +379,7 @@ dim.pandas.core.frame.DataFrame <- function(x) {
 }
 
 # Scipy sparse matrices
+#' @importFrom Matrix Matrix
 
 #' @export
 dim.scipy.sparse.base.spmatrix <- function(x) {
@@ -469,6 +470,7 @@ r_to_py.dgRMatrix <- function(x, convert = FALSE) {
 #' @export
 py_to_r.scipy.sparse.csr.csr_matrix <- function(x) {
   disable_conversion_scope(x)
+  x <- x$sorted_indices()    
   methods::new("dgRMatrix",
       j = as.integer(as_r_value(x$indices)),
       p = as.integer(as_r_value(x$indptr)),

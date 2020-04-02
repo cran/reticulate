@@ -93,7 +93,11 @@ eng_python <- function(options) {
 
   # iterate over top-level nodes and extract line numbers
   lines <- vapply(parsed$body, function(node) {
-    node$lineno
+    if(py_has_attr(node, 'decorator_list') && length(node$decorator_list)) {
+      node$decorator_list[[1]]$lineno
+    } else {
+      node$lineno
+    }
   }, integer(1))
 
   # it's possible for multiple statements to live on the
@@ -138,11 +142,15 @@ eng_python <- function(options) {
     # save last value
     last_value <- py_last_value()
 
+    # use trailing semicolon to suppress output of return value
+    suppress <- grepl(";\\s*$", snippet)
+    compile_mode <- if(suppress) "exec" else "single"
+
     # run code and capture output
     captured <- if (capture_errors)
-      tryCatch(py_compile_eval(snippet), error = identity)
+      tryCatch(py_compile_eval(snippet, compile_mode), error = identity)
     else
-      py_compile_eval(snippet)
+      py_compile_eval(snippet, compile_mode)
 
     # handle matplotlib output
     captured <- eng_python_matplotlib_handle_output(captured, last_value, i == length(ranges))
@@ -209,13 +217,35 @@ eng_python_initialize <- function(options, context, envir) {
 }
 
 eng_python_matplotlib_show <- function(plt, options) {
+  
+  # we need to work in either base.dir or output.dir, depending
+  # on which of the two has been requested by the user. (note
+  # that output.dir should always be set)
+  dir <-
+    knitr::opts_knit$get("base.dir") %||%
+    knitr::opts_knit$get("output.dir")
+
+  # move to the requested directory
+  dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  owd <- setwd(dir)
+  on.exit(setwd(owd), add = TRUE)
+  
+  # construct plot path
   plot_counter <- yoink("knitr", "plot_counter")
-  path <- knitr::fig_path(options$dev, number = plot_counter())
+  path <- knitr::fig_path(
+    suffix = options$dev,
+    options = options,
+    number = plot_counter()
+  )
+  
+  # save the current figure
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   plt$savefig(path, dpi = options$dpi)
   plt$clf()
-  path <- normalizePath(path, winslash = "/", mustWork = FALSE)
+  
+  # include the requested path
   knitr::include_graphics(path)
+
 }
 
 eng_python_initialize_matplotlib <- function(options, context, envir) {

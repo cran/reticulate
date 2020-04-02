@@ -1,4 +1,62 @@
 
+## reticulate 1.15
+
+- `reticulate` now ensures SciPy `csr_matrix` objects are sorted before
+  attempting to conver them to their R equivalent. (#738, @paulofelipe)
+
+- `reticulate` now throws an error if a package attempts to initialize
+  Python within `.onLoad()` or `.onAttach()`. R packages must ensure that
+  Python is initialized only on-demand by the user, and not forced by the
+  package itself. This was documented in `vignette("python_packages")`,
+  but is now enforced explicitly by `reticulate`.
+  
+- Fixed an issue where calling `input()` from Python with no prompt
+  would fail. (#728)
+
+- Lines ending with a semi-colon are no longer auto-printed in the
+  `reticulate` REPL. (#717, @jsfalk)
+
+- `reticulate` now searches for Conda binaries in /opt/anaconda and
+  /opt/miniconda. (#713)
+
+- The `conda` executable used by `reticulate` can now be configured using an R
+  option. Use `options(reticulate.conda_binary = <...>)` to force `reticulate`
+  to use a particular `conda` executable.
+
+- `reticulate::use_condaenv()` better handles cases where no
+  matching environment could be found. (#687)
+  
+- `reticulate` gains the `py_ellipsis()` function, used to access
+  the Python `Ellipsis` builtin. (#700, @skeydan)
+
+- `reticulate::configure_environment()` now only allows environment
+  configuration within interactive R sessions, and ensures that the
+  version of Python that has been initialized by Python is indeed
+  associated with a virtual environment or Conda environment.
+  Use `reticulate::configure_environment(force = TRUE)` to force
+  environment configuration within non-interactive R sessions.
+
+- `reticulate` now automatically flushes output written to Python's
+  stdout / stderr, as a top-level task added by `addTaskCallback()`.
+  This behavior is controlled with the `options(reticulate.autoflush)`
+  option. (#685)
+
+- `reticulate::install_miniconda()` no longer attempts to modify the
+  system PATH or registry when installing Miniconda. (#681)
+
+- `reticulate::conda_install()` gains the `channel` argument, allowing
+  custom Conda channels to be used when installing Python packages.
+  (#443)
+
+- `reticulate::configure_environment()` can now be used to configure a
+  non-Miniconda Python environment. (#682; @skeydan)
+
+- Fixed an issue where matplotlib plots would be included using absolute
+  paths, which fails in non-standalone documents rendered to HTML. (#669)
+
+- Fixed an issue where `reticulate` would attempt to flush a non-existent
+  stdout / stderr stream. (#584)
+
 ## reticulate 1.14
 
 - Fixed an issue where `rmarkdown::render()` could fail when including
