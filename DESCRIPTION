@@ -1,7 +1,7 @@
 Package: reticulate
 Type: Package
 Title: Interface to 'Python'
-Version: 1.15
+Version: 1.16
 Authors@R: c(
   person("Kevin", "Ushey", role = c("aut", "cre"),
          email = "kevin@rstudio.com"),
@@ -39,7 +39,7 @@ LinkingTo: Rcpp
 RoxygenNote: 7.1.0
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2020-04-02 19:20:56 UTC; kevinushey
+Packaged: 2020-05-26 21:48:16 UTC; kevinushey
 Author: Kevin Ushey [aut, cre],
   JJ Allaire [aut],
   RStudio [cph, fnd],
@@ -52,4 +52,4 @@ Author: Kevin Ushey [aut, cre],
     http://tinythreadpp.bitsnbites.eu/)
 Maintainer: Kevin Ushey <kevin@rstudio.com>
 Repository: CRAN
-Date/Publication: 2020-04-02 20:00:02 UTC
+Date/Publication: 2020-05-27 05:50:03 UTC

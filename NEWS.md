@@ -1,15 +1,23 @@
 
+## reticulate 1.16
+
+- TinyThread now calls `Rf_error()` rather than `std::terminate()`
+  when an internal error occurs.
+
+- Conversion of Pandas DataFrames to R no longer emits deprecation
+  warnings with pandas >= 0.25.0. (#762)
+  
+- `reticulate` now properly handles the version strings returned by beta
+  versions of `pip`. (#757)
+
+- `conda_create()` gains the `forge` and `channel` arguments,
+  analogous to those already in `conda_install()`. (#752, @jtilly)
+
 ## reticulate 1.15
 
 - `reticulate` now ensures SciPy `csr_matrix` objects are sorted before
-  attempting to conver them to their R equivalent. (#738, @paulofelipe)
+  attempting to convert them to their R equivalent. (#738, @paulofelipe)
 
-- `reticulate` now throws an error if a package attempts to initialize
-  Python within `.onLoad()` or `.onAttach()`. R packages must ensure that
-  Python is initialized only on-demand by the user, and not forced by the
-  package itself. This was documented in `vignette("python_packages")`,
-  but is now enforced explicitly by `reticulate`.
-  
 - Fixed an issue where calling `input()` from Python with no prompt
   would fail. (#728)
 
