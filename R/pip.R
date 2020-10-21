@@ -57,15 +57,30 @@ pip_uninstall <- function(python, packages) {
 
 pip_freeze <- function(python) {
   
+  # run pip freeze to list dependencies
   args <- c("-m", "pip", "freeze")
   output <- system2(python, args, stdout = TRUE)
-  splat <- strsplit(output, "==", fixed = TRUE)
-  packages <- vapply(splat, `[[`, 1L, FUN.VALUE = character(1))
-  versions <- vapply(splat, `[[`, 2L, FUN.VALUE = character(1))
+  
+  # match explicit version requests + direct references
+  matches <- strsplit(output, "(==|@)")
+  
+  # keep original output string
+  matches <- .mapply(c, list(matches, output), MoreArgs = NULL)
+  
+  # drop unmatched lines
+  n <- vapply(matches, length, FUN.VALUE = numeric(1))
+  matches <- matches[n == 3]
+  
+  # build output columns
+  packages    <- vapply(matches, `[[`, 1L, FUN.VALUE = character(1))
+  versions    <- vapply(matches, `[[`, 2L, FUN.VALUE = character(1))
+  requirement <- vapply(matches, `[[`, 3L, FUN.VALUE = character(1))
+  
+  # return as data.frame
   data.frame(
     package     = packages,
     version     = versions,
-    requirement = paste(packages, versions, sep = "=="),
+    requirement = requirement,
     stringsAsFactors = FALSE
   )
   

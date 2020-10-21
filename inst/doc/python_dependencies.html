@@ -27,6 +27,54 @@ document.addEventListener('DOMContentLoaded', function(e) {
   }
 });
 </script>
+<style type="text/css">
+a.anchor-section {margin-left: 10px; visibility: hidden; color: inherit;}
+a.anchor-section::before {content: '#';}
+.hasAnchor:hover a.anchor-section {visibility: visible;}
+</style>
+<script>// Anchor sections v1.0 written by Atsushi Yasumoto on Oct 3rd, 2020.
+document.addEventListener('DOMContentLoaded', function() {
+  // Do nothing if AnchorJS is used
+  if (typeof window.anchors === 'object' && anchors.hasOwnProperty('hasAnchorJSLink')) {
+    return;
+  }
+
+  const h = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+
+  // Do nothing if sections are already anchored
+  if (Array.from(h).some(x => x.classList.contains('hasAnchor'))) {
+    return null;
+  }
+
+  // Use section id when pandoc runs with --section-divs
+  const section_id = function(x) {
+    return ((x.classList.contains('section') || (x.tagName === 'SECTION'))
+            ? x.id : '');
+  };
+
+  // Add anchors
+  h.forEach(function(x) {
+    const id = x.id || section_id(x.parentElement);
+    if (id === '') {
+      return null;
+    }
+    let anchor = document.createElement('a');
+    anchor.href = '#' + id;
+    anchor.classList = ['anchor-section'];
+    x.classList.add('hasAnchor');
+    x.appendChild(anchor);
+  });
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
 
 
 <style type="text/css">code{white-space: pre;}</style>
@@ -319,9 +367,9 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div id="manual-configuration" class="section level2">
 <h2>Manual Configuration</h2>
 <p>Previously, packages like <a href="https://tensorflow.rstudio.com">tensorflow</a> accomplished this by providing helper functions (e.g. <code>tensorflow::install_tensorflow()</code>), and documenting that users should call this function to prepare the environment. For example:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(tensorflow)</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">install_tensorflow</span>()</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="co"># use tensorflow</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">library</span>(tensorflow)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">install_tensorflow</span>()</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="co"># use tensorflow</span></span></code></pre></div>
 <p>The biggest downside with this approach is that it requires users to manually download and install an appropriate version of Python. In addition, if the user has <em>not</em> downloaded an appropriate version of Python, then the version discovered on the user’s system may not conform with the requirements imposed by the <code>tensorflow</code> package – leading to more trouble.</p>
 <p>Fixing this often requires instructing the user to install Python, and then use <code>reticulate</code> APIs (e.g. <code>reticulate::use_python()</code> and other tools) to find and use an appropriate Python version + environment. This is, understandably, more cognitive overhead than you might want to impose on users of your package.</p>
 <p>Another huge problem with manual configuration is that if different R packages use different default Python environments, then those packages can’t ever be loaded in the same R session (since there can only be one active Python environment at a time within an R session).</p>
@@ -355,17 +403,17 @@ Config/reticulate:
 <li><p>These dependencies will then be installed into an appropriate Conda environment, as provided by the Miniconda installation.</p></li>
 </ol>
 <p>In this case, the end user workflow will be exactly as with an R package that has no Python dependencies:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">library</span>(rscipy)</span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="co"># use the package</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">library</span>(rscipy)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="co"># use the package</span></span></code></pre></div>
 <p>If the user has no compatible version of Python available on their system, they will be prompted to install Miniconda. If they do have Python already, then the required Python packages (in this case <code>scipy</code>) will be installed in the standard shared environment for R sessions (typically a virtual environment, or a Conda environment named “r-reticulate”).</p>
 <p>In effect, users have to pay a one-time, mostly-automated initialization cost in order to use your package, and then things will then work as any other R package would. In particular, users are otherwise insulated from details as to how <code>reticulate</code> works.</p>
 </div>
 <div id="onload-configuration" class="section level3">
 <h3>.onLoad Configuration</h3>
 <p>In some cases, a user may try to load your package after Python has already been initialized. To ensure that <code>reticulate</code> can still configure the active Python environment, you can include the code:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>.onLoad &lt;-<span class="st"> </span><span class="cf">function</span>(libname, pkgname) {</span>
-<span id="cb4-2"><a href="#cb4-2"></a>  reticulate<span class="op">::</span><span class="kw">configure_environment</span>(pkgname)</span>
-<span id="cb4-3"><a href="#cb4-3"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a>.onLoad &lt;-<span class="st"> </span><span class="cf">function</span>(libname, pkgname) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>  reticulate<span class="op">::</span><span class="kw">configure_environment</span>(pkgname)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>}</span></code></pre></div>
 <p>This will instruct <code>reticulate</code> to immediately try to configure the active Python environment, installing any required Python packages as necessary.</p>
 </div>
 </div>

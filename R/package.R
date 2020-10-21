@@ -109,10 +109,29 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
   curr_session_env <- Sys.getenv("R_SESSION_INITIALIZED", unset = NA)
   Sys.setenv(R_SESSION_INITIALIZED = sprintf('PID=%s:NAME="reticulate"', Sys.getpid()))
 
-  # initialize python
+  # munge PATH for python (needed so libraries can be found in some cases)
   oldpath <- python_munge_path(config$python)
-  tryCatch(
-    {
+  
+  # initialize python
+  tryCatch({
+    
+    # set PYTHONPATH (required to load virtual environments in some cases?)
+    oldpythonpath <- Sys.getenv("PYTHONPATH")
+    newpythonpath <- Sys.getenv(
+      "RETICULATE_PYTHONPATH",
+      unset = paste(
+        config$pythonpath,
+        system.file("python", package = "reticulate"),
+        sep = .Platform$path.sep
+      )
+    )
+ 
+    local({
+      # set PYTHONPATH while we initialize
+      Sys.setenv(PYTHONPATH = newpythonpath)
+      on.exit(Sys.setenv(PYTHONPATH = oldpythonpath), add = TRUE)
+      
+      # initialize Python
       py_initialize(config$python,
                     config$libpython,
                     config$pythonhome,
@@ -120,7 +139,10 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
                     config$version >= "3.0",
                     interactive(),
                     numpy_load_error)
+    })
+    
     },
+    
     error = function(e) {
       Sys.setenv(PATH = oldpath)
       if (is.na(curr_session_env)) {
@@ -130,15 +152,11 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
       }
       stop(e)
     }
+    
   )
 
   # set available flag indicating we have py bindings
   config$available <- TRUE
-
-  # add our python scripts to the search path
-  py_run_string_impl(paste0("import sys; sys.path.append('",
-                       system.file("python", package = "reticulate") ,
-                       "')"))
 
   # ensure modules can be imported from the current working directory
   py_run_string_impl("import sys; sys.path.insert(0, '')")
@@ -232,5 +250,25 @@ check_forbidden_initialization <- function() {
     warning(msg)
     
   }
+  
+}
+
+check_forbidden_install <- function(label) {
+  
+  # escape hatch for users who know, or claim to know, what they're doing
+  envvar <- Sys.getenv("_RETICULATE_I_KNOW_WHAT_IM_DOING_", unset = NA)
+  if (identical(tolower(envvar), "true"))
+    return(FALSE)
+  
+  # if this is being called as part of R CMD check, then warn
+  # (error in future versions)
+  if (is_r_cmd_check()) {
+    fmt <- "cannot install %s during R CMD check"
+    msg <- sprintf(fmt, label)
+    warning(msg)
+    return(TRUE)
+  }
+  
+  FALSE
   
 }

@@ -1,4 +1,93 @@
 
+## reticulate 1.17
+
+- `reticulate` now checks for and disallows installation of Python packages
+  during `R CMD check`.
+
+- `reticulate` no longer injects the `r` helper object into the main
+  module if another variable called `r` has already been defined.
+
+- The function `py_help_handler()` has now been exported, to be used by
+  front-ends and other tools which need to provide help for Python objects
+  in different contexts. (#864)
+
+- Fixed an issue where timezone information could be lost when converting
+  Python datetime objects to R. (#829)
+
+- Fixed an issue where numeric (rather than integer) dimensions could cause
+  issues when converting SciPy sparse matrices to their R counterparts. (#844)
+
+- Fixed an issue where R `data.frame`s with non-ASCII column names could not
+  be converted to Pandas DataFrames. (#834)
+
+- Fixed an issue where the `pip_ignore_installed` argument in `conda_install()`
+  was silently being ignored.
+
+- Fixed an issue where `reticulate::conda_install()` could re-install Python
+  into an environment when not explicitly requested by the user.
+  
+- `reticulate` now sets `LD_LIBRARY_PATH` when discovering Python. (#836)
+
+- `reticulate` is now better at capturing Python logger streams (those that
+  write to stdout or stderr) when `py_capture_output()` is set. (#825)
+
+- `reticulate` no longer calls `utils::loadhistory()` after each REPL iteration.
+
+- `reticulate` now better detects when Python modules are loaded.
+
+- `reticulate::import_from_path()` now accepts the `delay_load` parameter,
+  allowing modules which should be loaded from a pre-specified path
+  to be lazy-loaded.
+
+- Fixed an issue where `reticulate` load hooks (normally defined via
+  `setHook("reticulate::<module>::load", ...)`) would segfault if those
+  hooks attempted to load the hooked module.
+
+- `reticulate` now attempts to resolve the conda binary used to create the
+  associated Conda environment in calls to `py_install()`. This should fix use
+  cases where Conda environments are placed outside of the Conda installation
+  itself.
+
+- `reticulate` now sets `PYTHONPATH` before loading Python, to ensure modules
+  are looked up in the same locations where a regular Python interpreter would
+  find them on load. This should fix issues where `reticulate` was unable to
+  bind to a Python virtual environment in some cases.
+  
+- `reticulate::virtualenv_create()` gains the `packages` argument, allowing one
+  to choose a set of packages to be installed (via `pip install`) after the
+  virtual environment has been created.
+
+- `reticulate::virtualenv_create()` gains the `system_site_packages` argument,
+  allowing one to control whether the `--system-site-packages` flag is passed
+  along when creating a new virtual environment. The default value can be
+  customized via the `"reticulate.virtualenv.system_site_packages"` option and
+  now defaults to `FALSE` when unset.
+
+- Fixed an issue where `reticulate::configure_environment()` would fail
+  when attempting to configure an Anaconda environment. (#794)
+
+- `reticulate` now avoids presenting a Miniconda prompt for interactive
+  sessions during R session initialization.
+
+- Fixed unsafe usages of `Rprintf()` and `REprintf()`.
+
+- `reticulate::py_install()` better respects the `method` argument, when
+  `py_install()` is called without an explicit environment name. (#777)
+  
+- `reticulate:::pip_freeze()` now better handles `pip` direct references.
+  (#775)
+
+- Fixed an issue where output generated from `repl_python()` would
+  be buffered until the whole submitted command had completed.
+  (#739, @randy3k)
+
+- `reticulate` now explicitly qualifies symbols used from TinyThread
+  with `tthread::`, to avoid issues with symbol conflicts during
+  compilation. (#773)
+  
+- `reticulate` will now prefer an existing Miniconda installation over
+  a `conda` binary on the PATH, when looking for Conda. (#790)
+  
 ## reticulate 1.16
 
 - TinyThread now calls `Rf_error()` rather than `std::terminate()`
@@ -607,4 +696,3 @@
 ## reticulate 0.7
 
 - Initial CRAN release
-

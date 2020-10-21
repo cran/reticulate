@@ -589,6 +589,12 @@ bool py_is_callable(PyObject* x) {
 }
 
 // [[Rcpp::export]]
+PyObjectRef py_none_impl() {
+  Py_IncRef(Py_None);
+  return py_ref(Py_None, false);
+}
+
+// [[Rcpp::export]]
 bool py_is_callable(PyObjectRef x) {
   if (x.is_null_xptr())
     return false;
@@ -1516,8 +1522,8 @@ extern "C" PyObject* call_python_function_on_main_thread(
       break;
 
     // otherwise sleep for wait_ms
-    using namespace tthread;
-    this_thread::sleep_for(chrono::milliseconds(wait_ms));
+    
+    tthread::this_thread::sleep_for(tthread::chrono::milliseconds(wait_ms));
 
     // increment total wait time and print a warning every 60 seconds
     waited_ms += wait_ms;
@@ -1599,7 +1605,7 @@ void trace_print(int threadId, PyFrameObject *frame) {
 }
 
 void trace_thread_main(void* aArg) {
-  using namespace tthread;
+  
 
   int* tracems = (int*)aArg;
 
@@ -1616,7 +1622,7 @@ void trace_thread_main(void* aArg) {
 
     PyGILState_Release(gstate);
 
-    this_thread::sleep_for(chrono::milliseconds(*tracems));
+    tthread::this_thread::sleep_for(tthread::chrono::milliseconds(*tracems));
   }
 }
 
@@ -1898,6 +1904,15 @@ void py_set_attr_impl(PyObjectRef x,
 {
   PyObjectPtr converted(r_to_py(value, x.convert()));
   int res = PyObject_SetAttrString(x, name.c_str(), converted);
+  if (res != 0)
+    stop(py_fetch_error());
+}
+
+// [[Rcpp::export]]
+void py_del_attr_impl(PyObjectRef x,
+                      const std::string& name)
+{
+  int res = PyObject_SetAttrString(x, name.c_str(), NULL);
   if (res != 0)
     stop(py_fetch_error());
 }
@@ -2516,18 +2531,23 @@ PyObjectRef r_convert_dataframe(RObject dataframe, bool convert) {
   {
     RObject column = VECTOR_ELT(dataframe, i);
     
+    // ensure name is converted to appropriate encoding
+    const char* name = is_python3()
+      ? Rf_translateCharUTF8(names[i])
+      : Rf_translateChar(names[i]);
+    
     int status = 0;
     if (OBJECT(column) == 0) {
       if (is_convertible_to_numpy(column)) {
         PyObjectPtr value(r_to_py_numpy(column, convert));
-        status = PyDict_SetItemString(dict, names[i], value);
+        status = PyDict_SetItemString(dict, name, value);
       } else {
         PyObjectPtr value(r_to_py_cpp(column, convert));
-        status = PyDict_SetItemString(dict, names[i], value);
+        status = PyDict_SetItemString(dict, name, value);
       }
     } else {
       PyObjectRef ref(r_convert_dataframe_column(column, convert));
-      status = PyDict_SetItemString(dict, names[i], ref.get());
+      status = PyDict_SetItemString(dict, name, ref.get());
     }
     
     if (status != 0)

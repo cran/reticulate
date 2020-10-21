@@ -56,13 +56,8 @@ repl_python <- function(
   }
 
   # import other required modules for the REPL
-  builtins <- import_builtins(convert = FALSE)
   sys <- import("sys", convert = TRUE)
   codeop <- import("codeop", convert = TRUE)
-
-  # grab references to the locals, globals of the main module
-  locals <- py_run_string("locals()")
-  globals <- py_run_string("globals()")
 
   # check to see if the current environment supports history
   # (check for case where working directory not writable)
@@ -123,6 +118,17 @@ repl_python <- function(
   }
 
   repl <- function() {
+    
+    # flush stdout, stderr on each REPL iteration
+    on.exit({
+      
+      if (!is.null(sys$stdout) && !is.null(sys$stdout$flush))
+        sys$stdout$flush()
+      
+      if (!is.null(sys$stderr) && !is.null(sys$stderr$flush))
+        sys$stderr$flush()
+      
+    }, add = TRUE)
 
     # read user input
     prompt <- if (buffer$empty()) ">>> " else "... "
@@ -189,10 +195,8 @@ repl_python <- function(
     }
 
     # update history file
-    if (use_history) {
-      write(contents, file = histfile, append = TRUE)
-      utils::loadhistory(histfile)
-    }
+    if (use_history)
+      cat(contents, file = histfile, sep = "\n", append = TRUE)
 
     # trim whitespace if the buffer is empty (this effectively allows leading
     # whitespace in top-level Python commands)
@@ -229,9 +233,7 @@ repl_python <- function(
 
       # submit previous code
       pasted <- paste(previous, collapse = "\n")
-      output <- tryCatch(py_compile_eval(pasted), error = handle_error)
-      if (is.character(output) && nzchar(output))
-        cat(output, sep = "")
+      tryCatch(py_compile_eval(pasted, capture = FALSE), error = handle_error)
 
       # now, handle the newest line of code submitted
       buffer$set(contents)
@@ -246,9 +248,7 @@ repl_python <- function(
     # otherwise, we should have received a code output object
     # so we can just run the code submitted thus far
     buffer$clear()
-    output <- tryCatch(py_compile_eval(code), error = handle_error)
-    if (is.character(output) && nzchar(output))
-      cat(output, sep = "")
+    tryCatch(py_compile_eval(code, capture = FALSE), error = handle_error)
 
   }
 
@@ -302,4 +302,3 @@ repl_python <- function(
 py_repl_active <- function() {
   .globals$py_repl_active
 }
-

@@ -149,10 +149,23 @@ r_to_py.POSIXt <- function(x, convert = FALSE) {
 #' @export
 py_to_r.datetime.datetime <- function(x) {
   disable_conversion_scope(x)
+  
+  # convert to POSIX time
   time <- import("time", convert = TRUE)
   posix <- time$mktime(x$timetuple())
-  posix <- posix + as.numeric(as_r_value(x$microsecond)) * 1E-6
-  as.POSIXct(posix, origin = "1970-01-01")
+  
+  # include microseconds as well
+  ms <- as_r_value(x$microsecond)
+  posix <- posix + as.numeric(ms) * 1E-6
+  
+  # preserve timezone if available (handle UTC explicitly)
+  tzname <- as_r_value(x$tzname())
+  if (tzname %in% c("UTC", "UTC+00:00"))
+    return(as.POSIXct(posix, origin = "1970-01-01", tz = "UTC"))
+  
+  # treat other times as local / system times
+  as.POSIXct(posix, origin = "1970-01-01", tz = "UTC")
+  
 }
 
 
@@ -450,11 +463,15 @@ r_to_py.dgCMatrix <- function(x, convert = FALSE) {
 #' @export
 py_to_r.scipy.sparse.csc.csc_matrix <- function(x) {
   disable_conversion_scope(x)
-  new("dgCMatrix",
+  
+  new(
+    "dgCMatrix",
     i = as.integer(as_r_value(x$indices)),
     p = as.integer(as_r_value(x$indptr)),
     x = as.vector(as_r_value(x$data)),
-    Dim = dim(x))
+    Dim = as.integer(dim(x))
+  )
+  
 }
 
 # Conversion between `Matrix::dgRMatrix` and `scipy.sparse.csr.csr_matrix`.
@@ -484,12 +501,16 @@ r_to_py.dgRMatrix <- function(x, convert = FALSE) {
 #' @export
 py_to_r.scipy.sparse.csr.csr_matrix <- function(x) {
   disable_conversion_scope(x)
+  
   x <- x$sorted_indices()    
-  methods::new("dgRMatrix",
-      j = as.integer(as_r_value(x$indices)),
-      p = as.integer(as_r_value(x$indptr)),
-      x = as.vector(as_r_value(x$data)),
-      Dim = dim(x))
+  new(
+    "dgRMatrix",
+    j = as.integer(as_r_value(x$indices)),
+    p = as.integer(as_r_value(x$indptr)),
+    x = as.vector(as_r_value(x$data)),
+    Dim = as.integer(dim(x))
+  )
+  
 }
 
 # Conversion between `Matrix::dgTMatrix` and `scipy.sparse.coo.coo_matrix`.
@@ -520,11 +541,15 @@ r_to_py.dgTMatrix <- function(x, convert = FALSE) {
 #' @export
 py_to_r.scipy.sparse.coo.coo_matrix <- function(x) {
   disable_conversion_scope(x)
-  new("dgTMatrix",
-      i = as.integer(as_r_value(x$row)),
-      j = as.integer(as_r_value(x$col)),
-      x = as.vector(as_r_value(x$data)),
-      Dim = dim(x))
+  
+  new(
+    "dgTMatrix",
+    i = as.integer(as_r_value(x$row)),
+    j = as.integer(as_r_value(x$col)),
+    x = as.vector(as_r_value(x$data)),
+    Dim = as.integer(dim(x))
+  )
+  
 }
 
 
