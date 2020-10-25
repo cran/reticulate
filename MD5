@@ -1,6 +1,6 @@
-899a65a7327a059149327beb1c96a55f *DESCRIPTION
+b72c142f28a8d8ee9d7c238583c011f7 *DESCRIPTION
 37c6fa3c79416dc0d8c77a1bca412ffb *NAMESPACE
-30fd75a8a5532a1028b94b05b64b01a8 *NEWS.md
+f7dd3e3a3997bb2241c7fe93da9f2162 *NEWS.md
 13088280b703e9babeb795a7f135308e *R/RcppExports.R
 e815783b4b54644f18ef98f37d40a4c3 *R/array.R
 61b3e85e489444a12e6b5d303521f4dd *R/class.R
@@ -35,7 +35,7 @@ bb4fbcbbf400fe0f7154fea2a8243210 *R/utils-format.R
 2a03d742a1d3bbdfc61712e9a2a8a7dd *R/wrapper.R
 5176767720ba7fe4b076559c29863122 *R/zzz.R
 066ecea71454e16284fc36b9459b056a *build/vignette.rds
-c6a67757ef24c685c1a02d506f6a4347 *inst/config/config.py
+415e23d1bd8a4a8c19c59a3eeeb17468 *inst/config/config.py
 57f9018550663220cedb9307bfeceece *inst/doc/arrays.R
 22bd97311da3f96fc40e4e73b601b746 *inst/doc/arrays.Rmd
 8fd9eb66435340fdd19e829c73383d9f *inst/doc/arrays.html
