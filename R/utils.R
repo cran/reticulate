@@ -74,29 +74,6 @@ disable_conversion_scope <- function(object) {
   TRUE
 }
 
-new_stack <- function() {
-
-  (function() {
-
-    .data <- list()
-
-    methods <- list(
-      clear  = function() { .data <<- character() },
-      data   = function() { .data },
-      empty  = function() { length(.data) == 0 },
-      length = function() { length(.data) },
-      push   = function(line) { .data[[length(.data) + 1]] <<- line },
-      peek   = function() { .data[[length(.data)]] },
-      pop    = function() { .data <<- utils::head(.data, n = -1) },
-      set    = function(data) { .data <<- data }
-    )
-
-    list2env(methods)
-
-  })()
-
-}
-
 py_compile_eval <- function(code, compile_mode = "single", capture = TRUE) {
 
   builtins <- import_builtins(convert = TRUE)
@@ -104,8 +81,8 @@ py_compile_eval <- function(code, compile_mode = "single", capture = TRUE) {
 
   # allow 'globals' and 'locals' to both point at main module, so that
   # evaluated code updates references there as well
-  globals <- py_eval("globals()", convert = FALSE)
-  locals <- globals
+  main <- import_main(convert = FALSE)
+  globals <- locals <- py_get_attr(main, "__dict__")
 
   # Python's command compiler complains if the only thing you submit
   # is a comment, so detect that case first
@@ -140,7 +117,7 @@ py_compile_eval <- function(code, compile_mode = "single", capture = TRUE) {
 py_last_value <- function() {
   tryCatch(
     py_eval("_", convert = FALSE),
-    error = function(e) r_to_py(NULL)
+    error = function(e) py_none()
   )
 }
 
@@ -197,8 +174,8 @@ file_same <- function(lhs, rhs) {
     return(TRUE)
 
   # check if file info is the same
-  lhsi <- c(file.info(lhs, extra_cols = FALSE))
-  rhsi <- c(file.info(rhs, extra_cols = FALSE))
+  lhsi <- suppressWarnings(c(file.info(lhs, extra_cols = FALSE)))
+  rhsi <- suppressWarnings(c(file.info(rhs, extra_cols = FALSE)))
   fields <- c("size", "isdir", "mode", "mtime", "ctime")
   if (identical(lhsi[fields], rhsi[fields]))
     return(TRUE)
@@ -261,5 +238,57 @@ is_r_cmd_check <- function() {
   
   # does not appear to be R CMD check
   FALSE
+  
+}
+
+stack <- function(mode = "list") {
+  
+  .data <- vector(mode)
+  
+  object <- list(
+    
+    set = function(data) {
+      .data <<- data
+    },
+    
+    push = function(...) {
+      dots <- list(...)
+      for (data in dots) {
+        if (is.null(data))
+          .data[length(.data) + 1] <<- list(NULL)
+        else
+          .data[[length(.data) + 1]] <<- data
+      }
+    },
+    
+    pop = function() {
+      item <- .data[[length(.data)]]
+      length(.data) <<- length(.data) - 1
+      item
+    },
+    
+    peek = function() {
+      .data[[length(.data)]]
+    },
+    
+    contains = function(data) {
+      data %in% .data
+    },
+    
+    empty = function() {
+      length(.data) == 0
+    },
+    
+    clear = function() {
+      .data <<- list()
+    },
+    
+    data = function() {
+      .data
+    }
+    
+  )
+  
+  object
   
 }

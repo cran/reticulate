@@ -124,6 +124,7 @@ typedef Py_ssize_t Py_hash_t;
 LIBPYTHON_EXTERN PyTypeObject* PyFunction_Type;
 LIBPYTHON_EXTERN PyTypeObject* PyModule_Type;
 LIBPYTHON_EXTERN PyTypeObject* PyType_Type;
+LIBPYTHON_EXTERN PyTypeObject* PyProperty_Type;
 
 LIBPYTHON_EXTERN PyObject* Py_None;
 LIBPYTHON_EXTERN PyObject* Py_Unicode;
@@ -161,6 +162,10 @@ void initialize_type_objects(bool python3);
 
 LIBPYTHON_EXTERN void (*Py_Initialize)();
 LIBPYTHON_EXTERN int (*Py_IsInitialized)();
+LIBPYTHON_EXTERN const char* (*Py_GetVersion)();
+LIBPYTHON_EXTERN char* (*Py_GetProgramFullPath_v2)();
+LIBPYTHON_EXTERN wchar_t* (*Py_GetProgramFullPath)();
+
 
 LIBPYTHON_EXTERN int (*Py_AddPendingCall)(int (*func)(void *), void *arg);
 LIBPYTHON_EXTERN void (*PyErr_SetInterrupt)();
@@ -182,6 +187,7 @@ LIBPYTHON_EXTERN PyObject* (*Py_BuildValue)(const char *format, ...);
 LIBPYTHON_EXTERN void (*Py_IncRef)(PyObject *);
 LIBPYTHON_EXTERN void (*Py_DecRef)(PyObject *);
 
+LIBPYTHON_EXTERN int (*PyObject_Print)(PyObject* o, FILE* fp, int flags);
 LIBPYTHON_EXTERN PyObject* (*PyObject_Str)(PyObject *);
 
 LIBPYTHON_EXTERN int (*PyObject_IsInstance)(PyObject *object, PyObject *typeorclass);
@@ -330,7 +336,8 @@ LIBPYTHON_EXTERN int (*PyObject_IsTrue)(PyObject *o);
 LIBPYTHON_EXTERN PyObject* (*Py_CompileStringExFlags)(const char *str, const char *filename, int start, PyCompilerFlags *flags, int optimize);
 
 LIBPYTHON_EXTERN void* (*PyCapsule_Import)(const char *name, int no_block);
-  
+
+LIBPYTHON_EXTERN PyObject* (*PyObject_Type)(PyObject* o);
 #define PyObject_TypeCheck(o, tp) ((PyTypeObject*)Py_TYPE(o) == (tp)) || PyType_IsSubtype((PyTypeObject*)Py_TYPE(o), (tp))
 
 #define PyType_Check(o) PyObject_TypeCheck(o, PyType_Type)
@@ -710,4 +717,3 @@ LIBPYTHON_EXTERN PyThreadState* (*PyThreadState_Next)(PyThreadState*);
 } // namespace libpython
 
 #endif
-

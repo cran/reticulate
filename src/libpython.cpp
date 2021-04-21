@@ -59,7 +59,11 @@ bool loadLibrary(const std::string& libPath, void** ppLib, std::string* pError)
 #ifdef _WIN32
   *ppLib = (void*)::LoadLibraryEx(libPath.c_str(), NULL, 0);
 #else
-  *ppLib = ::dlopen(libPath.c_str(), RTLD_NOW|RTLD_GLOBAL);
+  if (libPath == "NA") {
+    *ppLib = ::dlopen(NULL, RTLD_NOW|RTLD_GLOBAL);
+  } else {
+    *ppLib = ::dlopen(libPath.c_str(), RTLD_NOW|RTLD_GLOBAL);
+  }
 #endif
   if (*ppLib == NULL)
   {
@@ -171,12 +175,14 @@ bool LibPython::loadSymbols(bool python3, std::string* pError)
 
   LOAD_PYTHON_SYMBOL(Py_Initialize)
   LOAD_PYTHON_SYMBOL(Py_IsInitialized)
+  LOAD_PYTHON_SYMBOL(Py_GetVersion)
   LOAD_PYTHON_SYMBOL(Py_AddPendingCall)
   LOAD_PYTHON_SYMBOL(PyErr_SetInterrupt)
   LOAD_PYTHON_SYMBOL(PyExc_KeyboardInterrupt)
   LOAD_PYTHON_SYMBOL(Py_IncRef)
   LOAD_PYTHON_SYMBOL(Py_DecRef)
   LOAD_PYTHON_SYMBOL(PyObject_Size)
+  LOAD_PYTHON_SYMBOL(PyObject_Type);
   LOAD_PYTHON_SYMBOL(PyObject_GetAttr)
   LOAD_PYTHON_SYMBOL(PyObject_HasAttr)
   LOAD_PYTHON_SYMBOL(PyObject_SetAttr)
@@ -201,6 +207,7 @@ bool LibPython::loadSymbols(bool python3, std::string* pError)
   LOAD_PYTHON_SYMBOL(PyErr_NormalizeException)
   LOAD_PYTHON_SYMBOL(PyErr_ExceptionMatches)
   LOAD_PYTHON_SYMBOL(PyErr_GivenExceptionMatches)
+  LOAD_PYTHON_SYMBOL(PyObject_Print)
   LOAD_PYTHON_SYMBOL(PyObject_Str)
   LOAD_PYTHON_SYMBOL(PyObject_Dir)
   LOAD_PYTHON_SYMBOL(PyByteArray_Size)
@@ -234,6 +241,7 @@ bool LibPython::loadSymbols(bool python3, std::string* pError)
   LOAD_PYTHON_SYMBOL(PyFunction_Type)
   LOAD_PYTHON_SYMBOL(PyModule_Type)
   LOAD_PYTHON_SYMBOL(PyType_Type)
+  LOAD_PYTHON_SYMBOL(PyProperty_Type)
   LOAD_PYTHON_SYMBOL(PyComplex_FromDoubles)
   LOAD_PYTHON_SYMBOL(PyComplex_RealAsDouble)
   LOAD_PYTHON_SYMBOL(PyComplex_ImagAsDouble)
@@ -263,6 +271,7 @@ bool LibPython::loadSymbols(bool python3, std::string* pError)
     return false;
 
   if (python3) {
+    LOAD_PYTHON_SYMBOL(Py_GetProgramFullPath)
 
     // Debug versions of Python will provide PyModule_Create2TraceRefs,
     // while release versions will provide PyModule_Create
@@ -292,6 +301,7 @@ bool LibPython::loadSymbols(bool python3, std::string* pError)
     } else {
       LOAD_PYTHON_SYMBOL(Py_InitModule4)
     }
+    LOAD_PYTHON_SYMBOL_AS(Py_GetProgramFullPath, Py_GetProgramFullPath_v2)
     LOAD_PYTHON_SYMBOL(PyString_AsStringAndSize)
     LOAD_PYTHON_SYMBOL(PyString_FromStringAndSize)
     LOAD_PYTHON_SYMBOL(PyString_FromString)
@@ -371,4 +381,3 @@ bool import_numpy_api(bool python3, std::string* pError) {
 
 
 } // namespace libpython
-

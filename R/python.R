@@ -286,7 +286,7 @@ as.environment.python.builtin.object <- function(x) {
     names <- sort(names, decreasing = FALSE)
 
     # get the types
-    types <- py_suppress_warnings(py_get_attribute_types(x, names))
+    types <- py_suppress_warnings(py_get_attr_types(x, names))
   }
 
 
@@ -770,7 +770,16 @@ py_list_attributes <- function(x) {
   attrs
 }
 
-
+py_get_attr_types <- function(x,
+                              names,
+                              resolve_properties = FALSE)
+{
+  ensure_python_initialized()
+  if (py_is_module_proxy(x))
+    py_resolve_module_proxy(x)
+  
+  py_get_attr_types_impl(x, names, resolve_properties)
+}
 
 #' Get an item from a Python object
 #'
@@ -1058,17 +1067,20 @@ py_flush_output <- function() {
 
 #' Run Python code
 #'
-#' Execute code within the the \code{__main__} Python module.
+#' Execute code within the scope of the \code{__main__} Python module.
 #'
 #' @inheritParams import
-#' @param code Code to execute
-#' @param file Source file
-#' @param local Whether to create objects in a local/private namespace (if
-#'   `FALSE`, objects are created within the main module).
+#' 
+#' @param code The Python code to be executed.
+#' @param file The Python script to be executed.
+#' @param local Boolean; should Python objects be created as part of
+#'   a local / private dictionary? If `FALSE`, objects will be created within
+#'   the scope of the Python main module.
 #'
-#' @return For `py_eval()`, the result of evaluating the expression; For
-#'   `py_run_string()` and `py_run_file()`, the dictionary associated with
-#'   the code execution.
+#' @return A Python dictionary of objects. When `local` is `FALSE`, this
+#'   dictionary captures the state of the Python main module after running
+#'   the provided code. Otherwise, only the variables defined and used are
+#'   captured.
 #'
 #' @name py_run
 #'
@@ -1087,7 +1099,43 @@ py_run_file <- function(file, local = FALSE, convert = TRUE) {
   invisible(py_run_file_impl(file, local, convert))
 }
 
-#' @rdname py_run
+#' Evaluate a Python Expression
+#' 
+#' Evaluate a single Python expression, in a way analogous to the Python
+#' `eval()` built-in function.
+#' 
+#' @param code A single Python expression.
+#' @param convert Boolean; automatically convert Python objects to R?
+#' 
+#' @return The result produced by evaluating `code`, converted to an `R`
+#'   object when `convert` is set to `TRUE`.
+#' 
+#' @section Caveats:
+#' 
+#' `py_eval()` only supports evaluation of 'simple' Python expressions.
+#' Other expressions (e.g. assignments) will fail; e.g.
+#' 
+#' ```
+#' > py_eval("x = 1")
+#' Error in py_eval_impl(code, convert) : 
+#'   SyntaxError: invalid syntax (reticulate_eval, line 1)
+#' ```
+#' 
+#' and this mirrors what one would see in a regular Python interpreter:
+#' 
+#' ```
+#' >>> eval("x = 1")
+#' Traceback (most recent call last):
+#'   File "<stdin>", line 1, in <module>
+#'   File "<string>", line 1
+#' x = 1
+#' ^
+#'   SyntaxError: invalid syntax
+#' ```
+#' 
+#' The [py_run_string()] method can be used if the evaluation of arbitrary
+#' Python code is required.
+#' 
 #' @export
 py_eval <- function(code, convert = TRUE) {
   ensure_python_initialized()
@@ -1239,7 +1287,7 @@ py_filter_classes <- function(classes) {
   classes
 }
 
-py_inject_r <- function(envir) {
+py_inject_r <- function() {
 
   # don't inject 'r' if there's already an 'r' object defined
   main <- import_main(convert = FALSE)
@@ -1253,20 +1301,18 @@ py_inject_r <- function(envir) {
   main <- import_main(convert = FALSE)
   R <- main$R
 
-  # extract active knit environment
-  if (is.null(envir)) {
-    .knitEnv <- yoink("knitr", ".knitEnv")
-    envir <- .knitEnv$knit_global
-  }
-
   # define the getters, setters we'll attach to the Python class
   getter <- function(self, code) {
+    envir <- py_resolve_envir()
     object <- eval(parse(text = as_r_value(code)), envir = envir)
     r_to_py(object, convert = is.function(object))
   }
 
   setter <- function(self, name, value) {
-    envir[[as_r_value(name)]] <<- as_r_value(value)
+    envir <- py_resolve_envir()
+    name  <- as_r_value(name)
+    value <- as_r_value(value)
+    assign(name, value, envir = envir)
   }
 
   py_set_attr(R, "__getattr__", getter)
@@ -1283,6 +1329,31 @@ py_inject_r <- function(envir) {
   # indicate success
   TRUE
 
+}
+
+py_resolve_envir <- function() {
+  
+  # if an environment has been set, use it
+  envir <- getOption("reticulate.engine.environment")
+  if (is.environment(envir))
+    return(envir)
+  
+  # if we're running in a knitr document, use the knit env
+  if ("knitr" %in% loadedNamespaces()) {
+    .knitEnv <- yoink("knitr", ".knitEnv")
+    envir <- .knitEnv$knit_global
+    if (is.environment(envir))
+      return(envir)
+  }
+  
+  # if we're running in a testthat test, use the rlang reported envir
+  envir <- getOption("rlang_trace_top_env")
+  if (is.environment(envir))
+    return(envir)
+  
+  # otherwise, default to the global environment
+  envir %||% globalenv()
+  
 }
 
 py_inject_hooks <- function() {
@@ -1310,15 +1381,20 @@ py_inject_hooks <- function() {
   }
   
   # register module import callback
-  useImportHook <- getOption("reticulate.useImportHook", default = TRUE)
+  useImportHook <- getOption("reticulate.useImportHook", default = is_python3())
   if (useImportHook) {
-    loader <- import("rpytools.loader")
-    loader$initialize(py_module_loaded)
+    loader <- import("rpytools.loader", convert = TRUE)
+    loader$initialize(py_module_onload)
   }
   
 }
 
-py_module_loaded <- function(module) {
+py_module_onload <- function(module) {
+  
+  # log module loading if requested
+  if (getOption("reticulate.logModuleLoad", default = FALSE)) {
+    writeLines(sprintf("Loaded module '%s'", module))
+  }
   
   # retrieve and clear list of hooks
   hookName <- paste("reticulate", module, "load", sep = "::")
@@ -1329,4 +1405,26 @@ py_module_loaded <- function(module) {
   for (hook in hooks)
     tryCatch(hook(), error = warning)
   
+}
+
+py_module_loaded <- function(module) {
+  sys <- import("sys", convert = TRUE)
+  modules <- sys$modules
+  module %in% names(modules)
+}
+
+py_register_load_hook <- function(module, hook) {
+  
+  # if the module is already loaded, just run the hook
+  if (py_module_loaded(module))
+    return(hook())
+  
+  # otherwise, register the hook to be run on next load
+  name <- paste("reticulate", module, "load", sep = "::")
+  setHook(name, hook)
+  
+}
+
+py_set_interrupt <- function() {
+  py_set_interrupt_impl()
 }

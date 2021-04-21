@@ -15,10 +15,11 @@ conda_list(conda = "auto")
 
 conda_create(
   envname = NULL,
-  packages = "python",
+  packages = NULL,
   forge = TRUE,
   channel = character(),
-  conda = "auto"
+  conda = "auto",
+  python_version = NULL
 )
 
 conda_remove(envname, packages = NULL, conda = "auto")
@@ -43,12 +44,15 @@ conda_version(conda = "auto")
 conda_python(envname = NULL, conda = "auto")
 }
 \arguments{
-\item{conda}{The path to a \code{conda} executable. Use \code{"auto"} to allow \code{reticulate} to
-automatically find an appropriate \code{conda} binary. See \strong{Finding Conda} for more details.}
+\item{conda}{The path to a \code{conda} executable. Use \code{"auto"} to allow
+\code{reticulate} to automatically find an appropriate \code{conda} binary. See
+\strong{Finding Conda} for more details.}
 
 \item{envname}{The name of, or path to, a conda environment.}
 
-\item{packages}{A character vector, indicating package names which should be installed or removed.}
+\item{packages}{A character vector, indicating package names which should be
+installed or removed. Use \verb{python=<version>} to request the installation
+of a specific version of Python.}
 
 \item{forge}{Boolean; include the \href{https://conda-forge.org/}{Conda Forge}
 repository?}
@@ -58,17 +62,26 @@ When specified, the \code{forge} argument is ignored. If you need to
 specify multiple channels, including the Conda Forge, you can use
 \verb{c("conda-forge", <other channels>)}.}
 
-\item{pip}{Boolean; use \code{pip} when downloading or installing packages? Defaults to \code{FALSE}.}
+\item{python_version}{The version of Python to be used in this Conda
+environment. The associated Python package from Conda will be requested
+as \code{python={python_version}}. When \code{NULL}, the default \code{python} package
+will be used instead. For example, use \code{python_version = "3.6"} to request
+that the Conda environment be created with a copy of Python 3.6. This
+argument will be ignored if \code{python} is specified as part of the \code{packages}
+argument, for backwards compatibility.}
+
+\item{pip}{Boolean; use \code{pip} when downloading or installing packages?
+Defaults to \code{FALSE}.}
 
 \item{pip_options}{An optional character vector of additional command line
 arguments to be passed to \code{pip}. Only relevant when \code{pip = TRUE}.}
 
-\item{pip_ignore_installed}{Ignore installed versions when using pip. This is
-\code{TRUE} by default so that specific package versions can be installed even
-if they are downgrades. The \code{FALSE} option is useful for situations where
-you don't want a pip install to attempt an overwrite of a conda binary
-package (e.g. SciPy on Windows which is very difficult to install via pip
-due to compilation requirements).}
+\item{pip_ignore_installed}{Ignore installed versions when using pip
+(defaults to \code{FALSE}). Set this to \code{TRUE} so that specific package versions
+can be installed even if they are downgrades. The \code{FALSE} option is useful
+for situations where you don't want a pip install to attempt an overwrite of
+a conda binary package (e.g. SciPy on Windows which is very difficult to
+install via pip due to compilation requirements).}
 
 \item{...}{Optional arguments, reserved for future expansion.}
 }

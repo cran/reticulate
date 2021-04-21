@@ -50,6 +50,10 @@ py_activate_virtualenv <- function(script) {
     invisible(.Call(`_reticulate_py_activate_virtualenv`, script))
 }
 
+main_process_python_info <- function() {
+    .Call(`_reticulate_main_process_python_info`)
+}
+
 py_initialize <- function(python, libpython, pythonhome, virtualenv_activate, python3, interactive, numpy_load_error) {
     invisible(.Call(`_reticulate_py_initialize`, python, libpython, pythonhome, virtualenv_activate, python3, interactive, numpy_load_error))
 }
@@ -137,8 +141,8 @@ py_set_item_impl <- function(x, key, val) {
     invisible(.Call(`_reticulate_py_set_item_impl`, x, key, val))
 }
 
-py_get_attribute_types <- function(x, attributes) {
-    .Call(`_reticulate_py_get_attribute_types`, x, attributes)
+py_get_attr_types_impl <- function(x, attrs, resolve_properties) {
+    .Call(`_reticulate_py_get_attr_types_impl`, x, attrs, resolve_properties)
 }
 
 py_ref_to_r_with_convert <- function(x, convert) {
@@ -233,7 +237,15 @@ r_convert_date <- function(dates, convert) {
     .Call(`_reticulate_r_convert_date`, dates, convert)
 }
 
+py_set_interrupt_impl <- function() {
+    invisible(.Call(`_reticulate_py_set_interrupt_impl`))
+}
+
 readline <- function(prompt) {
     .Call(`_reticulate_readline`, prompt)
+}
+
+py_interrupt_handler <- function(signum) {
+    invisible(.Call(`_reticulate_py_interrupt_handler`, signum))
 }
 

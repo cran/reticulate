@@ -2,10 +2,14 @@
 
 #' Python configuration
 #'
-#' Information on Python and Numpy versions detected
+#' Retrieve information about the version of Python currently being used by
+#' `reticulate`.
+#' 
+#' If Python has not yet been initialized, then calling `py_config()` will force
+#' the initialization of Python. See [py_discover_config()] for more details.
 #'
-#' @return Python configuration object; Logical indicating whether Python
-#'   bindings are available
+#' @return Information about the version of Python in use, as an \R list with
+#'   class `"py_config"`.
 #'
 #' @export
 py_config <- function() {
@@ -13,6 +17,52 @@ py_config <- function() {
   .globals$py_config
 }
 
+#' Python version
+#' 
+#' Get the version of Python currently being used by `reticulate`.
+#' 
+#' @return The version of Python currently used, or `NULL` if Python has
+#'   not yet been initialized by `reticulate`.
+#' 
+#' @export
+py_version <- function() {
+  
+  if (!py_available(initialize = FALSE))
+    return(NULL)
+  
+  config <- py_config()
+  numeric_version(config$version)
+  
+}
+
+#' Python executable
+#' 
+#' Get the path to the Python executable associated with the instance currently
+#' being used by `reticulate`.
+#' 
+#' This can occasionally be useful if you'd like to interact with Python (or its
+#' modules) via a subprocess; for example you might choose to install a package
+#' with `pip`:
+#' 
+#' ```
+#' system2(py_exe(), c("-m", "pip", "install", "numpy"))
+#' ```
+#' 
+#' and so you can also have greater control over how these modules are invoked.
+#' 
+#' @return The path to the associated Python executable, or `NULL` if Python
+#'   has not yet been initialized.
+#'   
+#' @export
+py_exe <- function() {
+  
+  if (!py_available(initialize = FALSE))
+    return(NULL)
+  
+  config <- py_config()
+  config$python
+  
+}
 
 #' Build Python configuration error message
 #'
@@ -95,6 +145,19 @@ py_module_available <- function(module) {
 #' @export
 py_discover_config <- function(required_module = NULL, use_environment = NULL) {
 
+  # check if python symbols can already be found in the current process
+  main_process_info <- main_process_python_info()
+  if (!is.null(main_process_info)) {
+    python_version <- normalize_python_path(main_process_info$python)$path
+    config <- python_config(
+      python_version,
+      required_module,
+      python_version,
+      forced = "the current process"
+    )
+    return(config)
+  }
+
   # if PYTHON_SESSION_INITIALIZED is specified then use it without scanning
   # further (this is a "hard" requirement because an embedding process may
   # set this to indicate that the python interpreter is already loaded)
@@ -133,6 +196,17 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   if (!is.null(required_version)) {
     python_version <- normalize_python_path(required_version)$path
     config <- python_config(python_version, required_module, python_version, forced = "use_python function")
+    return(config)
+  }
+  
+  # if RETICULATE_PYTHON_FALLBACK is specified then use it
+  reticulate_env <- Sys.getenv("RETICULATE_PYTHON_FALLBACK", unset = NA)
+  if (!is.na(reticulate_env)) {
+    python_version <- normalize_python_path(reticulate_env)
+    if (!python_version$exists)
+      stop("Python specified in RETICULATE_PYTHON_FALLBACK (", reticulate_env, ") does not exist")
+    python_version <- python_version$path
+    config <- python_config(python_version, required_module, python_version, forced = "RETICULATE_PYTHON_FALLBACK")
     return(config)
   }
 
@@ -499,8 +573,13 @@ python_config <- function(python, required_module, python_versions, forced = NUL
   anaconda <- grepl("continuum", tolower(version_string)) || grepl("anaconda", tolower(version_string))
   architecture <- config$Architecture
 
-  # determine the location of libpython (see also # https://github.com/JuliaPy/PyCall.jl/blob/master/deps/build.jl)
-  if (is_windows()) {
+  # determine the location of libpython
+  # see also: https://github.com/JuliaPy/PyCall.jl/blob/master/deps/build.jl
+  main_process_info <- main_process_python_info()
+  if (!is.null(main_process_info)) {
+    # either we have the main process libpython, or NA in case of PIE executable
+    libpython <- main_process_info$libpython
+  } else if (is_windows()) {
     
     # construct DLL name
     dll <- sprintf("python%s.dll", gsub(".", "", version, fixed = TRUE))
@@ -640,7 +719,7 @@ str.py_config <- function(object, ...) {
   x <- object
   out <- ""
   out <- paste0(out, "python:         ", x$python, "\n")
-  out <- paste0(out, "libpython:      ", ifelse(is.null(x$libpython), "[NOT FOUND]", x$libpython), ifelse(is_windows() || is.null(x$libpython) || file.exists(x$libpython), "", "[NOT FOUND]"), "\n")
+  out <- paste0(out, "libpython:      ", ifelse(is.null(x$libpython), "[NOT FOUND]", x$libpython), ifelse(is_windows() || is.null(x$libpython) || is.na(x$libpython) || file.exists(x$libpython), "", "[NOT FOUND]"), "\n")
   out <- paste0(out, "pythonhome:     ", ifelse(is.null(x$pythonhome), "[NOT FOUND]", x$pythonhome), "\n")
   if (nzchar(x$virtualenv_activate))
     out <- paste0(out, "virtualenv:     ", x$virtualenv_activate, "\n")
@@ -941,5 +1020,3 @@ py_session_initialized_binary <- function() {
   # return
   python_binary
 }
-
-

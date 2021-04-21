@@ -5,12 +5,16 @@
 #'
 #' @param envname The name of, or path to, a conda environment.
 #'
-#' @param conda The path to a `conda` executable. Use `"auto"` to allow `reticulate` to
-#'   automatically find an appropriate `conda` binary. See **Finding Conda** for more details.
+#' @param conda The path to a `conda` executable. Use `"auto"` to allow
+#'   `reticulate` to automatically find an appropriate `conda` binary. See
+#'   **Finding Conda** for more details.
 #'
-#' @param packages A character vector, indicating package names which should be installed or removed.
+#' @param packages A character vector, indicating package names which should be
+#'   installed or removed. Use `python=<version>` to request the installation
+#'   of a specific version of Python.
 #'
-#' @param pip Boolean; use `pip` when downloading or installing packages? Defaults to `FALSE`.
+#' @param pip Boolean; use `pip` when downloading or installing packages?
+#'   Defaults to `FALSE`.
 #'
 #' @param ... Optional arguments, reserved for future expansion.
 #'
@@ -118,6 +122,14 @@ conda_list <- function(conda = "auto") {
 #'   When specified, the `forge` argument is ignored. If you need to
 #'   specify multiple channels, including the Conda Forge, you can use
 #'   `c("conda-forge", <other channels>)`.
+#'   
+#' @param python_version The version of Python to be used in this Conda
+#'   environment. The associated Python package from Conda will be requested
+#'   as `python={python_version}`. When `NULL`, the default `python` package
+#'   will be used instead. For example, use `python_version = "3.6"` to request
+#'   that the Conda environment be created with a copy of Python 3.6. This
+#'   argument will be ignored if `python` is specified as part of the `packages`
+#'   argument, for backwards compatibility.
 #'
 #' @rdname conda-tools
 #'
@@ -125,16 +137,27 @@ conda_list <- function(conda = "auto") {
 #'
 #' @export
 conda_create <- function(envname = NULL,
-                         packages = "python",
+                         packages = NULL,
                          forge = TRUE,
                          channel = character(),
-                         conda = "auto") {
+                         conda = "auto",
+                         python_version = NULL)
+{
 
   # resolve conda binary
   conda <- conda_binary(conda)
 
   # resolve environment name
   envname <- condaenv_resolve(envname)
+  
+  # resolve packages argument
+  if (!any(grepl("^python", packages))) {
+    python_package <- if (is.null(python_version))
+      "python"
+    else
+      sprintf("python=%s", python_version)
+    packages <- c(python_package, packages)
+  }
 
   # create the environment
   args <- conda_args("create", envname, packages)
@@ -190,12 +213,12 @@ conda_remove <- function(envname, packages = NULL, conda = "auto") {
 #'   specify multiple channels, including the Conda Forge, you can use
 #'   `c("conda-forge", <other channels>)`.
 #'
-#' @param pip_ignore_installed Ignore installed versions when using pip. This is
-#'   `TRUE` by default so that specific package versions can be installed even
-#'   if they are downgrades. The `FALSE` option is useful for situations where
-#'   you don't want a pip install to attempt an overwrite of a conda binary
-#'   package (e.g. SciPy on Windows which is very difficult to install via pip
-#'   due to compilation requirements).
+#' @param pip_ignore_installed Ignore installed versions when using pip
+#'   (defaults to `FALSE`). Set this to `TRUE` so that specific package versions
+#'   can be installed even if they are downgrades. The `FALSE` option is useful
+#'   for situations where you don't want a pip install to attempt an overwrite of
+#'   a conda binary package (e.g. SciPy on Windows which is very difficult to
+#'   install via pip due to compilation requirements).
 #'   
 #' @param pip_options An optional character vector of additional command line
 #'   arguments to be passed to `pip`. Only relevant when `pip = TRUE`.
@@ -226,7 +249,9 @@ conda_install <- function(envname = NULL,
 
   # honor request for specific version of Python package
   python_package <- if (is.null(python_version))
-    "python"
+    NULL
+  else if (grepl("[><=]", python_version))
+    paste0("python", python_version)
   else
     sprintf("python=%s", python_version)
 
@@ -239,8 +264,17 @@ conda_install <- function(envname = NULL,
   
   # if this conda environment doesn't seem to exist, auto-create it
   if (inherits(python, "error") || !file.exists(python)) {
-    conda_create(envname, packages = python_package, conda = conda)
+    
+    conda_create(
+      envname = envname,
+      packages = python_package %||% "python",
+      forge = forge,
+      channel = channel,
+      conda = conda
+    )
+    
     python <- conda_python(envname = envname, conda = conda)
+    
   }
   
   # if the user has requested a specific version of Python, ensure that
