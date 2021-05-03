@@ -1,4 +1,8 @@
 
+## reticulate 1.20
+
+* Fixed an issue causing tests to fail on CRAN's M1mac machine.
+
 ## reticulate 1.19
 
 * Fixed an issue where `reticulate`'s interrupt handlers could cause issues

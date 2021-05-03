@@ -8,8 +8,3 @@ if (!is_windows() &&
   if (nzchar(python))
     use_python(python, required = TRUE)
 }
-
-# TODO: Install Python on CI for Windows
-if (!is_windows())
-    print(py_config())
-
