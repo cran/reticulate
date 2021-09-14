@@ -41,6 +41,15 @@
 #' and friends only persist for the active session; they must be re-run in each
 #' new \R session as appropriate.
 #' 
+#' If `use_python()` (or one of the other `use_*()` functions) are called
+#' multiple times, the most recently-requested version of Python will be
+#' used. Note that any request to `use_python()` will always be overridden
+#' by the `RETICULATE_PYTHON` environment variable, if set.
+#' 
+#' The [py_config()] function will also provide a short note describing why
+#' `reticulate` chose to select the version of Python that was ultimately
+#' activated.
+#' 
 #' @param python
 #'   The path to a Python binary.
 #' 
@@ -134,6 +143,19 @@ use_condaenv <- function(condaenv = NULL, conda = "auto", required = FALSE) {
     python <- conda_python(condaenv)
     use_python(python, required = required)
     return(invisible(NULL))
+  }
+  
+  # if the user has requested the 'base' environment, then just activate
+  # the conda installation associated with the conda binary found
+  # 
+  # TODO: what if there are multiple conda installations? users could still
+  # use 'use_python()' explicitly to target a specific install
+  conda <- conda_binary(conda)
+  if (identical(condaenv, "base")) {
+    bin <- dirname(conda)
+    suffix <- if (is_windows()) "../python.exe" else "python"
+    python <- file.path(bin, suffix)
+    return(use_python(python, required = required))
   }
 
   # list all conda environments

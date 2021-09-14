@@ -1,12 +1,12 @@
 
 test_that("Running Python scripts can be interrupted", {
   
-  skip_on_os("windows")
+  skip_on_cran()
   
   # import time module
   time <- import("time", convert = TRUE)
   
-  # interrupt this process in a couple seconds
+  # interrupt this process shortly
   system(paste("sleep 1 && kill -s INT", Sys.getpid()), wait = FALSE)
   
   # tell Python to sleep

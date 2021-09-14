@@ -93,31 +93,38 @@ py_config_error_message <- function(prefix) {
 #'
 #' @export
 py_available <- function(initialize = FALSE) {
+  
   if (is_python_initialized())
+    return(.globals$py_config$available)
+  
+  if (!initialize)
+    return(FALSE)
+  
+  tryCatch({
+    ensure_python_initialized()
     .globals$py_config$available
-  else if (initialize) {
-    tryCatch({
-      ensure_python_initialized()
-      .globals$py_config$available
-    }, error = function(e) FALSE)
-  } else {
-    FALSE
-  }
+  }, error = function(e) FALSE)
+  
 }
 
 
 #' @rdname py_available
 #' @export
 py_numpy_available <- function(initialize = FALSE) {
+  
   if (!py_available(initialize = initialize))
-    FALSE
-  else
-    py_numpy_available_impl()
+    return(FALSE)
+  
+  py_numpy_available_impl()
+    
 }
 
 
 #' Check if a Python module is available on this system.
 #'
+#' Note that this function will also attempt to initialize Python
+#' before checking if the requested module is available.
+#' 
 #' @param module The name of the module.
 #'
 #' @return `TRUE` if the module is available and can be loaded;
@@ -149,12 +156,7 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   main_process_info <- main_process_python_info()
   if (!is.null(main_process_info)) {
     python_version <- normalize_python_path(main_process_info$python)$path
-    config <- python_config(
-      python_version,
-      required_module,
-      python_version,
-      forced = "the current process"
-    )
+    config <- python_config(python_version, required_module, forced = "the current process")
     return(config)
   }
 
@@ -164,38 +166,53 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   py_session_initialized <- py_session_initialized_binary()
   if (!is.null(py_session_initialized)) {
     python_version <- normalize_python_path(py_session_initialized)$path
-    config <- python_config(python_version, required_module, python_version, forced = "PYTHON_SESSION_INITIALIZED")
+    config <- python_config(python_version, required_module, forced = "PYTHON_SESSION_INITIALIZED")
     return(config)
   }
 
   # if RETICULATE_PYTHON is specified then use it without scanning further
   reticulate_env <- Sys.getenv("RETICULATE_PYTHON", unset = NA)
   if (!is.na(reticulate_env)) {
+    
     python_version <- normalize_python_path(reticulate_env)
     if (!python_version$exists)
       stop("Python specified in RETICULATE_PYTHON (", reticulate_env, ") does not exist")
+    
     python_version <- python_version$path
-    config <- python_config(python_version, required_module, python_version, forced = "RETICULATE_PYTHON")
+    config <- python_config(python_version, required_module, forced = "RETICULATE_PYTHON")
     return(config)
+    
   }
 
   # if RETICULATE_PYTHON_ENV is specified then use that
   reticulate_python_env <- Sys.getenv("RETICULATE_PYTHON_ENV", unset = NA)
   if (!is.na(reticulate_python_env)) {
+    
     python <- python_binary_path(reticulate_python_env)
     python_version <- normalize_python_path(python)
     if (!python_version$exists)
       stop("Python specified in RETICULATE_PYTHON_ENV (", reticulate_python_env, ") does not exist")
+    
     path <- python_version$path
-    config <- python_config(path, required_module, path, forced = "RETICULATE_PYTHON_ENV")
+    config <- python_config(path, required_module, forced = "RETICULATE_PYTHON_ENV")
+    return(config)
+    
+  }
+  
+  # if we're working within a project that contains a Pipfile, then
+  # use the copy of Python associated with that pipenv
+  pipfile <- pipenv_pipfile_path()
+  if (file.exists(pipfile)) {
+    python <- pipenv_python()
+    config <- python_config(python, required_module, forced = "Pipfile")
     return(config)
   }
-
+  
   # next look for a required python version (e.g. use_python("/usr/bin/python", required = TRUE))
   required_version <- .globals$required_python_version
   if (!is.null(required_version)) {
     python_version <- normalize_python_path(required_version)$path
-    config <- python_config(python_version, required_module, python_version, forced = "use_python function")
+    config <- python_config(python_version, required_module, forced = "use_python function")
     return(config)
   }
   
@@ -511,8 +528,11 @@ python_munge_path <- function(python) {
 
 }
 
-python_config <- function(python, required_module, python_versions, forced = NULL) {
-
+python_config <- function(python,
+                          required_module = NULL,
+                          python_versions = python,
+                          forced = NULL)
+{
   # normalize and remove duplicates
   python <- canonical_path(python)
   python_versions <- canonical_path(python_versions)
@@ -564,7 +584,7 @@ python_config <- function(python, required_module, python_versions, forced = NUL
 
   # read output as dcf
   config_connection <- textConnection(config)
-  on.exit(close(config_connection))
+  on.exit(close(config_connection), add = TRUE)
   config <- read.dcf(config_connection, all = TRUE)
 
   # get the full textual version and the numeric version, check for anaconda
@@ -685,6 +705,14 @@ python_config <- function(python, required_module, python_versions, forced = NUL
 
   # check for required module
   required_module_path <- config$RequiredModulePath
+  
+  # fix up libpython for macOS command line tools
+  if (is_osx() && length(libpython)) {
+    old <- "/Applications/Xcode.app/Contents/Developer"
+    new <- "/Library/Developer/CommandLineTools"
+    if (grepl(new, config$PythonPath, fixed = TRUE))
+      libpython <- gsub(old, new, libpython, fixed = TRUE)
+  }
 
   # return config info
   info <- list(
@@ -711,27 +739,36 @@ python_config <- function(python, required_module, python_versions, forced = NUL
   
   class(info) <- "py_config"
   info
-
 }
 
 #' @export
 str.py_config <- function(object, ...) {
-  x <- object
+  NextMethod()
+}
+
+#' @export
+format.py_config <- function(x, ...) {
+  
   out <- ""
   out <- paste0(out, "python:         ", x$python, "\n")
   out <- paste0(out, "libpython:      ", ifelse(is.null(x$libpython), "[NOT FOUND]", x$libpython), ifelse(is_windows() || is.null(x$libpython) || is.na(x$libpython) || file.exists(x$libpython), "", "[NOT FOUND]"), "\n")
   out <- paste0(out, "pythonhome:     ", ifelse(is.null(x$pythonhome), "[NOT FOUND]", x$pythonhome), "\n")
+  
   if (nzchar(x$virtualenv_activate))
     out <- paste0(out, "virtualenv:     ", x$virtualenv_activate, "\n")
+  
   out <- paste0(out, "version:        ", x$version_string, "\n")
+  
   if (is_windows())
     out <- paste0(out, "Architecture:   ", x$architecture, "\n")
+  
   if (!is.null(x$numpy)) {
     out <- paste0(out, "numpy:          ", x$numpy$path, "\n")
     out <- paste0(out, "numpy_version:  ", as.character(x$numpy$version), "\n")
   } else {
     out <- paste0(out, "numpy:           [NOT FOUND]\n")
   }
+  
   if (!is.null(x$required_module)) {
     out <- paste0(out, sprintf("%-16s", paste0(x$required_module, ":")))
     if (!is.null(x$required_module_path))
@@ -739,20 +776,23 @@ str.py_config <- function(object, ...) {
     else
       out <- paste0(out, "[NOT FOUND]\n")
   }
+  
   if (!is.null(x$forced)) {
     out <- paste0(out, "\nNOTE: Python version was forced by ", x$forced, "\n")
   }
+  
   if (length(x$python_versions) > 1) {
     out <- paste0(out, "\npython versions found: \n")
     python_versions <- paste0(" ", x$python_versions, collapse = "\n")
     out <- paste0(out, python_versions, sep = "\n")
   }
+  
   out
 }
 
 #' @export
 print.py_config <- function(x, ...) {
-  cat(str(x))
+  cat(format(x))
 }
 
 

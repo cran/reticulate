@@ -44,12 +44,14 @@ ensure_python_initialized <- function(required_module = NULL) {
       .globals$delay_load_priority <- 0
     }
 
+    # notify front-end (if any) that Python is about to be initialized
+    callback <- getOption("reticulate.python.beforeInitialized")
+    if (is.function(callback))
+      callback()
+
+    # perform initialization
     .globals$py_config <- initialize_python(required_module, use_environment)
 
-    # register interrupt handler
-    signals <- import("rpytools.signals", convert = TRUE)
-    signals$initialize(py_interrupt_handler)
-    
     # remap output streams to R output handlers
     remap_output_streams()
 
@@ -61,12 +63,34 @@ ensure_python_initialized <- function(required_module = NULL) {
 
     # install required packages
     configure_environment()
-
+    
     # notify front-end (if any) that Python has been initialized
-    callback <- getOption("reticulate.initialized")
+    callback <- getOption("reticulate.python.afterInitialized")
+    if (is.null(callback))
+      callback <- getOption("reticulate.initialized")
+
     if (is.function(callback))
       callback()
 
+    # set up a Python signal handler
+    signals <- import("rpytools.signals")
+    signals$initialize(py_interrupts_pending)
+    
+    # register C-level interrupt handler
+    py_register_interrupt_handler()
+
+    # call init hooks
+    call_init_hooks()
+  }
+}
+
+
+call_init_hooks <- function() {
+  for (fun in get_hooks_list("reticulate.onPyInit")) {
+    if (is.character(fun)) {
+      fun <- get(fun)
+    }
+    fun()
   }
 }
 
@@ -132,7 +156,23 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
 
   # munge PATH for python (needed so libraries can be found in some cases)
   oldpath <- python_munge_path(config$python)
-
+  
+  # on macOS, we need to do some gymnastics to ensure that Anaconda
+  # libraries can be properly discovered (and this will only work in RStudio)
+  if (is_osx()) local({
+    
+    symlink <- Sys.getenv("RSTUDIO_FALLBACK_LIBRARY_PATH", unset = NA)
+    if (is.na(symlink))
+      return()
+    
+    if (file.exists(symlink))
+      unlink(symlink)
+    
+    target <- dirname(config$libpython)
+    file.symlink(target, symlink)
+    
+  })
+  
   # initialize python
   tryCatch({
 

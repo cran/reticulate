@@ -411,6 +411,9 @@ eng_python_initialize_matplotlib <- function(options, envir) {
   # override show implementation
   plt$show <- function(...) {
 
+    # get current chunk options
+    options <- knitr::opts_current$get()
+    
     # call hook to generate plot
     hook <- getOption("reticulate.engine.matplotlib.show", eng_python_matplotlib_show)
     graphic <- hook(plt, options)
@@ -475,7 +478,7 @@ eng_python_validate_options <- function(options) {
 eng_python_is_matplotlib_output <- function(value) {
 
   # extract 'boxed' matplotlib outputs
-  if (inherits(value, "python.builtin.list") && length(value) == 1)
+  if (inherits(value, "python.builtin.list") && length(value) > 0)
     value <- value[[0]]
 
   # TODO: are there other types we care about?
@@ -534,12 +537,19 @@ eng_python_autoprint <- function(captured, options, autoshow) {
   # check if output format is html
   isHtml <- knitr::is_html_output()
 
-  if (eng_python_is_matplotlib_output(value) && autoshow) {
+  if (eng_python_is_matplotlib_output(value)) {
     
+    # by default, we suppress "side-effect" outputs from matplotlib
+    # objects; only when 'autoshow' is set will we try to render the
+    # associated matplotlib plot
+    #
     # handle matplotlib output. note that the default hook installed by
     # reticulate will update the 'pending_plots' item
-    plt <- import("matplotlib.pyplot", convert = TRUE)
-    plt$show()
+    if (autoshow) {
+      plt <- import("matplotlib.pyplot", convert = TRUE)
+      plt$show()
+    }
+    
     return("")
     
   } else if (eng_python_is_seaborn_output(value)) {

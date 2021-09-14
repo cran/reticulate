@@ -35,7 +35,7 @@ install_miniconda <- function(path = miniconda_path(),
   
   # run the installer
   message("* Installing Miniconda -- please wait a moment ...")
-  miniconda_installer_run(installer, path)
+  miniconda_installer_run(installer, update, path)
   
   # validate the install succeeded
   ok <- miniconda_exists(path) && miniconda_test(path)
@@ -92,8 +92,14 @@ install_miniconda_preflight <- function(path, force) {
 
 miniconda_installer_url <- function(version = "3") {
   
+  url <- getOption("reticulate.miniconda.url")
+  if (!is.null(url))
+    return(url)
+  
   base <- "https://repo.anaconda.com/miniconda"
-  arch <- ifelse(.Machine$sizeof.pointer == 8, "x86_64", "x86")
+  
+  info <- as.list(Sys.info())
+  arch <- miniconda_installer_arch()
   version <- as.character(version)
   name <- if (is_windows())
     sprintf("Miniconda%s-latest-Windows-%s.exe", version, arch)
@@ -105,6 +111,27 @@ miniconda_installer_url <- function(version = "3") {
     stopf("unsupported platform %s", shQuote(Sys.info()[["sysname"]]))
   
   file.path(base, name)
+  
+}
+
+miniconda_installer_arch <- function() {
+  
+  # allow user override
+  arch <- getOption("reticulate.miniconda.arch")
+  if (!is.null(arch))
+    return(arch)
+  
+  # arm64 on macOS is not yet supported
+  info <- as.list(Sys.info())
+  if (info$machine == "i386")
+    return("x86")
+  
+  # miniconda url use x86_64 not x86-64 for Windows
+  if (info$machine == "x86-64")
+    return("x86_64")
+  
+  # otherwise, use arch as-is
+  info$machine
   
 }
 
@@ -129,7 +156,7 @@ miniconda_installer_download <- function(url) {
 }
   
 
-miniconda_installer_run <- function(installer, path) {
+miniconda_installer_run <- function(installer, update, path) {
   
   args <- if (is_windows()) {
     dir.create(path, recursive = TRUE, showWarnings = FALSE)
@@ -143,9 +170,7 @@ miniconda_installer_run <- function(installer, path) {
     )
     
   } else if (is_unix()) {
-    
-    c("-b", "-p", shQuote(path))
-    
+    c("-b", if (update) "-u", "-p", shQuote(path))
   } else {
     stopf("unsupported platform %s", shQuote(Sys.info()[["sysname"]]))
   }

@@ -20,7 +20,7 @@ using namespace Rcpp;
 #include <windows.h>
 #endif
 
-using namespace libpython;
+using namespace reticulate::libpython;
 
 // track whether we are using python 3 (set during py_initialize)
 bool s_isPython3 = false;
@@ -591,16 +591,16 @@ std::string py_fetch_error() {
 
   // clear last error
   s_lastError.clear();
-  
-  // check for interrupt -- we do this because, depending on where
-  // the interrupt is handled by Python, the associated error can
-  // be something entirely separate from a regular interrupt.
-  //
-  // if a Python interrupt is generated and handled, then we also want
-  // to disable the R-level interrupt
+
+  // check whether this error was signaled via an interrupt.
+  // the intention here is to catch cases where reticulate is running
+  // Python code, an interrupt is signaled and caught by that code,
+  // and then the associated error is returned. in such a case, we
+  // want to forward that interrupt back to R so that the user is then
+  // returned back to the top level.
   if (reticulate::signals::getPythonInterruptsPending()) {
     PyErr_Clear();
-    reticulate::signals::setRInterruptsPending(false);
+    reticulate::signals::setInterruptsPending(false);
     reticulate::signals::setPythonInterruptsPending(false);
     throw Rcpp::internal::InterruptedException();
   }
@@ -2089,7 +2089,7 @@ void py_initialize(const std::string& python,
     trace_thread_init(tracems);
   
   // poll for events while executing python code
-  event_loop::initialize();
+  reticulate::event_loop::initialize();
 
 }
 
@@ -2694,38 +2694,38 @@ SEXP py_run_string_impl(const std::string& code,
                         bool local = false,
                         bool convert = true)
 {
-  // get main module. note that PyModule_GetDict returns
-  // a borrowed reference and so if we're returning a reference
-  // to that dictionary (with local = false) then we need to
-  // Py_IncRef it
+  // retrieve reference to main module dictionary
+  // note: both PyImport_AddModule() and PyModule_GetDict()
+  // return borrowed references
   PyObject* main = PyImport_AddModule("__main__");
-  PyObject* main_dict = PyModule_GetDict(main);
-  
-  // use separate dictionary for locals if requested
-  PyObject* local_dict = NULL;
+  PyObject* globals = PyModule_GetDict(main);
   
   if (local) {
-    PyObjectPtr local_dict_ptr(PyDict_New());
-    local_dict = local_dict_ptr.get();
+    
+    // create dictionary to capture locals
+    PyObjectPtr locals(PyDict_New());
+    
+    // run the requested code
+    PyObjectPtr res(PyRun_StringFlags(code.c_str(), Py_file_input, globals, locals, NULL)); 
+    if (res.is_null())
+      stop(py_fetch_error());
+    
+    // return locals dictionary (detach so we don't decref on scope exit)
+    return py_ref(locals.detach(), convert);
+    
   } else {
-    local_dict = main_dict;
+    
+    // run the requested code
+    PyObjectPtr res(PyRun_StringFlags(code.c_str(), Py_file_input, globals, globals, NULL)); 
+    if (res.is_null())
+      stop(py_fetch_error());
+    
+    // because globals is borrowed, we need to incref here
+    Py_IncRef(globals);
+    return py_ref(globals, convert);
+    
   }
   
-  // run the requested code
-  PyObjectPtr res(
-      PyRun_StringFlags(
-        code.c_str(),
-        Py_file_input,
-        main_dict,
-        local_dict,
-        NULL));
-  
-  if (res.is_null())
-    stop(py_fetch_error());
-
-  // return dictionary with objects defined during the execution
-  Py_IncRef(local_dict);
-  return py_ref(local_dict, convert);
 }
 
 
@@ -3016,3 +3016,4 @@ PyObjectRef r_convert_date(DateVector dates, bool convert) {
 void py_set_interrupt_impl() {
   PyErr_SetInterrupt();
 }
+

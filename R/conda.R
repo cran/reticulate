@@ -82,10 +82,6 @@ conda_list <- function(conda = "auto") {
   # may report both short-path and long-path versions of the same environment)
   conda_envs <- unique(normalizePath(conda_envs))
   
-  # remove root conda environment as it shouldnnt count as environment and
-  # it is not correct to install packages into it.
-  conda_envs <- conda_envs[!conda_envs == normalizePath(info$root_prefix)]
-  
   # return an empty data.frame when no envs are found
   if (length(conda_envs) == 0L) {
     return(data.frame(
@@ -404,6 +400,32 @@ conda_python <- function(envname = NULL, conda = "auto") {
     stop("conda environment ", envname, " not found")
 }
 
+conda_dll_paths <- function(envname = NULL, conda = "auto") {
+  
+  # resolve envname
+  envname <- condaenv_resolve(envname)
+  
+  # for fully-qualified paths, we return empty string
+  if (grepl("[/\\\\]", envname)) {
+      return("")
+  }
+  
+  # otherwise, list conda environments and try to find it
+  conda_envs <- conda_list(conda = conda)
+  env <- subset(conda_envs, conda_envs$name == envname)
+  if (nrow(env) > 0) {
+    prefix <- dirname(env$python[[1]])
+    dll_paths <- c(
+        normalizePath(file.path(prefix, "Library/mingw-w64/bin"), winslash="\\", mustWork = FALSE),
+        normalizePath(file.path(prefix, "Library/usr/bin"), winslash="\\", mustWork = FALSE),
+        normalizePath(file.path(prefix, "Library/bin"), winslash="\\", mustWork = FALSE),
+        normalizePath(file.path(prefix, "Scripts"), winslash="\\", mustWork = FALSE),
+        normalizePath(file.path(prefix, "bin"), winslash="\\", mustWork = FALSE)
+    )
+    paste(dll_paths, collapse = ";")
+  } else
+    stop("conda environment ", envname, " not found")
+}
 
 
 find_conda <- function() {

@@ -1,14 +1,49 @@
 
+## reticulate 1.21
+
+- `use_condaenv("base")` can now be used to activate the base Anaconda
+  environment.
+
+- `reticulate` will now execute any hooks registered via
+  `setHook("reticulate.onPyInit", <...>)` after Python has been initialized.
+  This can be useful for packages that need to take some action after
+  `reticulate` has initialized Python.
+
+- Further refined interrupt handling.
+
+- Fixed an issue where attempting to bind `reticulate` to `/usr/bin/python3`
+  on macOS could fail if Xcode was not installed. (#1017)
+
+- The `reticulate` Python REPL no longer exits when a top-level interrupt
+  is sent (e.g. via Ctrl + C).
+
+- The miniconda auto-installer now supports aarch64 Linux machines. (#1012)
+
+- Fixed an issue where matplotlib plots were incorrectly overwritten when
+  multiple Python chunks in the same R Markdown document included plot output.
+  (#1010)
+
+- `reticulate` can now use the version of Python configured in projects using
+  [pipenv](https://pypi.org/project/pipenv/). If the project contains a
+  `Pipfile` at the root directory (as understood by `here::here()`), then
+  `reticulate` will invoke `pipenv --venv` to determine the path to the
+  Python virtual environment associated with the project. Note that the
+  `RETICULATE_PYTHON` environment variable, as well as usages of
+  `use_python(..., force = TRUE)`, will still take precedence. (#1006)
+  
+- Fixed an issue where `reticulate::py_run_string(..., local = TRUE)` failed
+  to return the dictionary of defined Python objects in some cases.
+  
 ## reticulate 1.20
 
-* Fixed an issue causing tests to fail on CRAN's M1mac machine.
+- Fixed an issue causing tests to fail on CRAN's M1mac machine.
 
 ## reticulate 1.19
 
-* Fixed an issue where `reticulate`'s interrupt handlers could cause issues
+- Fixed an issue where `reticulate`'s interrupt handlers could cause issues
   with newer versions of Python.
 
-* `reticulate` now better handles Pandas categorical variables containing
+- `reticulate` now better handles Pandas categorical variables containing
   `NA` values. (#942)
 
 - `reticulate` now supports converting `pandas.NA` objects into R `NA` objects.

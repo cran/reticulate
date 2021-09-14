@@ -1,6 +1,6 @@
 
-#ifndef __LIBPYTHON_HPP__
-#define __LIBPYTHON_HPP__
+#ifndef RETICULATE_LIBPYTHON_H
+#define RETICULATE_LIBPYTHON_H
 
 #include <string>
 #include <ostream>
@@ -15,6 +15,7 @@
 #define _PYTHON_API_VERSION 1013
 #define _PYTHON3_ABI_VERSION 3
 
+namespace reticulate {
 namespace libpython {
 
 #if _WIN32 || _WIN64
@@ -169,6 +170,7 @@ LIBPYTHON_EXTERN wchar_t* (*Py_GetProgramFullPath)();
 
 LIBPYTHON_EXTERN int (*Py_AddPendingCall)(int (*func)(void *), void *arg);
 LIBPYTHON_EXTERN void (*PyErr_SetInterrupt)();
+LIBPYTHON_EXTERN void (*PyErr_CheckSignals)();
 
 LIBPYTHON_EXTERN PyObject* (*Py_InitModule4)(const char *name, PyMethodDef *methods,
            const char *doc, PyObject *self,
@@ -264,6 +266,8 @@ LIBPYTHON_EXTERN PyObject* (*PyUnicode_FromString)(const char *u);
 
 LIBPYTHON_EXTERN void (*PyErr_Clear)();
 LIBPYTHON_EXTERN void (*PyErr_Fetch)(PyObject **, PyObject **, PyObject **);
+LIBPYTHON_EXTERN void (*PyErr_SetNone)(PyObject*);
+LIBPYTHON_EXTERN void (*PyErr_BadArgument)();
 LIBPYTHON_EXTERN PyObject* (*PyErr_Occurred)(void);
 LIBPYTHON_EXTERN void (*PyErr_NormalizeException)(PyObject**, PyObject**, PyObject**);
 LIBPYTHON_EXTERN int (*PyErr_GivenExceptionMatches)(PyObject *given, PyObject *exc);
@@ -715,5 +719,6 @@ LIBPYTHON_EXTERN PyThreadState* (*PyThreadState_Next)(PyThreadState*);
 /* End PyFrameObject */
 
 } // namespace libpython
+} // namespace reticulate
 
-#endif
+#endif /* RETICULATE_LIBPYTHON_H */
