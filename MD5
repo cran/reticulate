@@ -1,11 +1,11 @@
-aea7334fa577fe75c4f9213a21721c55 *DESCRIPTION
+2371ed79201b7c5d66b2cdf800d171e6 *DESCRIPTION
 5017a056f4c6b8e07d2eb3cdbd3dee52 *NAMESPACE
-8e9fc46d088aa1e9e134ad030242bd48 *NEWS.md
+7ec8c877f688679bc3d91e0c4d006e19 *NEWS.md
 00082a6359f8e86fa5a3ffd409409cb6 *R/RcppExports.R
 e815783b4b54644f18ef98f37d40a4c3 *R/array.R
 c9f862aea995fc7d1d0799db11ccbc34 *R/case.R
 b4ed34031ba40c1fce5413aaf70dae36 *R/class.R
-44c842aa2cb0aef2945a4edee6643238 *R/conda.R
+1301f808d817465b1e1028ce7c23eef1 *R/conda.R
 b30779532c6f312c28d23561d5767685 *R/config.R
 5342bc8934ef3a72417f91fffc0f26d4 *R/conversion.R
 775e273db49e5bfe9f28549d4a64bb36 *R/generator.R
@@ -19,7 +19,7 @@ cc1350c0f274dd9e10ade4e3eb51f2e3 *R/install.R
 78aac2885f3c8de086682d463db684db *R/output.R
 4482bb6a4e50baf112f7948b160bdc90 *R/package.R
 27dbf4ed44471497dace487f2900ecc1 *R/pickle.R
-cb242a2613f6000b1ac70b1f4828f816 *R/pip.R
+08f585827bffd4f6d2670628a16bae08 *R/pip.R
 4a683c26245bb4bf642bd7a4bde2ce9e *R/pipenv.R
 8770839a0e0f7b740e4b8045751d6cd3 *R/py_func.R
 8d18e18f3d406d25eae13d8df72a1ec0 *R/pyenv.R
@@ -39,7 +39,7 @@ bb4fbcbbf400fe0f7154fea2a8243210 *R/utils-format.R
 0cf493c0340bc41e7d3e11ec7eda6097 *R/virtualenv.R
 2a03d742a1d3bbdfc61712e9a2a8a7dd *R/wrapper.R
 e7a1b37ee466492281f30bacf76f23a0 *R/zzz.R
-f766216f1759128e83141bf6fa618eab *build/vignette.rds
+58d151d3aa079e49160d17fd8eee16f3 *build/vignette.rds
 415e23d1bd8a4a8c19c59a3eeeb17468 *inst/config/config.py
 57f9018550663220cedb9307bfeceece *inst/doc/arrays.R
 22bd97311da3f96fc40e4e73b601b746 *inst/doc/arrays.Rmd
