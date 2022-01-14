@@ -9,6 +9,7 @@
 #'
 #' @docType package
 #' @name reticulate
+#' @keywords internal
 #' @useDynLib reticulate, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 NULL
@@ -32,56 +33,58 @@ is_python_initialized <- function() {
 
 ensure_python_initialized <- function(required_module = NULL) {
 
-  if (!is_python_initialized()) {
+  # nothing to do if python is initialized
+  if (is_python_initialized())
+    return()
 
-    # give delay load modules priority
-    use_environment <- NULL
-    if (!is.null(.globals$delay_load_module)) {
-      required_module <- .globals$delay_load_module
-      use_environment <- .globals$delay_load_environment
-      .globals$delay_load_module <- NULL # one shot
-      .globals$delay_load_environment <- NULL
-      .globals$delay_load_priority <- 0
-    }
-
-    # notify front-end (if any) that Python is about to be initialized
-    callback <- getOption("reticulate.python.beforeInitialized")
-    if (is.function(callback))
-      callback()
-
-    # perform initialization
-    .globals$py_config <- initialize_python(required_module, use_environment)
-
-    # remap output streams to R output handlers
-    remap_output_streams()
-
-    # generate 'R' helper object
-    py_inject_r()
-
-    # inject hooks
-    py_inject_hooks()
-
-    # install required packages
-    configure_environment()
-    
-    # notify front-end (if any) that Python has been initialized
-    callback <- getOption("reticulate.python.afterInitialized")
-    if (is.null(callback))
-      callback <- getOption("reticulate.initialized")
-
-    if (is.function(callback))
-      callback()
-
-    # set up a Python signal handler
-    signals <- import("rpytools.signals")
-    signals$initialize(py_interrupts_pending)
-    
-    # register C-level interrupt handler
-    py_register_interrupt_handler()
-
-    # call init hooks
-    call_init_hooks()
+  # give delay load modules priority
+  use_environment <- NULL
+  if (!is.null(.globals$delay_load_module)) {
+    required_module <- .globals$delay_load_module
+    use_environment <- .globals$delay_load_environment
+    .globals$delay_load_module <- NULL # one shot
+    .globals$delay_load_environment <- NULL
+    .globals$delay_load_priority <- 0
   }
+
+  # notify front-end (if any) that Python is about to be initialized
+  callback <- getOption("reticulate.python.beforeInitialized")
+  if (is.function(callback))
+    callback()
+
+  # perform initialization
+  .globals$py_config <- initialize_python(required_module, use_environment)
+
+  # remap output streams to R output handlers
+  remap_output_streams()
+
+  # generate 'R' helper object
+  py_inject_r()
+
+  # inject hooks
+  py_inject_hooks()
+
+  # install required packages
+  configure_environment()
+
+  # notify front-end (if any) that Python has been initialized
+  callback <- getOption("reticulate.python.afterInitialized")
+  if (is.null(callback))
+    callback <- getOption("reticulate.initialized")
+
+  if (is.function(callback))
+    callback()
+
+  # set up a Python signal handler
+  signals <- import("rpytools.signals")
+  signals$initialize(py_interrupts_pending)
+
+  # register C-level interrupt handler
+  py_register_interrupt_handler()
+
+  # call init hooks
+  call_init_hooks()
+
 }
 
 
@@ -107,12 +110,16 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
     required_module <- strsplit(required_module, ".", fixed = TRUE)[[1]][[1]]
 
   # find configuration
-  config <- py_discover_config(required_module, use_environment)
+  config <- local({
+    op <- options(reticulate.python.initializing = TRUE)
+    on.exit(options(op), add = TRUE)
+    py_discover_config(required_module, use_environment)
+  })
 
   # check if R is embedded in an python environment
   py_embedded <- !is.null(main_process_python_info())
 
-  # check for basic python prerequsities
+  # check for basic python pre-requisites
   if (is.null(config)) {
     python_not_found("Installation of Python not found, Python bindings not loaded.")
   } else if (!is_windows() && is.null(config$libpython)) {
@@ -156,23 +163,21 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
 
   # munge PATH for python (needed so libraries can be found in some cases)
   oldpath <- python_munge_path(config$python)
-  
+
   # on macOS, we need to do some gymnastics to ensure that Anaconda
   # libraries can be properly discovered (and this will only work in RStudio)
   if (is_osx()) local({
-    
+
     symlink <- Sys.getenv("RSTUDIO_FALLBACK_LIBRARY_PATH", unset = NA)
     if (is.na(symlink))
       return()
-    
-    if (file.exists(symlink))
-      unlink(symlink)
-    
+
+    unlink(symlink)
     target <- dirname(config$libpython)
     file.symlink(target, symlink)
-    
+
   })
-  
+
   # initialize python
   tryCatch({
 
@@ -222,14 +227,14 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
   config$available <- TRUE
 
   if (py_embedded) {
-    
+
     # we need to insert path to rpytools directly for embedded R
     path <- system.file("python", package = "reticulate")
     fmt <- "import sys; sys.path.append(%s)"
     cmd <- sprintf(fmt, shQuote(path))
-    
+
     py_run_string_impl(cmd)
-    
+
   }
 
   # ensure modules can be imported from the current working directory
