@@ -335,22 +335,47 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <div id="locating-python" class="section level2">
 <h2>Locating Python</h2>
-<p>It is not uncommon for several version of Python (and several conda or virtualenv environments within a given version) to be available on a given system. The <strong>reticulate</strong> package can bind to any of these versions, and in all cases will attempt to locate a version which includes the first Python package imported via the <code>import()</code> function. Consider the following code:</p>
+<p>It is not uncommon for several version of Python (and several conda
+or virtualenv environments within a given version) to be available on a
+given system. The <strong>reticulate</strong> package can bind to any of
+these versions, and in all cases will attempt to locate a version which
+includes the first Python package imported via the <code>import()</code>
+function. Consider the following code:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>scipy <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;scipy&quot;</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>scipy<span class="sc">$</span><span class="fu">amin</span>(<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>))</span></code></pre></div>
-<p>In this case, the various versions of Python installed on the system will be scanned to see whether one of them includes the “scipy” Python package (the first version found that satisfies this requirement will be used).</p>
-<p>By default, the version of Python found on the system <code>PATH</code> is checked first, and then some other conventional location for Py Python (e.g. <code>/usr/local/bin/python</code>, <code>/opt/local/bin/python</code>, etc.) are checked.</p>
-<p>Note that for reticulate to bind to a version of Python it must be compiled with shared library support (i.e. with the <code>--enable-shared</code> flag).</p>
+<p>In this case, the various versions of Python installed on the system
+will be scanned to see whether one of them includes the “scipy” Python
+package (the first version found that satisfies this requirement will be
+used).</p>
+<p>By default, the version of Python found on the system
+<code>PATH</code> is checked first, and then some other conventional
+location for Py Python (e.g. <code>/usr/local/bin/python</code>,
+<code>/opt/local/bin/python</code>, etc.) are checked.</p>
+<p>Note that for reticulate to bind to a version of Python it must be
+compiled with shared library support (i.e. with the
+<code>--enable-shared</code> flag).</p>
 </div>
 <div id="providing-hints" class="section level2">
 <h2>Providing Hints</h2>
-<p>There are two ways you can provide hints as to which version of Python should be used:</p>
+<p>There are two ways you can provide hints as to which version of
+Python should be used:</p>
 <ol style="list-style-type: decimal">
-<li><p>By setting the value of the <code>RETICULATE_PYTHON</code> environment variable to a Python binary. Note that if you set this environment variable, then the specified version of Python will always be used (i.e. this is prescriptive rather than advisory). To set the value of <code>RETICULATE_PYTHON</code>, insert <code>Sys.setenv(RETICULATE_PYTHON = PATH)</code> into your project’s .Rprofile, where <code>PATH</code> is your preferred Python binary.</p></li>
+<li><p>By setting the value of the <code>RETICULATE_PYTHON</code>
+environment variable to a Python binary. Note that if you set this
+environment variable, then the specified version of Python will always
+be used (i.e. this is prescriptive rather than advisory). To set the
+value of <code>RETICULATE_PYTHON</code>, insert
+<code>Sys.setenv(RETICULATE_PYTHON = PATH)</code> into your project’s
+.Rprofile, where <code>PATH</code> is your preferred Python
+binary.</p></li>
 <li><p>By calling one of the these functions:</p></li>
 </ol>
 <table>
+<colgroup>
+<col width="19%" />
+<col width="80%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th>Function</th>
@@ -377,39 +402,68 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">use_python</span>(<span class="st">&quot;/usr/local/bin/python&quot;</span>)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">use_virtualenv</span>(<span class="st">&quot;~/myenv&quot;</span>)</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="st">&quot;myenv&quot;</span>)</span></code></pre></div>
-<p>The <code>use_condaenv</code> function will use whatever conda binary is found on the system PATH. If you want to use a specific alternate version you can use the <code>conda</code> parameter. For example:</p>
+<p>The <code>use_condaenv</code> function will use whatever conda binary
+is found on the system PATH. If you want to use a specific alternate
+version you can use the <code>conda</code> parameter. For example:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="at">condaenv =</span> <span class="st">&quot;r-nlp&quot;</span>, <span class="at">conda =</span> <span class="st">&quot;/opt/anaconda3/bin/conda&quot;</span>)</span></code></pre></div>
-<p>Note that the <code>use</code> functions are by default considered only hints as to where to find Python (i.e. they don’t produce errors if the specified version doesn’t exist). You can add the <code>required</code> parameter to ensure that the specified version of Python is always used (it will be an error if the specified version doesn’t exist):</p>
+<p>Note that the <code>use</code> functions are by default considered
+only hints as to where to find Python (i.e. they don’t produce errors if
+the specified version doesn’t exist). You can add the
+<code>required</code> parameter to ensure that the specified version of
+Python is always used (it will be an error if the specified version
+doesn’t exist):</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">use_virtualenv</span>(<span class="st">&quot;~/myenv&quot;</span>, <span class="at">required =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 </div>
 <div id="order-of-discovery" class="section level2">
 <h2>Order of Discovery</h2>
-<p>The order in which versions of Python will be discovered and used is as follows:</p>
+<p>The order in which versions of Python will be discovered and used is
+as follows:</p>
 <ol style="list-style-type: decimal">
-<li><p>If specified, at the location referenced by the <code>RETICULATE_PYTHON</code> environment variable.</p></li>
-<li><p>If specified, at the locations referenced by calls to <code>use_python()</code>, <code>use_virtualenv()</code>, and <code>use_condaenv()</code>.</p></li>
-<li><p>Within virtualenvs and conda envs that carry the same name as the first module imported. For example, if you execute <code>import(&quot;nltk&quot;)</code> then the following locations (among other similar ones) would be scanned for a version of Python with the <strong>nltk</strong> module installed:</p>
+<li><p>If specified, at the location referenced by the
+<code>RETICULATE_PYTHON</code> environment variable.</p></li>
+<li><p>If specified, at the locations referenced by calls to
+<code>use_python()</code>, <code>use_virtualenv()</code>, and
+<code>use_condaenv()</code>.</p></li>
+<li><p>Within virtualenvs and conda envs that carry the same name as the
+first module imported. For example, if you execute
+<code>import(&quot;nltk&quot;)</code> then the following locations (among other
+similar ones) would be scanned for a version of Python with the
+<strong>nltk</strong> module installed:</p>
 <ul>
 <li>$WORKON_HOME/nltk</li>
 <li>~/.virtualenvs/nltk</li>
 <li>~/anaconda/envs/nltk</li>
 <li>~/nltk</li>
 </ul></li>
-<li><p>At the location of the Python binary discovered on the system <code>PATH</code> (via the <code>Sys.which</code> function).</p></li>
-<li><p>At other customary locations for Python including <code>/usr/local/bin/python</code>, <code>/opt/local/bin/python</code>, etc.</p></li>
+<li><p>At the location of the Python binary discovered on the system
+<code>PATH</code> (via the <code>Sys.which</code> function).</p></li>
+<li><p>At other customary locations for Python including
+<code>/usr/local/bin/python</code>, <code>/opt/local/bin/python</code>,
+etc.</p></li>
 </ol>
-<p>The scanning for and binding to a version of Python typically occurs at the time of the first call to <code>import()</code> within an R session. As a result, priority will be given to versions of Python that include the module specified within the call to <code>import()</code> (i.e. versions that don’t include it will be skipped).</p>
+<p>The scanning for and binding to a version of Python typically occurs
+at the time of the first call to <code>import()</code> within an R
+session. As a result, priority will be given to versions of Python that
+include the module specified within the call to <code>import()</code>
+(i.e. versions that don’t include it will be skipped).</p>
 </div>
 <div id="python-packages" class="section level2">
 <h2>Python Packages</h2>
-<p>Each version of Python on your system has its own set of packages and as described above reticulate will automatically find a version of Python that contains the first package that you import from R.</p>
-<p>You can learn more about installing Python packages into virtualenvs or Conda environments in the article on <a href="python_packages.html">Installing Python Packages</a>.</p>
+<p>Each version of Python on your system has its own set of packages and
+as described above reticulate will automatically find a version of
+Python that contains the first package that you import from R.</p>
+<p>You can learn more about installing Python packages into virtualenvs
+or Conda environments in the article on <a href="python_packages.html">Installing Python Packages</a>.</p>
 </div>
 <div id="configuration-info" class="section level2">
 <h2>Configuration Info</h2>
-<p>You can use the <code>py_config()</code> function to query for information about the specific version of Python in use as well as a list of other Python versions discovered on the system:</p>
+<p>You can use the <code>py_config()</code> function to query for
+information about the specific version of Python in use as well as a
+list of other Python versions discovered on the system:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">py_config</span>()</span></code></pre></div>
-<p>You can also use the <code>py_discover_config()</code> function to see what version of Python will be used without actually loading Python:</p>
+<p>You can also use the <code>py_discover_config()</code> function to
+see what version of Python will be used without actually loading
+Python:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">py_discover_config</span>()</span></code></pre></div>
 </div>
 

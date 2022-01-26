@@ -1,8 +1,16 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include=FALSE------------------------------------------------------------
+library(reticulate)
+
+# this vignette requires python 3.8 or newer
+eval <- tryCatch({
+  config <- py_config()
+  numeric_version(config$version) >= "3.8" && py_numpy_available()
+}, error = function(e) FALSE)
+
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = reticulate::py_numpy_available(initialize = TRUE)
+  eval = eval
 )
 
 ## ----setup--------------------------------------------------------------------
