@@ -52,13 +52,13 @@ bool getInterruptsPending() {
 }
 
 void setInterruptsPending(bool value) {
-  
+
 #ifndef _WIN32
   R_interrupts_pending = value ? 1 : 0;
 #else
   UserBreak = value ? 1 : 0;
 #endif
-  
+
 }
 
 bool getInterruptsSuspended() {
@@ -70,14 +70,14 @@ void setInterruptsSuspended(bool value) {
 }
 
 // namespace {
-// 
+//
 // volatile sig_atomic_t s_pyInterruptHandlerRegistered;
-// 
+//
 // int pyInterruptHandler(void*) {
-//   
+//
 //   DBG("Running Python interrupt handler.");
 //   s_pyInterruptHandlerRegistered = 0;
-//   
+//
 //   if (s_pyInterruptsPending != 0)
 //   {
 //     DBG("Python interrupts are pending; setting interrupt.");
@@ -88,25 +88,25 @@ void setInterruptsSuspended(bool value) {
 //   {
 //     DBG("No Python interrupts pending.");
 //   }
-//   
+//
 //   return 0;
 // }
-// 
+//
 // } // end anonymous namespace
 
 void interruptHandler(int signum) {
-  
+
   DBG("Invoking interrupt handler.");
-  
+
   // set internal flag for Python interrupts
   setPythonInterruptsPending(true);
-  
+
   // set R interrupts pending
   setInterruptsPending(true);
 
   // tell Python to interrupt
   PyErr_SetInterrupt();
-  
+
 }
 
 #ifndef _WIN32
@@ -162,23 +162,18 @@ void py_register_interrupt_handler() {
   reticulate::signals::registerInterruptHandler();
 }
 
-// [[Rcpp::export]]
-void py_clear_error() {
-  DBG("Clearing Python errors.");
-  PyErr_Clear();
-}
 
 // [[Rcpp::export]]
 bool py_interrupts_pending(bool reset) {
-  
+
   if (reticulate::signals::getInterruptsSuspended())
     return false;
-  
+
   if (reset) {
     reticulate::signals::setInterruptsPending(false);
     return false;
   }
-  
+
   return reticulate::signals::getInterruptsPending();
-  
+
 }

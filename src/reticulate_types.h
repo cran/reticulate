@@ -28,14 +28,14 @@ public:
   }
 
   PyObject* get() const {
-    
+
     SEXP pyObject = getFromEnvironment("pyobj");
     if (pyObject != R_NilValue) {
       PyObject* obj = (PyObject*)R_ExternalPtrAddr(pyObject);
       if (obj != NULL)
         return obj;
     }
-    
+
     Rcpp::stop("Unable to access object (object is from previous session and is now invalid)");
   }
 
@@ -75,5 +75,43 @@ public:
   }
 
 };
+
+extern bool s_is_python_initialized;
+
+class GILScope {
+ private:
+  PyGILState_STATE gstate;
+  bool acquired = false;
+
+ public:
+  GILScope() {
+    if (s_is_python_initialized) {
+      gstate = PyGILState_Ensure();
+      acquired = true;
+    }
+  }
+
+  GILScope(bool force) {
+    if (force) {
+      gstate = PyGILState_Ensure();
+      acquired = true;
+    }
+  }
+
+  ~GILScope() {
+    if (acquired) PyGILState_Release(gstate);
+  }
+};
+
+#undef BEGIN_RCPP
+#define BEGIN_RCPP                           \
+  int rcpp_output_type = 0;                  \
+  int nprot = 0;                             \
+  (void)rcpp_output_type;                    \
+  SEXP rcpp_output_condition = R_NilValue;   \
+  (void)rcpp_output_condition;               \
+  static SEXP stop_sym = Rf_install("stop"); \
+  try {                                      \
+    GILScope gilscope;
 
 #endif // RETICULATE_TYPES_H

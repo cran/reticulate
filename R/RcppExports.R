@@ -13,21 +13,31 @@ is_python3 <- function() {
     .Call(`_reticulate_is_python3`)
 }
 
-#' Get or clear the last Python error encountered
+#' Check if a Python object is a null externalptr
 #'
-#' @return For `py_last_error()`, a list with the type, value,
-#' and traceback for the last Python error encountered (can be
-#' `NULL` if no error has yet been encountered).
+#' @param x Python object
+#'
+#' @return Logical indicating whether the object is a null externalptr
+#'
+#' @details When Python objects are serialized within a persisted R
+#'  environment (e.g. .RData file) they are deserialized into null
+#'  externalptr objects (since the Python session they were originally
+#'  connected to no longer exists). This function allows you to safely
+#'  check whether whether a Python object is a null externalptr.
+#'
+#'  The `py_validate` function is a convenience function which calls
+#'  `py_is_null_xptr` and throws an error in the case that the xptr
+#'  is `NULL`.
 #'
 #' @export
-py_last_error <- function() {
-    .Call(`_reticulate_py_last_error`)
+py_is_null_xptr <- function(x) {
+    .Call(`_reticulate_py_is_null_xptr`, x)
 }
 
-#' @rdname py_last_error
+#' @rdname py_is_null_xptr
 #' @export
-py_clear_last_error <- function() {
-    invisible(.Call(`_reticulate_py_clear_last_error`))
+py_validate_xptr <- function(x) {
+    invisible(.Call(`_reticulate_py_validate_xptr`, x))
 }
 
 py_none_impl <- function() {
@@ -54,6 +64,14 @@ main_process_python_info <- function() {
     .Call(`_reticulate_main_process_python_info`)
 }
 
+py_clear_error <- function() {
+    invisible(.Call(`_reticulate_py_clear_error`))
+}
+
+was_python_initialized_by_reticulate <- function() {
+    .Call(`_reticulate_was_python_initialized_by_reticulate`)
+}
+
 py_initialize <- function(python, libpython, pythonhome, virtualenv_activate, python3, interactive, numpy_load_error) {
     invisible(.Call(`_reticulate_py_initialize`, python, libpython, pythonhome, virtualenv_activate, python3, interactive, numpy_load_error))
 }
@@ -74,39 +92,18 @@ py_str_impl <- function(x) {
     .Call(`_reticulate_py_str_impl`, x)
 }
 
+#' @export
+#' @rdname py_str
+py_repr <- function(object) {
+    .Call(`_reticulate_py_repr`, object)
+}
+
 py_print <- function(x) {
     invisible(.Call(`_reticulate_py_print`, x))
 }
 
 py_is_function <- function(x) {
     .Call(`_reticulate_py_is_function`, x)
-}
-
-#' Check if a Python object is a null externalptr
-#'
-#' @param x Python object
-#'
-#' @return Logical indicating whether the object is a null externalptr
-#'
-#' @details When Python objects are serialized within a persisted R
-#'  environment (e.g. .RData file) they are deserialized into null
-#'  externalptr objects (since the Python session they were originally
-#'  connected to no longer exists). This function allows you to safely
-#'  check whether whether a Python object is a null externalptr.
-#'
-#'  The `py_validate` function is a convenience function which calls
-#'  `py_is_null_xptr` and throws an error in the case that the xptr
-#'  is `NULL`.
-#'
-#' @export
-py_is_null_xptr <- function(x) {
-    .Call(`_reticulate_py_is_null_xptr`, x)
-}
-
-#' @rdname py_is_null_xptr
-#' @export
-py_validate_xptr <- function(x) {
-    invisible(.Call(`_reticulate_py_validate_xptr`, x))
 }
 
 py_numpy_available_impl <- function() {
@@ -245,7 +242,7 @@ py_list_length <- function(x) {
     .Call(`_reticulate_py_list_length`, x)
 }
 
-py_len_impl <- function(x, defaultValue) {
+py_len_impl <- function(x, defaultValue = NULL) {
     .Call(`_reticulate_py_len_impl`, x, defaultValue)
 }
 
@@ -259,10 +256,6 @@ readline <- function(prompt) {
 
 py_register_interrupt_handler <- function() {
     invisible(.Call(`_reticulate_py_register_interrupt_handler`))
-}
-
-py_clear_error <- function() {
-    invisible(.Call(`_reticulate_py_clear_error`))
 }
 
 py_interrupts_pending <- function(reset) {

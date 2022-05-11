@@ -50,7 +50,9 @@
 #'   Either the name of, or the path to, a Python virtual environment.
 #'
 #' @param condaenv
-#'   The name of the Conda environment to use.
+#'   The conda environment to use. This can be the name, the absolute prefix path
+#'   or the absolute path to the python binary. If the name is ambiguous, the
+#'   first environment is used and a warning is issued.
 #'
 #' @param conda
 #'   The path to a `conda` executable. By default, `reticulate` will check the
@@ -70,6 +72,9 @@ use_python <- function(python, required = NULL) {
   required <- required %||% use_python_required()
   if (required && !file_test("-f", python) && !file_test("-d", python))
     stop("Specified version of python '", python, "' does not exist.")
+
+  # ensure that the python path is normalized as expected
+  python <- normalize_python_path(python)$path
 
   # if required == TRUE and python is already initialized then confirm that we
   # are using the correct version
@@ -106,8 +111,23 @@ use_python <- function(python, required = NULL) {
     }
   }
 
-  if (required)
+  if (required) {
+    if (!is.null(prior_required_python <-
+                 .globals$required_python_version) &&
+        !isTRUE(canonical_path(prior_required_python) == canonical_path(python)))
+      warningf(
+        'Previous request to `use_python("%s", required = TRUE)` will be ignored. It is superseded by request to `use_python("%s")',
+        prior_required_python, python)
+
     .globals$required_python_version <- python
+
+    if (!is.na(python_w_precedence <-
+               Sys.getenv("RETICULATE_PYTHON", NA)) &&
+        !isTRUE(canonical_path(python_w_precedence) == canonical_path(python)))
+      warningf(
+        'The request to `use_python("%s")` will be ignored because the environment variable RETICULATE_PYTHON is set to "%s"',
+        python, python_w_precedence)
+  }
 
   .globals$use_python_versions <- unique(c(.globals$use_python_versions, python))
 

@@ -115,6 +115,8 @@ py_compile_eval <- function(code, compile_mode = "single", capture = TRUE) {
 }
 
 py_last_value <- function() {
+  ex <- .globals$py_last_exception
+  on.exit(.globals$py_last_exception <- ex)
   tryCatch(
     py_eval("_", convert = FALSE),
     error = function(e) py_none()
@@ -380,7 +382,22 @@ startsWith <- function(x, prefix) {
   suppressWarnings(substr(x, 1L, nchar(prefix)) == prefix)
 }
 
+endsWith <- function (x, suffix) { # needed for R < 3.3
+  if (!is.character(x) || !is.character(suffix))
+    stop("non-character object(s)")
+  n <- nchar(x)
+  suppressWarnings(substr(x, n - nchar(suffix) + 1L, n) == suffix)
+}
+
 debuglog <- function(fmt, ...) {
   msg <- sprintf(fmt, ...)
   cat(msg, file = "/tmp/reticulate.log", sep = "\n", append = TRUE)
+}
+
+system2t <- function(command, args, ...) {
+  # system2, with a trace
+  # mimic bash's set -x usage of a "+" prefix for now
+  # maybe someday take a dep on {cli} and make it prettier
+  message(paste("+", shQuote(command), paste0(args, collapse = " ")))
+  system2(command, args, ...)
 }

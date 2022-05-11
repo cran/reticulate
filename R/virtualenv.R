@@ -129,9 +129,9 @@ virtualenv_create <- function(
   args <- c(args, shQuote(path.expand(path)))
 
   writef("Using Python: %s", python)
-  printf("Creating virtual environment %s ... ", shQuote(name))
+  printf("Creating virtual environment %s ... \n", shQuote(name))
 
-  result <- system2(python, args)
+  result <- system2t(python, args)
   if (result != 0L) {
     writef("FAILED")
     fmt <- "Error creating virtual environment '%s' [error code %d]"

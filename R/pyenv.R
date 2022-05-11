@@ -6,10 +6,37 @@ pyenv_root <- function() {
   file.path(norm, "pyenv")
 }
 
+
+pyenv_resolve_latest_patch <- function(version, installed = TRUE, pyenv = pyenv_find()) {
+  # if version = "3.8:latest", resolve latest installed
+  # recent versions of pyenv on Mac/Linux can accept a ":latest" suffix on install,
+  # but then we can't easily resolve the latest from what's locally installed.
+  # windows pyenv can't handle :latest at all.
+  # So we do it all in R.
+  stopifnot(endsWith(version, ":latest"))
+  version <- substr(version, 1L, nchar(version) - nchar(":latest"))
+
+  available <- pyenv_list(pyenv, installed)
+  available <- available[startsWith(available, version)]
+  out <- as.character(max(numeric_version(available, strict = FALSE),
+                          na.rm = TRUE))
+
+  if (!length(out))
+    stop(
+      sprintf("Python release version '%s' not found. ", version),
+      "Run `install_python(list = TRUE)` to see available versions."
+    )
+
+  out
+}
+
 pyenv_python <- function(version) {
 
   if (is.null(version))
     return(NULL)
+
+  if(endsWith(version, ":latest"))
+    version <- pyenv_resolve_latest_patch(version, installed = TRUE)
 
   # on Windows, Python will be installed as part of the pyenv installation
   prefix <- if (is_windows()) {
@@ -43,7 +70,7 @@ pyenv_python <- function(version) {
 
 }
 
-pyenv_list <- function(pyenv = NULL) {
+pyenv_list <- function(pyenv = NULL, installed = FALSE) {
 
   # resolve pyenv
   pyenv <- normalizePath(
@@ -51,6 +78,9 @@ pyenv_list <- function(pyenv = NULL) {
     winslash = "/",
     mustWork = TRUE
   )
+
+  if(installed)
+    return(system2(pyenv, c("versions", "--bare"), stdout = TRUE))
 
   # request list of Python packages
   output <- system2(pyenv, c("install", "--list"), stdout = TRUE, stderr = TRUE)
@@ -66,7 +96,7 @@ pyenv_list <- function(pyenv = NULL) {
 
 pyenv_find <- function() {
   pyenv <- pyenv_find_impl()
-  normalizePath(pyenv, winslash = "/", mustWork = TRUE)
+  canonical_path(pyenv)
 }
 
 pyenv_find_impl <- function() {
@@ -150,9 +180,15 @@ pyenv_bootstrap_windows <- function() {
   on.exit(setwd(owd), add = TRUE)
   system("git pull")
 
-  # return path to pyenv binary
-  file.path(root, "pyenv-win/bin/pyenv")
+  # path to pyenv binary
+  pyenv <- file.path(root, "pyenv-win/bin/pyenv")
 
+  # running 'update' after install on windows is basically required
+  # https://github.com/pyenv-win/pyenv-win/issues/280#issuecomment-1045027625
+  system2(pyenv, "update")
+
+  # return path to pyenv binary
+  pyenv
 }
 
 pyenv_bootstrap_unix <- function() {
@@ -189,3 +225,25 @@ pyenv_bootstrap_unix <- function() {
   path
 
 }
+
+
+pyenv_update <- function(pyenv = pyenv_find()) {
+  if(is_windows())
+    return(system2t(pyenv, "update"))
+
+  # $ git clone https://github.com/pyenv/pyenv-update.git $(pyenv root)/plugins/pyenv-update
+  root <- system2(pyenv, "root", stdout = TRUE)
+  if(!dir.exists(file.path(root, "plugins/pyenv-update")))
+    system2("git", c("clone", "https://github.com/pyenv/pyenv-update.git",
+                      file.path(root, "plugins/pyenv-update")))
+
+  system2t(pyenv, "update")
+}
+
+#export PATH="$HOME/.local/share/r-reticulate/pyenv/bin/:$PATH"
+#eval "$(pyenv init --path)"
+#eval "$(pyenv virtualenv-init -)"
+
+#export PATH="$HOME/.pyenv/bin:$PATH"
+#eval "$(pyenv init --path)"
+#eval "$(pyenv virtualenv-init -)"

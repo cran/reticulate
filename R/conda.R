@@ -37,7 +37,7 @@
 #' @param file The path where the conda environment definition will be written.
 #'
 #' @param json Boolean; should the environment definition be written as JSON?
-#'   By default, conda exports environmentas as YAML.
+#'   By default, conda exports environments as YAML.
 #'
 #' @param pip Boolean; use `pip` for package installation? By default, packages
 #'   are installed from the active conda channels.
@@ -226,7 +226,7 @@ conda_create <- function(envname = NULL,
     args <- c(args, "-c", ch)
 
   # invoke conda
-  result <- system2(conda, shQuote(args))
+  result <- system2t(conda, shQuote(args))
   if (result != 0L) {
     fmt <- "Error creating conda environment '%s' [exit code %i]"
     stopf(fmt, envname, result, call. = FALSE)
@@ -252,7 +252,7 @@ conda_create_env <- function(envname, environment, conda) {
     "-f", shQuote(environment)
   )
 
-  result <- system2(conda, args)
+  result <- system2t(conda, args)
   if (result != 0L) {
     fmt <- "Error creating conda environment [exit code %i]"
     stopf(fmt, result)
@@ -287,7 +287,7 @@ conda_clone <- function(envname, ..., clone = "base", conda = "auto") {
   args <- c(args, "--clone", clone)
 
   # invoke conda
-  result <- system2(conda, shQuote(args))
+  result <- system2t(conda, shQuote(args))
   if (result != 0L) {
     fmt <- "Error creating conda environment '%s' [exit code %i]"
     stopf(fmt, envname, result, call. = FALSE)
@@ -359,7 +359,7 @@ conda_remove <- function(envname,
 
   # remove packges (or the entire environment)
   args <- conda_args("remove", envname, packages)
-  result <- system2(conda, shQuote(args))
+  result <- system2t(conda, shQuote(args))
   if (result != 0L) {
     stop("Error ", result, " occurred removing conda environment ", envname,
          call. = FALSE)
@@ -439,7 +439,7 @@ conda_install <- function(envname = NULL,
   # (should be no-op if that copy of Python already installed)
   if (!is.null(python_version)) {
     args <- conda_args("install", envname, python_package)
-    status <- system2(conda, shQuote(args))
+    status <- system2t(conda, shQuote(args))
     if (status != 0L) {
       fmt <- "installation of '%s' into environment '%s' failed [error code %i]"
       msg <- sprintf(fmt, python_package, envname, status)
@@ -476,7 +476,7 @@ conda_install <- function(envname = NULL,
     args <- c(args, "-c", ch)
 
   args <- c(args, python_package, packages)
-  result <- system2(conda, shQuote(args))
+  result <- system2t(conda, shQuote(args))
 
   # check for errors
   if (result != 0L) {
@@ -501,8 +501,8 @@ conda_binary <- function(conda = "auto") {
   }
 
   conda <- normalizePath(conda, winslash = "/", mustWork = FALSE)
-  if (!grepl("^conda", basename(conda)))
-    stop("Supplied path is not a conda binary: ", sQuote(conda))
+  if (!grepl("^(conda|mamba)", basename(conda)))
+    warning("Supplied path is not a conda binary: ", sQuote(conda))
 
   # if the user has requested a conda binary in the 'condabin' folder,
   # try to find and use its sibling in the 'bin' folder instead as
@@ -538,7 +538,10 @@ conda_exe <- conda_binary
 #' @export
 conda_version <- function(conda = "auto") {
   conda_bin <- conda_binary(conda)
-  system2(conda_bin, "--version", stdout = TRUE)
+  out <- system2(conda_bin, "--version", stdout = TRUE)
+
+  # mamba --version gives multi-line output, with the conda version on the last line.
+  tail(out, 1)
 }
 
 
@@ -558,8 +561,7 @@ conda_update <- function(conda = "auto") {
   name <- if ("anaconda" %in% envlist$name) "anaconda" else "conda"
 
   # attempt update
-  system2(conda, c("update", "--prefix", shQuote(prefix), "--yes", name))
-
+  system2t(conda, c("update", "--prefix", shQuote(prefix), "--yes", name))
 }
 
 numeric_conda_version <- function(conda = "auto", version_string = conda_version(conda)) {
@@ -798,6 +800,9 @@ conda_installed <- function() {
 
 conda_run <- function(cmd, args = c(), conda = "auto", envname = NULL,
                       run_args = c("--no-capture-output"), ...) {
+  # `conda run` is very unreliable, best avoided. known issues:
+  #  - fails if user doesn't have write permissions to conda installation
+  #  - fails if arguments need to be quoted
 
   conda <- conda_binary(conda)
   envname <- condaenv_resolve(envname)
@@ -813,7 +818,7 @@ Run `miniconda_update('%s')` to update conda.", conda)
   else
     in_env <- c("--name", envname)
 
-  system2(conda, c("run", in_env, run_args,
+  system2t(conda, c("run", in_env, run_args,
                    shQuote(cmd), args), ...)
 }
 
@@ -828,7 +833,8 @@ conda_run2 <- function(...) {
 
 conda_run2_windows <-
   function(cmd, args = c(), conda = "auto", envname = NULL,
-           cmd_line = paste(shQuote(cmd), paste(args, collapse = " "))) {
+           cmd_line = paste(shQuote(cmd), paste(args, collapse = " ")),
+           intern = FALSE, echo = !intern) {
   conda <- normalizePath(conda_binary(conda))
 
   if (identical(envname, "base"))
@@ -839,19 +845,31 @@ conda_run2_windows <-
   if (grepl("[/\\]", envname))
     envname <- normalizePath(envname)
 
+  activate.bat <- normalizePath(file.path(dirname(conda), "activate.bat"),
+                                mustWork = FALSE)
+
+  activate_cmd <-
+    if (file.exists(activate.bat)) {
+      paste("CALL", shQuote(activate.bat), shQuote(envname))
+    } else {
+      paste("CALL", shQuote(conda), "activate", shQuote(envname))
+    }
+
   fi <- tempfile(fileext = ".bat")
   on.exit(unlink(fi))
   writeLines(c(
-    paste("CALL", shQuote(conda), "activate", shQuote(envname)),
+    if(!echo) "@echo off",
+    activate_cmd,
     cmd_line
   ), fi)
 
-  shell(fi)
+  shell(fi, intern = intern)
 }
 
 conda_run2_nix <-
   function(cmd, args = c(), conda = "auto", envname = NULL,
-           cmd_line = paste(shQuote(cmd), paste(args, collapse = " "))) {
+           cmd_line = paste(shQuote(cmd), paste(args, collapse = " ")),
+           intern = FALSE, echo = !intern) {
   conda <- normalizePath(conda_binary(conda))
   activate <- normalizePath(file.path(dirname(conda), "activate"))
 
@@ -863,14 +881,24 @@ conda_run2_nix <-
 
   fi <- tempfile(fileext = ".sh")
   on.exit(unlink(fi))
-  writeLines(c(
+
+  commands <- c(
     paste(".", activate),
     if (!identical(envname, "base"))
       paste("conda activate", shQuote(envname)),
-    'echo "Activated conda python: $(which python)"',
     cmd_line
-  ), fi)
-  system2(Sys.which("sh"), fi)
+  )
+
+  # set -x is too verbose, includes all the commands made by conda scripts
+  # so we manually echo the top-level commands only
+  if(echo)
+    commands <- as.vector(rbind(
+      paste("echo", shQuote(paste("+", commands))),
+      commands))
+
+  writeLines(commands, fi)
+  system2(Sys.which("sh"), fi,
+          stdout = if(identical(intern, FALSE)) "" else intern)
 }
 
 

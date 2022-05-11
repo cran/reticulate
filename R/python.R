@@ -1,7 +1,8 @@
 
 #' @export
 print.python.builtin.object <- function(x, ...) {
-  str(x, ...)
+  writeLines(py_repr(x))
+  invisible(x)
 }
 
 
@@ -375,7 +376,7 @@ plot.numpy.ndarray <- function(x, y, ...) {
 #' @return A Python dictionary
 #'
 #' @note The returned dictionary will not automatically convert its elements
-#'   from Python to R. You can do manual converstion with the [py_to_r()]
+#'   from Python to R. You can do manual conversion with the [py_to_r()]
 #'   function or pass `convert = TRUE` to request automatic conversion.
 #'
 #' @export
@@ -438,7 +439,7 @@ py_dict <- function(keys, values, convert = FALSE) {
 #'
 #' @return A Python tuple
 #' @note The returned tuple will not automatically convert its elements from
-#'   Python to R. You can do manual converstion with the [py_to_r()] function or
+#'   Python to R. You can do manual conversion with the [py_to_r()] function or
 #'   pass `convert = TRUE` to request automatic conversion.
 #'
 #' @export
@@ -560,7 +561,7 @@ py_bool <- function(x) {
 #'   they are 8-bit string objects. This function enables you to
 #'   obtain a Python unicode object from an R character vector
 #'   when running under Python 2 (under Python 3 a standard Python
-#'   string object is returend).
+#'   string object is returned).
 #'
 #' @export
 py_unicode <- function(str) {
@@ -934,7 +935,20 @@ py_id <- function(object) {
 }
 
 
-#' An S3 method for getting the string representation of a Python object
+#' String representation of a python object.
+#'
+#' This is equivalent to calling `str(object)` or `repr(object)` in Python.
+#'
+#' In Python, calling `print()` invokes the builtin `str()`, while auto-printing
+#' an object at the REPL invokes the builtin `repr()`.
+#'
+#' In \R, the default print method for python objects invokes `py_repr()`, and
+#' the default `format()` and `as.character()` methods invoke `py_str()`.
+#'
+#' For historical reasons, `py_str()` is also an \R S3 method that allows R
+#' authors to customize the the string representation of a Python object from R.
+#' New code is recommended to provide a `format()` and/or `print()` S3 R method
+#' for python objects instead.
 #'
 #' @param object Python object
 #' @param ... Unused
@@ -946,7 +960,7 @@ py_id <- function(object) {
 #' @export
 py_str <- function(object, ...) {
   if (!inherits(object, "python.builtin.object"))
-    py_str.default(object)
+    "<not a python object>"
   else if (py_is_null_xptr(object) || !py_available())
     "<pointer: 0x0>"
   else
@@ -958,12 +972,20 @@ py_str.default <- function(object, ...) {
   "<not a python object>"
 }
 
-
 #' @export
 py_str.python.builtin.object <- function(object, ...) {
+  py_str_impl(object)
+}
 
-  # get default rep
-  str <- py_str_impl(object)
+
+#' @export
+format.python.builtin.object <- function(x, ...) {
+
+  if (py_is_null_xptr(x) || !py_available())
+    return("<pointer: 0x0>")
+
+  # get default rep, potentially user defined S3
+  str <- py_str(x)
 
   # remove e.g. 'object at 0x10d084710'
   str <- gsub(" object at 0x\\w{4,}", "", str)
@@ -974,8 +996,7 @@ py_str.python.builtin.object <- function(object, ...) {
 
 #' @export
 py_str.python.builtin.bytearray <- function(object, ...) {
-  builtins <- import_builtins()
-  paste0("python.builtin.bytearray (", builtins$len(object), " bytes)")
+  paste0("python.builtin.bytearray (", py_len_impl(object), " bytes)")
 }
 
 #' @export
@@ -999,19 +1020,29 @@ py_str.python.builtin.tuple <- function(object, ...) {
 }
 
 py_collection_str <- function(name, object) {
-  len <- py_collection_len(object)
+  len <- py_len_impl(object)
   if (len > 10)
     paste0(name, " (", len, " items)")
   else
     py_str.python.builtin.object(object)
 }
 
-py_collection_len <- function(object) {
-  # do this dance so we can call __len__ on dictionaries (which
-  # otherwise overload the $)
-  len <- py_get_attr(object, "__len__")
-  py_to_r(py_call(len))
+.print.via.format <- function(x, ...) {
+  writeLines(format(x, ...))
+  invisible(x)
 }
+
+#' @export
+print.python.builtin.bytearray <- .print.via.format
+#' @export
+print.python.builtin.tuple <- .print.via.format
+#' @export
+print.python.builtin.module <- .print.via.format
+#' @export
+print.python.builtin.list <- .print.via.format
+#' @export
+print.python.builtin.dict <- .print.via.format
+
 
 #' Suppress Python warnings for an expression
 #'
@@ -1427,7 +1458,7 @@ py_inject_hooks <- function() {
   }
 
   # override input function
-  if (interactive()) {
+  if (interactive() && was_python_initialized_by_reticulate()) {
     name <- if (is_python3()) "input" else "raw_input"
     builtins[[name]] <- input
   }
@@ -1479,4 +1510,104 @@ py_register_load_hook <- function(module, hook) {
 
 py_set_interrupt <- function() {
   py_set_interrupt_impl()
+}
+
+#' @export
+format.python.builtin.traceback <- function(x, ..., limit = NULL) {
+  import("traceback")$format_tb(x, limit)
+}
+
+
+#' @rdname py_last_error
+#' @export
+py_clear_last_error <- function() {
+  py_last_error(NULL)
+}
+
+#' Get or (re)set the last Python error encountered.
+#'
+#' @param exception A python exception object. If provided, the provided
+#'   exception is set as the last exception.
+#'
+#' @return For `py_last_error()`, `NULL` if no error has yet been encountered.
+#'   Otherwise, a named list with entries:
+#'
+#'   +  `"type"`: R string, name of the exception class.
+#'
+#'   +  `"value"`: R string, formatted exception message.
+#'
+#'   +  `"traceback"`: R character vector, the formatted python traceback,
+#'
+#'   +  `"message"`: The full formatted raised exception, as it would be printed in
+#'   Python. Includes the traceback, type, and value.
+#'
+#' And attribute `"exception"`, a `'python.builtin.Exception'` object.
+#'
+#' The named list has `class` `"py_error"`, and has a default `print` method
+#' that is the equivalent of `cat(py_last_error()$message)`.
+#'
+#' @examples
+#' \dontrun{
+#' # run python code that might error,
+#' # without modifying the user-visible python exception
+#'
+#' safe_len <- function(x) {
+#'   last_err <- py_last_error()
+#'   tryCatch({
+#'     # this might raise a python exception if x has no `__len__` method.
+#'     import_builtins()$len(x)
+#'   }, error = function(e) {
+#'     # py_last_error() was overwritten, is now "no len method for 'object'"
+#'     py_last_error(last_err) # restore previous exception
+#'     -1L
+#'   })
+#' }
+#'
+#' safe_len(py_eval("object"))
+#' }
+#'
+#' @export
+py_last_error <- function(exception) {
+  if (!missing(exception)) {
+    # set as the last exception
+    if (inherits(exception, "py_error"))
+      exception <- attr(exception, "exception", TRUE)
+
+    if (!is.null(exception) &&
+        !inherits(exception, "python.builtin.Exception"))
+      stop("`exception` must be NULL, a `py_error`, or a 'python.builtin.Exception'")
+
+    on.exit(.globals$py_last_exception <- exception)
+    return(invisible(.globals$py_last_exception))
+  }
+
+  e <- .globals$py_last_exception
+
+  if (is.null(e))
+    return(NULL)
+
+  if (!py_available() || py_is_null_xptr(e)) {
+    .globals$py_last_exception <- NULL
+    return(NULL)
+  }
+
+  etype <- py_get_attr_impl(e, "__class__")
+  etb <- py_get_attr_impl(e, "__traceback__", TRUE)
+  traceback <- import("traceback")
+
+  out <- list(
+    type = py_get_attr_impl(etype, "__name__", TRUE),
+    value = py_str_impl(e),
+    traceback = if (!is.null(etb)) traceback$format_tb(etb),
+    message = paste0(traceback$format_exception(etype, e, etb),
+                     collapse = "")
+  )
+  attr(out, "exception") <- e
+  class(out) <- "py_error"
+  out
+}
+
+#' @export
+print.py_error <- function(x, ...) {
+  cat(x$message, "\n", sep = "")
 }

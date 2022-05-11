@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function(e) {
     </style>
 
 
+
 <style type="text/css">
   code {
     white-space: pre;
@@ -831,10 +832,11 @@ with <em>n &gt; 2</em>.</p>
 by <code>a.sum(0)</code>, and in R (among other possible ways) by
 <code>apply(a, 2, sum)</code>. Although correct for matrices, this is in
 general not quite right. A more precise R analog of NumPy’s
-<code>a.sum(0)</code> is <code>apply(a, seq_along(dim(a))[-1],
-sum)</code>. In other words, <code>a.sum(0)</code> means sum over the
-first dimension, returning an array of the same dimensions as <em>a</em>
-but with the first dimension removed.</p>
+<code>a.sum(0)</code> is
+<code>apply(a, seq_along(dim(a))[-1], sum)</code>. In other words,
+<code>a.sum(0)</code> means sum over the first dimension, returning an
+array of the same dimensions as <em>a</em> but with the first dimension
+removed.</p>
 <p>It’s easy to be confused by this, so let’s see an example using a
 4x3x2 array, first in Python:</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>

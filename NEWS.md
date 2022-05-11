@@ -1,9 +1,68 @@
+# reticulate 1.25 
+
+- Fixed an issue where reticulate would fail if R was running embedded under rpy2.
+  reticulate now ensures the Python GIL is acquired before calling into Python.
+  
+- Fixed an issue where reticulate would fail to bind to an ArcGIS Pro conda environment
+  (#1200, @philiporlando).
+
+- Fixed an issue where reticulate would fail to bind to an Anaconda
+  base environment on Windows.
+
+- All commands that create, modify, or delete a Python environment now echo
+  the system command about to be executed. Affected:
+    virtualenv_{create,install,remove}
+    conda_{create,clone,remove,install,update}
+    py_install
+
+- `install_python()` and `create_virtualenv()` gain the ability to automatically
+  select the latest patch of a requested Python version.
+  e.g.: `install_python("3.9:latest")`, `create_virtualenv("my-env", version = "3.9:latest")`
+
+- `install_python()` `version` arg gains default value of `"3.9:latest"`.
+  `install_python()` can now be called with no arguments.
+
+- Fixed an issue where reticulate would fail to bind to a conda python
+  if the user didn't have write permissions to the conda installation (#1156).
+
+- Fixed an issue where reticulate would fail to bind to a conda python if
+  spaces were present in the file path to the associated conda binary (#1154).
+
+- `use_python(, required = TRUE)` now issues a warning if the request will be ignored (#1150).
+
+- New function `py_repr()` (#1157)
+
+- `print()` and related changes (#1148, #1157):
+  - The default `print()` method for Python objects now invokes `py_repr()` instead of `str()`.
+  - All Python objects gain a default `format()` method that invokes `py_str()`.
+  - `py_str()` default method no longer strips the object memory address.
+  - `print()` now returns the printed object invisibly, for composability with `%>%`.
+
+- Exception handling changes (#1142, @t-kalinowski):
+  - R error messages from Python exceptions are now truncated differently to satisfy `getOption("warning.length")`.
+    A hint to call `reticulate::py_last_error()` is shown if the exception message was truncated.
+
+  - Python buffers `sys.stderr` and `sys.stdout` are now flushed when Python exceptions are raised.
+
+  -`py_last_error()`:
+    * Return object is now an S3 object 'py_error', includes a default print method.
+    * The python Exception object ('python.builtin.Exception') is available as an R attribute.
+    * Gains the ability to restore a previous exception if provided in a call `py_last_error(previous_error)`
+
+  - Python traceback objects gain a default `format()` S3 method.
+
+- Fixed `py_to_r()` for scipy matrices when scipy >= 1.8.0, since sparse matrices
+    are now deprecated.
+
+- Fixed `r_to_py()` for small scipy matrices.
+
+- New maintainer: Tomasz Kalinowski
 
 # reticulate 1.24
 
 - Fixed an issue where `reticulate` would fail to bind to the system version
   of Python on macOS if command line tools were installed, but Xcode was not.
-
+  
 # reticulate 1.23
 
 - `use_condaenv()` gains the ability to accept an absolute path to a python
@@ -637,7 +696,7 @@
 
 - Fail when environment not found with `use_condaenv(..., required = TRUE)`
 
-- Ensure that `use_*` python version is satsified when using `eng_python()`
+- Ensure that `use_*` python version is satisfied when using `eng_python()`
 
 - Forward `required` argument from `use_virtualenv()` and `use_condaenv()`
 
@@ -825,7 +884,7 @@
 - Add `py_function_docs()` amd `py_function_wrapper()` utility functions for
   scaffolding R wrappers for Python functions.
 
-- Add `py_last_error()` function for retreiving last Python error.
+- Add `py_last_error()` function for retrieving last Python error.
 
 - Convert 0-dimension NumPy arrays (scalars) to single element R vectors
 
@@ -884,7 +943,7 @@
 
 - Fix `PROTECT`/`UNPROTECT` issue detected by CRAN
 
-- Correct converstion of strings with Unicode characters on Windows
+- Correct conversion of strings with Unicode characters on Windows
 
 - Fix incompatibility with system-wide Python installations on Windows
 

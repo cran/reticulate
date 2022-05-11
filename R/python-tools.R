@@ -151,6 +151,20 @@ python_info_condaenv_find <- function(path) {
   if (file.exists(conda))
     return(conda)
 
+  if (is_windows()) {
+    # in Anaconda base env, conda.exe lives under Scripts
+    conda <- file.path(path, "Scripts", exe)
+    if (file.exists(conda))
+      return(conda)
+
+    # in ArcGIS env, conda.exe lives in a parent directory
+    conda <- file.path(path, "../..", "Scripts", exe)
+    conda <- normalizePath(conda, winslash = "/", mustWork = FALSE)
+    if (file.exists(conda))
+      return(conda)
+
+  }
+
   # read history file
   histpath <- file.path(path, "conda-meta/history")
   if (!file.exists(histpath))
@@ -165,9 +179,7 @@ python_info_condaenv_find <- function(path) {
     return(NULL)
 
   # get path to conda script used
-  line <- gsub(pattern, "", lines[[1]])
-  parts <- strsplit(line, "[[:space:]]+")[[1]]
-  script <- parts[[1]]
+  script <- sub("^#\\s+cmd: (.+)\\s+create\\s+.*", "\\1", lines[[1]])
 
   # on Windows, a wrapper script is recorded in the history,
   # so instead attempt to find the real conda binary
