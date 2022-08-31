@@ -120,13 +120,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   for (var i = 0; i < sheets.length; i++) {
     if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
     try { var rules = sheets[i].cssRules; } catch (e) { continue; }
-    for (var j = 0; j < rules.length; j++) {
+    var j = 0;
+    while (j < rules.length) {
       var rule = rules[j];
       // check if there is a div.sourceCode rule
-      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -614,7 +621,7 @@ called with <code>next()</code> until it is exhausted.</p>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>it</span>
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="co"># call `next` on the iterator until it is exhausted:</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;list_iterator object at 0x7f38d9d2dca0&gt;</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;list_iterator object at 0x7ff1fcefdee0&gt;</span></span>
 <span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="bu">next</span>(it)</span>
 <span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1</span></span>
 <span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="bu">next</span>(it)</span>
@@ -773,7 +780,7 @@ for demonstration purposes.</p>
 <span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;class &#39;type&#39;&gt;</span></span>
 <span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>instance <span class="op">=</span> MyClass()</span>
 <span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>instance</span>
-<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x7f38d9d3dfa0&gt;</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x7ff1fcf05580&gt;</span></span>
 <span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a><span class="bu">type</span>(instance)</span>
 <span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;class &#39;__main__.MyClass&#39;&gt;</span></span></code></pre></div>
 <p>Like the <code>def</code> statement, the <code>class</code> statement
@@ -823,13 +830,13 @@ before <code>__init__</code>).</p>
 <span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;MyClass is finished being created&quot;</span>)</span>
 <span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; MyClass is finished being created</span></span>
 <span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>instance <span class="op">=</span> MyClass()</span>
-<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x7f38d9d42880&gt; is initializing</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x7ff1fcf081f0&gt; is initializing</span></span>
 <span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(instance)</span>
-<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x7f38d9d42880&gt;</span></span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x7ff1fcf081f0&gt;</span></span>
 <span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>instance2 <span class="op">=</span> MyClass()</span>
-<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x7f38d9d3dfa0&gt; is initializing</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x7ff1fcf05580&gt; is initializing</span></span>
 <span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(instance2)</span>
-<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x7f38d9d3dfa0&gt;</span></span></code></pre></div>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x7ff1fcf05580&gt;</span></span></code></pre></div>
 <p>A few things to note:</p>
 <ul>
 <li><p>the <code>class</code> statement takes a code block that is
@@ -865,11 +872,11 @@ if the function is decorated with something like
 <span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>instance <span class="op">=</span> MyClass()</span>
 <span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>instance.a_method()</span>
-<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; MyClass.a_method() was called with &lt;__main__.MyClass object at 0x7f38d9d42850&gt;</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; MyClass.a_method() was called with &lt;__main__.MyClass object at 0x7ff1fcef7610&gt;</span></span>
 <span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>MyClass.a_method()     <span class="co"># error, missing required argument `self`</span></span>
 <span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Error in py_call_impl(callable, dots$args, dots$keywords): TypeError: a_method() missing 1 required positional argument: &#39;self&#39;</span></span>
 <span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>MyClass.a_method(instance) <span class="co"># identical to instance.a_method()</span></span>
-<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; MyClass.a_method() was called with &lt;__main__.MyClass object at 0x7f38d9d42850&gt;</span></span></code></pre></div>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; MyClass.a_method() was called with &lt;__main__.MyClass object at 0x7ff1fcef7610&gt;</span></span></code></pre></div>
 <p>Other dunder’s worth knowing about are:</p>
 <ul>
 <li><p><code>__getitem__</code>: the function invoked when subsetting an
@@ -967,14 +974,14 @@ a generator object, which is just another type of iterator.</p>
 <span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="co"># At first glance it presents like a regular function</span></span>
 <span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>my_generator_constructor</span>
-<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;function my_generator_constructor at 0x7f38d9d94b80&gt;</span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;function my_generator_constructor at 0x7ff1fcf67430&gt;</span></span>
 <span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="bu">type</span>(my_generator_constructor)</span>
 <span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a><span class="co"># But calling it returns something special, a &#39;generator object&#39;</span></span>
 <span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;class &#39;function&#39;&gt;</span></span>
 <span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a>my_generator <span class="op">=</span> my_generator_constructor()</span>
 <span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a>my_generator</span>
-<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;generator object my_generator_constructor at 0x7f38d9dc4580&gt;</span></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;generator object my_generator_constructor at 0x7ff1fd792510&gt;</span></span>
 <span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a><span class="bu">type</span>(my_generator)</span>
 <span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a><span class="co"># The generator object is both an iterable and an iterator</span></span>
@@ -1043,15 +1050,15 @@ code in the current Python session (though this is relatively uncommon
 in practice).</p>
 <div class="sourceCode" id="cb37"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>sys.path</span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [&#39;&#39;, &#39;/home/tomasz/.local/share/r-miniconda/envs/r-reticulate/bin&#39;, &#39;/home/tomasz/.local/share/r-miniconda/envs/r-reticulate/lib/python38.zip&#39;, &#39;/home/tomasz/.local/share/r-miniconda/envs/r-reticulate/lib/python3.8&#39;, &#39;/home/tomasz/.local/share/r-miniconda/envs/r-reticulate/lib/python3.8/lib-dynload&#39;, &#39;/home/tomasz/.local/lib/python3.8/site-packages&#39;, &#39;/home/tomasz/.local/share/r-miniconda/envs/r-reticulate/lib/python3.8/site-packages&#39;, &#39;/tmp/Rtmp4y7hGC/Rinst3c005f036e52/reticulate/python&#39;]</span></span></code></pre></div>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [&#39;&#39;, &#39;/home/tomasz/.pyenv/versions/3.9.13/bin&#39;, &#39;/home/tomasz/.pyenv/versions/3.9.13/lib/python39.zip&#39;, &#39;/home/tomasz/.pyenv/versions/3.9.13/lib/python3.9&#39;, &#39;/home/tomasz/.pyenv/versions/3.9.13/lib/python3.9/lib-dynload&#39;, &#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python3.9/site-packages&#39;, &#39;/tmp/RtmpaunzRc/Rinst2d3da7001c227/reticulate/python&#39;, &#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python39.zip&#39;, &#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python3.9&#39;, &#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python3.9/lib-dynload&#39;]</span></span></code></pre></div>
 <p>You can inspect where a module was loaded from by accessing the
 dunder <code>__path__</code> or <code>__file__</code> (especially useful
 when troubleshooting installation issues):</p>
 <div class="sourceCode" id="cb38"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>os.<span class="va">__file__</span></span>
-<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &#39;/home/tomasz/.local/share/r-miniconda/envs/r-reticulate/lib/python3.8/os.py&#39;</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &#39;/home/tomasz/.pyenv/versions/3.9.13/lib/python3.9/os.py&#39;</span></span>
 <span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>numpy.__path__</span>
-<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [&#39;/home/tomasz/.local/lib/python3.8/site-packages/numpy&#39;]</span></span></code></pre></div>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [&#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python3.9/site-packages/numpy&#39;]</span></span></code></pre></div>
 <p>Once a module is loaded, you can access symbols from the module using
 <code>.</code> (equivalent to <code>::</code>, or maybe
 <code>$.environment</code>, in R).</p>
@@ -1210,12 +1217,12 @@ working directory (equivalent to R’s <code>withr::with_dir()</code>)</p>
 <span id="cb46-14"><a href="#cb46-14" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb46-15"><a href="#cb46-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb46-16"><a href="#cb46-16" aria-hidden="true" tabindex="-1"></a>getcwd()</span>
-<span id="cb46-17"><a href="#cb46-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &#39;/tmp/Rtmp4y7hGC/Rbuild3c0046daa50e/reticulate/vignettes&#39;</span></span>
+<span id="cb46-17"><a href="#cb46-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &#39;/tmp/RtmpaunzRc/Rbuild2d3daed2c5dc/reticulate/vignettes&#39;</span></span>
 <span id="cb46-18"><a href="#cb46-18" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> wd_context(<span class="st">&quot;..&quot;</span>):</span>
 <span id="cb46-19"><a href="#cb46-19" aria-hidden="true" tabindex="-1"></a>  <span class="bu">print</span>(<span class="st">&quot;in the context, wd is:&quot;</span>, getcwd())</span>
-<span id="cb46-20"><a href="#cb46-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; in the context, wd is: /tmp/Rtmp4y7hGC/Rbuild3c0046daa50e/reticulate</span></span>
+<span id="cb46-20"><a href="#cb46-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; in the context, wd is: /tmp/RtmpaunzRc/Rbuild2d3daed2c5dc/reticulate</span></span>
 <span id="cb46-21"><a href="#cb46-21" aria-hidden="true" tabindex="-1"></a>getcwd()</span>
-<span id="cb46-22"><a href="#cb46-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &#39;/tmp/Rtmp4y7hGC/Rbuild3c0046daa50e/reticulate/vignettes&#39;</span></span></code></pre></div>
+<span id="cb46-22"><a href="#cb46-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &#39;/tmp/RtmpaunzRc/Rbuild2d3daed2c5dc/reticulate/vignettes&#39;</span></span></code></pre></div>
 </div>
 <div id="learning-more" class="section level3">
 <h3>Learning More</h3>
