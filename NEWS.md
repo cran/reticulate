@@ -1,13 +1,24 @@
+# reticulate 1.27
+
+- `py_run_file()` now ensures the `__file__` dunder is visible to the
+  executing python code. (#1283, #1284)
+
+- Fixed errors with `install_miniconda()` and `conda_install()`,
+  on Windows (#1286, #1287, conda/conda#11795, #1312, #1297),
+  and on Linux and macOS (#1306, conda/conda#10431)
+
+- Fixed error when activating a conda env from a UNC drive on Windows (#1303).
+
 # reticulate 1.26
 
 - Fixed issue where reticulate failed to bind to python2. (#1241, #1229)
 
 - A warning is now issued when reticulate binds to python2 that python2
   support will be removed in an upcoming reticulate release.
-  
+
 - `py_id()` now returns a character string, instead of an R integer (#1216).
 
-- Fixed an issue where `py_to_r()` would not convert elements of a 
+- Fixed an issue where `py_to_r()` would not convert elements of a
   dictionary (#1221).
 
 - Fixed an issue where setting `RETICULATE_PYTHON` or `RETICULATE_PYTHON_FALLBACK`

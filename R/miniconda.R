@@ -80,7 +80,8 @@ install_miniconda <- function(path = miniconda_path(),
 #' @export
 miniconda_update <- function(path = miniconda_path()) {
   conda <- miniconda_conda(path)
-  system2(conda, c("update", "--yes", "--name", "base", "conda"))
+  local_conda_paths(conda)
+  system2t(conda, c("update", "--yes", "--name", "base", "conda"))
 }
 
 #' Remove Miniconda
@@ -196,7 +197,8 @@ miniconda_installer_download <- function(url) {
 miniconda_installer_run <- function(installer, update, path) {
 
   args <- if (is_windows()) {
-    dir.create(path, recursive = TRUE, showWarnings = FALSE)
+    if(dir.exists(path))
+      unlink(path, recursive = TRUE)
     c(
       "/InstallationType=JustMe",
       "/AddToPath=0",
@@ -233,8 +235,17 @@ miniconda_installer_run <- function(installer, update, path) {
     on.exit(Sys.setenv(DYLD_FALLBACK_LIBRARY_PATH = old), add = TRUE)
 
   }
-
-  status <- system2(installer, args)
+  if (is_windows()) {
+    installer <- normalizePath(installer)
+    status <- system2(installer, args)
+  }
+  if (is_unix()) {
+    ##check for bash
+    bash_path <- Sys.which("bash")
+    if (bash_path[1] == "")
+      stopf("The miniconda installer requires bash.")
+    status <- system2(bash_path[1], c(installer, args))
+  }
   if (status != 0)
     stopf("miniconda installation failed [exit code %i]", status)
 
