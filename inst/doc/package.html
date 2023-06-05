@@ -349,13 +349,13 @@ convenient access to them within the rest of the package source
 code.</p>
 <p>When you do this, you should use the <code>delay_load</code> flag to
 the <code>import()</code> function, for example:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># global reference to scipy (will be initialized in .onLoad)</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>scipy <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># use superassignment to update global reference to scipy</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  scipy <span class="ot">&lt;&lt;-</span> reticulate<span class="sc">::</span><span class="fu">import</span>(<span class="st">&quot;scipy&quot;</span>, <span class="at">delay_load =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># global reference to scipy (will be initialized in .onLoad)</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>scipy <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="co"># use superassignment to update global reference to scipy</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>  scipy <span class="ot">&lt;&lt;-</span> reticulate<span class="sc">::</span><span class="fu">import</span>(<span class="st">&quot;scipy&quot;</span>, <span class="at">delay_load =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>}</span></code></pre></div>
 <p>Using the <code>delay_load</code> flag has two important
 benefits:</p>
 <ol style="list-style-type: decimal">
@@ -364,9 +364,9 @@ benefits:</p>
 particularly important when testing on CRAN build machines).</p></li>
 <li><p>It allows users to specify a desired location for Python before
 interacting with your package. For example:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mypackage)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">use_virtualenv</span>(<span class="st">&quot;~/pythonenvs/userenv&quot;</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># call functions from mypackage</span></span></code></pre></div></li>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(mypackage)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">use_virtualenv</span>(<span class="st">&quot;~/pythonenvs/userenv&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co"># call functions from mypackage</span></span></code></pre></div></li>
 </ol>
 <p>Without the <code>delay_load</code>, Python would be loaded
 immediately and the user’s call to <code>use_virtualenv</code> would
@@ -384,14 +384,14 @@ that they can be easily used together).</p>
 interface for installing one or more Python packages. The packages will
 by default be installed within a virtualenv or Conda environment named
 “r-reticulate”. For example:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">py_install</span>(<span class="st">&quot;scipy&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">py_install</span>(<span class="st">&quot;scipy&quot;</span>)</span></code></pre></div>
 <p>You can document the use of this function along with your package or
 alternatively provide a wrapper function for <code>py_install()</code>.
 For example:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>install_scipy <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">method =</span> <span class="st">&quot;auto&quot;</span>, <span class="at">conda =</span> <span class="st">&quot;auto&quot;</span>) {</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  reticulate<span class="sc">::</span><span class="fu">py_install</span>(<span class="st">&quot;scipy&quot;</span>, <span class="at">method =</span> method, <span class="at">conda =</span> conda)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>install_scipy <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">method =</span> <span class="st">&quot;auto&quot;</span>, <span class="at">conda =</span> <span class="st">&quot;auto&quot;</span>) {</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  reticulate<span class="sc">::</span><span class="fu">py_install</span>(<span class="st">&quot;scipy&quot;</span>, <span class="at">method =</span> method, <span class="at">conda =</span> conda)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>}</span></code></pre></div>
 <p>While reticulate is capable of binding to <a href="calling_python.html#python-version">any Python environment</a>
 available on a system, it’s much more straightforward for users if there
 is a common environment used by R packages with convenient high-level
@@ -411,28 +411,28 @@ behaved on CRAN:</p>
 <li><p>Use the <code>delay_load</code> option (as described above) to
 ensure that the module (and Python) is loaded only on its first use. For
 example:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># python &#39;scipy&#39; module I want to use in my package</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>scipy <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># delay load foo module (will only be loaded when accessed via $)</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  scipy <span class="ot">&lt;&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;scipy&quot;</span>, <span class="at">delay_load =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div></li>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># python &#39;scipy&#39; module I want to use in my package</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>scipy <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="co"># delay load foo module (will only be loaded when accessed via $)</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  scipy <span class="ot">&lt;&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;scipy&quot;</span>, <span class="at">delay_load =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>}</span></code></pre></div></li>
 <li><p>When writing tests, check to see if your module is available and
 if it isn’t then skip the test. For example, if you are using the
 <strong>testthat</strong> package, you might do this:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># helper function to skip tests if we don&#39;t have the &#39;foo&#39; module</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>skip_if_no_scipy <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  have_scipy <span class="ot">&lt;-</span> <span class="fu">py_module_available</span>(<span class="st">&quot;scipy&quot;</span>)</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span>have_scipy)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">skip</span>(<span class="st">&quot;scipy not available for testing&quot;</span>)</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co"># then call this function from all of your tests</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">&quot;Things work as expected&quot;</span>, {</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">skip_if_no_scipy</span>()</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># test code here...</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div></li>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># helper function to skip tests if we don&#39;t have the &#39;foo&#39; module</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>skip_if_no_scipy <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  have_scipy <span class="ot">&lt;-</span> <span class="fu">py_module_available</span>(<span class="st">&quot;scipy&quot;</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span>have_scipy)</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>    <span class="fu">skip</span>(<span class="st">&quot;scipy not available for testing&quot;</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>}</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co"># then call this function from all of your tests</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">&quot;Things work as expected&quot;</span>, {</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="fu">skip_if_no_scipy</span>()</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  <span class="co"># test code here...</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>})</span></code></pre></div></li>
 </ol>
 </div>
 <div id="implementing-s3-methods" class="section level2">
@@ -455,12 +455,12 @@ previous session (a <code>NULL</code> R <code>externalptr</code>) an
 error is thrown. If you want to do something more customized in your S3
 method you can use the <code>py_is_null_xptr()</code> function. For
 example:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>method.MyModule.MyPythonClass <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y, ...) {</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">py_is_null_xptr</span>(x))</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># whatever is appropriate</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> </span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># interact with the object</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>method.MyModule.MyPythonClass <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y, ...) {</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">py_is_null_xptr</span>(x))</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>    <span class="co"># whatever is appropriate</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="cf">else</span> </span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>    <span class="co"># interact with the object</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>}</span></code></pre></div>
 <p>Note that this check isn’t required, as by default an R error will
 occur. If it’s desirable to avoid this error for any reason then you can
 use <code>py_is_null_xptr()</code> to do so.</p>
@@ -469,11 +469,11 @@ generic method which is called from the <code>str</code> method only
 after doing appropriate validation (if the object is NULL then
 <code>&lt;pointer: 0x0&gt;</code> is returned). You can implement the
 <code>py_str</code> method as follows:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&#39; @importFrom reticulate py_str</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&#39; @export </span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>py_str.MyModule.MyPythonClass <span class="ot">&lt;-</span> <span class="cf">function</span>(object, ...) {</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># interact with the object to generate the string</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co">#&#39; @importFrom reticulate py_str</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co">#&#39; @export </span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>py_str.MyModule.MyPythonClass <span class="ot">&lt;-</span> <span class="cf">function</span>(object, ...) {</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="co"># interact with the object to generate the string</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>}</span></code></pre></div>
 <p>The <code>print</code> and <code>summary</code> methods for Python
 objects both call the <code>str</code> method by default, so if you
 implement <code>py_str()</code> you will automatically inherit
@@ -508,17 +508,17 @@ package.</p>
 controls how objects generated from the created Python object are
 converted. To illustrate, consider the difference between these two
 cases:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># [convert = TRUE] =&gt; convert Python objects to R when appropriate</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>sys <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;sys&quot;</span>, <span class="at">convert =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(sys<span class="sc">$</span>path)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># [1] &quot;character&quot;</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co"># [convert = FALSE] =&gt; always return Python objects</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>sys <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;sys&quot;</span>, <span class="at">convert =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(sys<span class="sc">$</span>path)</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co"># [1] &quot;python.builtin.list&quot; &quot;python.builtin.object&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co"># [convert = TRUE] =&gt; convert Python objects to R when appropriate</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>sys <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;sys&quot;</span>, <span class="at">convert =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="fu">class</span>(sys<span class="sc">$</span>path)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co"># [1] &quot;character&quot;</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co"># [convert = FALSE] =&gt; always return Python objects</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>sys <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;sys&quot;</span>, <span class="at">convert =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="fu">class</span>(sys<span class="sc">$</span>path)</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co"># [1] &quot;python.builtin.list&quot; &quot;python.builtin.object&quot;</span></span></code></pre></div>
 <p>This is accomplished through the use of a <code>convert</code> flag,
 which is set on the Python object wrappers used by
 <code>reticulate</code>. Therefore, if you’re writing a method
@@ -532,13 +532,13 @@ generated object. This is typically done by:</p>
 returned Python object.</p></li>
 </ol>
 <p>As an example of the second:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># suppose &#39;make_python_object()&#39; creates a Python object</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># from R objects of class &#39;my_r_object&#39;.</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>r_to_py.my_r_object <span class="ot">&lt;-</span> <span class="cf">function</span>(x, convert) {</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  object <span class="ot">&lt;-</span> <span class="fu">make_python_object</span>(x)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">assign</span>(<span class="st">&quot;convert&quot;</span>, convert, <span class="at">envir =</span> object)</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  object</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># suppose &#39;make_python_object()&#39; creates a Python object</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co"># from R objects of class &#39;my_r_object&#39;.</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>r_to_py.my_r_object <span class="ot">&lt;-</span> <span class="cf">function</span>(x, convert) {</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  object <span class="ot">&lt;-</span> <span class="fu">make_python_object</span>(x)</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="fu">assign</span>(<span class="st">&quot;convert&quot;</span>, convert, <span class="at">envir =</span> object)</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  object</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 </div>
 <div id="using-github-actions" class="section level2">
@@ -551,34 +551,34 @@ the runner, and that reticulate knows to use it. You can do this all
 with shell commands, or you can use functions in reticulate to do this.
 Here is an example sequence of <code>steps</code> demonstrating how you
 can do this with reticulate functions:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r@v2</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">r-version</span><span class="kw">:</span><span class="at"> release</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r-dependencies@v2</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">extra-packages</span><span class="kw">:</span><span class="at"> rcmdcheck remotes reticulate</span></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-python@v4</span></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">python-version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3.x&quot;</span></span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span></span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> setup r-reticulate venv</span></span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> Rscript {0}</span></span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>          python_packages &lt;- </span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>            c(&quot;numpy&quot;, &quot;any-other-python-packages-you-want-go-here&quot;)</span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>          </span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>          library(reticulate)</span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>          virtualenv_create(&quot;r-reticulate&quot;, Sys.which(&quot;python&quot;))</span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>          virtualenv_install(&quot;r-reticulate&quot;, python_packages)</span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>          </span>
-<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>          path_to_python &lt;- virtualenv_python(&quot;r-reticulate&quot;)</span>
-<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>          writeLines(sprintf(&quot;RETICULATE_PYTHON=%s&quot;, path_to_python),</span>
-<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>                     Sys.getenv(&quot;GITHUB_ENV&quot;))</span>
-<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>                     </span>
-<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/check-r-package@v2</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r@v2</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="at">          </span><span class="fu">r-version</span><span class="kw">:</span><span class="at"> release</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r-dependencies@v2</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="at">          </span><span class="fu">extra-packages</span><span class="kw">:</span><span class="at"> rcmdcheck remotes reticulate</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-python@v4</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="at">          </span><span class="fu">python-version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3.x&quot;</span></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="at">          </span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> setup r-reticulate venv</span></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="at">        </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> Rscript {0}</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a>          python_packages &lt;- </span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>            c(&quot;numpy&quot;, &quot;any-other-python-packages-you-want-go-here&quot;)</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>          </span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a>          library(reticulate)</span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a>          virtualenv_create(&quot;r-reticulate&quot;, Sys.which(&quot;python&quot;))</span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a>          virtualenv_install(&quot;r-reticulate&quot;, python_packages)</span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a>          </span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a>          path_to_python &lt;- virtualenv_python(&quot;r-reticulate&quot;)</span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a>          writeLines(sprintf(&quot;RETICULATE_PYTHON=%s&quot;, path_to_python),</span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a>                     Sys.getenv(&quot;GITHUB_ENV&quot;))</span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a>                     </span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/check-r-package@v2</span></span></code></pre></div>
 </div>
 
 

@@ -348,9 +348,9 @@ given system. The <strong>reticulate</strong> package can bind to any of
 these versions, and in all cases will attempt to locate a version which
 includes the first Python package imported via the <code>import()</code>
 function. Consider the following code:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>scipy <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;scipy&quot;</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>scipy<span class="sc">$</span><span class="fu">amin</span>(<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>scipy <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;scipy&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>scipy<span class="sc">$</span><span class="fu">amin</span>(<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>))</span></code></pre></div>
 <p>In this case, the various versions of Python installed on the system
 will be scanned to see whether one of them includes the “scipy” Python
 package (the first version found that satisfies this requirement will be
@@ -405,21 +405,21 @@ binary.</p></li>
 </tbody>
 </table>
 <p>For example:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">use_python</span>(<span class="st">&quot;/usr/local/bin/python&quot;</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">use_virtualenv</span>(<span class="st">&quot;~/myenv&quot;</span>)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="st">&quot;myenv&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">use_python</span>(<span class="st">&quot;/usr/local/bin/python&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">use_virtualenv</span>(<span class="st">&quot;~/myenv&quot;</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="st">&quot;myenv&quot;</span>)</span></code></pre></div>
 <p>The <code>use_condaenv</code> function will use whatever conda binary
 is found on the system PATH. If you want to use a specific alternate
 version you can use the <code>conda</code> parameter. For example:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="at">condaenv =</span> <span class="st">&quot;r-nlp&quot;</span>, <span class="at">conda =</span> <span class="st">&quot;/opt/anaconda3/bin/conda&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="at">condaenv =</span> <span class="st">&quot;r-nlp&quot;</span>, <span class="at">conda =</span> <span class="st">&quot;/opt/anaconda3/bin/conda&quot;</span>)</span></code></pre></div>
 <p>Note that the <code>use</code> functions are by default considered
 only hints as to where to find Python (i.e. they don’t produce errors if
 the specified version doesn’t exist). You can add the
 <code>required</code> parameter to ensure that the specified version of
 Python is always used (it will be an error if the specified version
 doesn’t exist):</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">use_virtualenv</span>(<span class="st">&quot;~/myenv&quot;</span>, <span class="at">required =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">use_virtualenv</span>(<span class="st">&quot;~/myenv&quot;</span>, <span class="at">required =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 </div>
 <div id="order-of-discovery" class="section level2">
 <h2>Order of Discovery</h2>
@@ -467,11 +467,11 @@ or Conda environments in the article on <a href="python_packages.html">Installin
 <p>You can use the <code>py_config()</code> function to query for
 information about the specific version of Python in use as well as a
 list of other Python versions discovered on the system:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">py_config</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">py_config</span>()</span></code></pre></div>
 <p>You can also use the <code>py_discover_config()</code> function to
 see what version of Python will be used without actually loading
 Python:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">py_discover_config</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">py_discover_config</span>()</span></code></pre></div>
 </div>
 
 

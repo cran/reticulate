@@ -355,9 +355,9 @@ by providing helper functions (e.g.
 <code>tensorflow::install_tensorflow()</code>), and documenting that
 users should call this function to prepare the environment. For
 example:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tensorflow)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">install_tensorflow</span>()</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># use tensorflow</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(tensorflow)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">install_tensorflow</span>()</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co"># use tensorflow</span></span></code></pre></div>
 <p>The biggest downside with this approach is that it requires users to
 manually download and install an appropriate version of Python. In
 addition, if the user has <em>not</em> downloaded an appropriate version
@@ -426,8 +426,8 @@ Conda environment, as provided by the Miniconda installation.</p></li>
 </ol>
 <p>In this case, the end user workflow will be exactly as with an R
 package that has no Python dependencies:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rscipy)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># use the package</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(rscipy)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co"># use the package</span></span></code></pre></div>
 <p>If the user has no compatible version of Python available on their
 system, they will be prompted to install Miniconda. If they do have
 Python already, then the required Python packages (in this case
@@ -446,9 +446,9 @@ works.</p>
 already been initialized. To ensure that <code>reticulate</code> can
 still configure the active Python environment, you can include the
 code:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  reticulate<span class="sc">::</span><span class="fu">configure_environment</span>(pkgname)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  reticulate<span class="sc">::</span><span class="fu">configure_environment</span>(pkgname)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>}</span></code></pre></div>
 <p>This will instruct <code>reticulate</code> to immediately try to
 configure the active Python environment, installing any required Python
 packages as necessary.</p>

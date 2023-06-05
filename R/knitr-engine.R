@@ -108,11 +108,20 @@ eng_python <- function(options) {
 
   # iterate over top-level nodes and extract line numbers
   lines <- vapply(parsed$body, function(node) {
+    if(py_version() >= "3.8")
+      return(as_r_value(py_get_attr(node, "end_lineno")))
+    # `end_lineno` attribute was introduced in python3.8
+    # in earlier versions, fallback to using just lineno
+    # note, this can result in comments being attached to
+    # the wrong code chunk
+
     if (py_has_attr(node, "decorator_list") && length(node$decorator_list)) {
-      node$decorator_list[[1]]$lineno
+      out <- py_get_attr(node$decorator_list[[1]], "lineno")
     } else {
-      node$lineno
+      out <- py_get_attr(node, "lineno")
     }
+
+    as_r_value(out)
   }, integer(1))
 
   # it's possible for multiple statements to live on the
@@ -123,8 +132,15 @@ eng_python <- function(options) {
   # convert from lines to ranges (be sure to handle the zero-length case)
   ranges <- list()
   if (length(lines)) {
-    starts <- lines
-    ends <- c(lines[-1] - 1, length(code))
+
+    if(py_version() >= "3.8") {
+      # end_lineno attr only introduced in 3.8
+      ends <- lines
+      starts <- c(1L, ends[-length(ends)] + 1L)
+    } else {
+      starts <- lines
+      ends <- c(lines[-1] - 1, length(code))
+    }
     ranges <- mapply(c, starts, ends, SIMPLIFY = FALSE)
   }
 
@@ -149,6 +165,18 @@ eng_python <- function(options) {
     identical(options$error, TRUE) ||
     identical(getOption("knitr.in.progress", default = FALSE), FALSE)
 
+  if(isFALSE(options$warning)) {
+    py_catch_warnings_ctxt <-
+      # need to set record = TRUE, otherwise custom implementations of
+      # `warning.showwarning()` leak warnings out of the context.
+      import("warnings", convert = FALSE)$catch_warnings(record = TRUE)
+    py_catch_warnings_ctxt$`__enter__`()
+    on.exit({
+      py_catch_warnings_ctxt$`__exit__`(NULL, NULL, NULL)
+    }, add = TRUE)
+  }
+
+
   for (i in seq_along(ranges)) {
 
     # extract range
@@ -159,6 +187,7 @@ eng_python <- function(options) {
 
     # clear the last value object (so we can tell if it was updated)
     py_compile_eval("'__reticulate_placeholder__'")
+    .engine_context$matplotlib_show_was_called <- FALSE
 
     # use trailing semicolon to suppress output of return value
     suppress <- grepl(";\\s*$", snippet)
@@ -187,6 +216,12 @@ eng_python <- function(options) {
       # append pending source to outputs (respecting 'echo' option)
       if (!identical(options$echo, FALSE) && !identical(options$results, "hold")) {
         extracted <- extract(code, c(pending_source_index, range[2]))
+        if(!identical(options$collapse, TRUE) &&
+           identical(options$strip.white, TRUE)) {
+          extracted <- sub("^\\n+", "", sub("\\n+$", "", extracted))
+          # trimws(whitespace = ) requires R 3.6
+          # extracted <- trimws(extracted, whitespace = "[\n]")
+        }
         output <- structure(list(src = extracted), class = "source")
         outputs$push(output)
       }
@@ -420,6 +455,8 @@ eng_python_initialize_matplotlib <- function(options, envir) {
   # override show implementation
   plt$show <- function(...) {
 
+    .engine_context$matplotlib_show_was_called <- TRUE
+
     # get current chunk options
     options <- knitr::opts_current$get()
 
@@ -558,7 +595,7 @@ eng_python_autoprint <- function(captured, options, autoshow) {
     #
     # handle matplotlib output. note that the default hook installed by
     # reticulate will update the 'pending_plots' item
-    if (autoshow) {
+    if (autoshow && !.engine_context$matplotlib_show_was_called) {
       plt <- import("matplotlib.pyplot", convert = TRUE)
       plt$show()
     }
