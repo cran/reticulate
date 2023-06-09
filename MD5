@@ -1,6 +1,6 @@
-0df983de001718405eb0f16cbfb32c0e *DESCRIPTION
-6686a29319dac8593ebbe3d8aba05f52 *NAMESPACE
-d2793679530aa51602871c597ff1d289 *NEWS.md
+d7de514755185794ca813cf4564f9223 *DESCRIPTION
+80635f731e86ef83e1f1d171037ce4cf *NAMESPACE
+d409df12a505e147fcca24387318d8f4 *NEWS.md
 adfc6f072dd48742eaa37e9a8ab584f5 *R/RcppExports.R
 ca97890d05dd5dce13199d21e9dd5110 *R/array.R
 c9f862aea995fc7d1d0799db11ccbc34 *R/case.R
@@ -28,7 +28,7 @@ a3e88b2126bd0a3d6f2f9b514d11c26a *R/pip.R
 16c918e753296e1bf663a1ce9b8ac760 *R/python-environments.R
 ed979d2ca235f8ac2af4ab097d69bdf6 *R/python-packages.R
 a06dd02ee0a420dfb676f5b6cc1c65a0 *R/python-tools.R
-745303e79545eedc91a528159ecf2396 *R/python.R
+a794e1f42465dd8b28dff6cc5f1905e3 *R/python.R
 fcd2bf901cde95011b15193d83f5b0b2 *R/repl.R
 5b7c4af93ec6d780c1ecbaf6c5650fae *R/seed.R
 fe0cc33ac63c0899fb7cedb6b5a7a6d8 *R/source.R
@@ -39,7 +39,7 @@ bb4fbcbbf400fe0f7154fea2a8243210 *R/utils-format.R
 8753494690f7bd72e33d85cd39fe3b9e *R/utils.R
 a86227b280435fa968f04d2c84f27424 *R/virtualenv.R
 2a03d742a1d3bbdfc61712e9a2a8a7dd *R/wrapper.R
-09e3371cd872110dbb048b18b157b745 *R/zzz.R
+a4bccaa876c94e1742a84c0e0e7795db *R/zzz.R
 64cd9e61d3691cf9d2ce60d3f4b576b0 *build/vignette.rds
 21cb441672e75318887f2ba0620857fc *inst/config/config.py
 57f9018550663220cedb9307bfeceece *inst/doc/arrays.R
@@ -59,7 +59,7 @@ e44b5cba7f41eb2f6ccda5daf6b341e1 *inst/doc/python_dependencies.Rmd
 9930f1b54438357059389cfe8f137436 *inst/doc/python_packages.html
 60374de91b2529c6ebf24ed9cac0426e *inst/doc/python_primer.R
 1be04c6428ef352895aa0c7914484416 *inst/doc/python_primer.Rmd
-b7fc9da87664894c7a225d0f87208e88 *inst/doc/python_primer.html
+4b6a3fd9d49e50cf00f855d270c0a60a *inst/doc/python_primer.html
 57f9018550663220cedb9307bfeceece *inst/doc/r_markdown.R
 58d30dfcd1cc9e18afff8ce53e96b020 *inst/doc/r_markdown.Rmd
 8cc81e49b725a9218e2e27d7a3e556b1 *inst/doc/r_markdown.html
@@ -163,7 +163,7 @@ e7da1f91b70b269d5ab2204e9e29f674 *man/virtualenv-tools.Rd
 2176e61063cabbe31b30584710640c29 *src/libpython.cpp
 712f599ee8089525677dbb9c00e76395 *src/libpython.h
 a30bb6abe90f5e0659da86b581b42ec8 *src/output.cpp
-fb0db92c8a0feda85a184f0201b08a27 *src/python.cpp
+ee40c6d996fd42ca24c2633731480c35 *src/python.cpp
 3befa34f301c431894d6293c52fc44b0 *src/readline.cpp
 5189d2cc7856891a158176bc6a74d6e1 *src/reticulate_types.h
 4d0b004bf1c37f6ca2a1899322995bbc *src/signals.cpp
@@ -185,7 +185,7 @@ ff4c3ddc0099e73e28207425f6f7768f *tests/testthat/resources/plotly-example.Rmd
 fbfc442c14ebf347e230c2281392d35f *tests/testthat/resources/test-chunking.md
 dbda56868b54ca282ca6933c71401f0c *tests/testthat/resources/venv-activate.R
 8684f56103beaf680494f4c107823f3c *tests/testthat/script.py
-8c241be91ba39f1f7f80ffb8647e7c42 *tests/testthat/setup.R
+cc0665a85c121ff9b82fce50b1fd387e *tests/testthat/setup.R
 bd776034959201df637c63f7820bf2a7 *tests/testthat/test-aaa.R
 c1f4b793d4c893c46e31c4a5b93df254 *tests/testthat/test-callable-dynamic-dots.R
 68257ba3486a03966e8b51652ec71666 *tests/testthat/test-delay-load.R
@@ -205,7 +205,7 @@ b433a737b2058ee72935334b9414427b *tests/testthat/test-python-datetime.R
 1f2c78fe462ac891a9d7b91f1df21711 *tests/testthat/test-python-envs.R
 6d4b29a23ac15fcb7da3c6850533e7ec *tests/testthat/test-python-exceptions.R
 ab6b1d174d8c2f585e0be077e98d2bcf *tests/testthat/test-python-factors.R
-70ada6a78e105e479b18d60115096031 *tests/testthat/test-python-formals.R
+31cddc7a3170158dec34871294f4a3a9 *tests/testthat/test-python-formals.R
 f1012cbcdd6a477da7c14b700643ec6f *tests/testthat/test-python-function.R
 e81f91cf0b39cc946485fefb6bb486b9 *tests/testthat/test-python-import-hook.R
 f639c14123b9af2c5849836f840696b7 *tests/testthat/test-python-info.R
@@ -229,7 +229,8 @@ aeffb11382823093ab1438e2db33a842 *tests/testthat/test-python-scope.R
 279f771e23010b0570c6e6201320e8b3 *tests/testthat/test-python-strings.R
 f3b4e1903303a716e46c60dc9f9a87ef *tests/testthat/test-python-vectors.R
 c19eb575f1df508217838498fa3a67e5 *tests/testthat/test-python-virtual-environments.R
-cc51434c3452ea5dd00c381763b4f243 *tests/testthat/test-repl-magics.R
+fe5a5c6a7bb4e1983089733168a5b563 *tests/testthat/test-repl-magics.R
+eb1e7cfb57bf22e18c6e77a47a4de162 *tools/r-3-5.Dockerfile
 2ed8cc81358f0cd268085684298623a2 *tools/tools-build-site.sh
 9e283fcea2d02201ab940807e5ec9bf3 *vignettes/arrays.Rmd
 6e35329861400fb1670d8c0a97606f24 *vignettes/calling_python.Rmd
