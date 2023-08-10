@@ -406,17 +406,10 @@ py_get_attr_or_item <- function(x, name, prefer_attr) {
 `$.python.builtin.object` <- function(x, name) {
   py_get_attr_or_item(x, name, TRUE)
 }
-
-#' @export
-`[.python.builtin.object` <- function(x, name) {
-  py_get_attr_or_item(x, name, FALSE)
-}
-
 #' @export
 `[[.python.builtin.object` <- function(x, name) {
   py_get_attr_or_item(x, name, FALSE)
 }
-
 
 
 # the as.environment generic enables pytyhon objects that manifest
@@ -968,7 +961,11 @@ py_get_attr <- function(x, name, silent = FALSE) {
   ensure_python_initialized()
   if (py_is_module_proxy(x))
     py_resolve_module_proxy(x)
-  py_get_attr_impl(x, name, silent)
+  res <- py_get_attr_impl(x, name, silent)
+  if(silent && identical(res, emptyenv()))
+    NULL
+  else
+    res
 }
 
 #' Set an attribute of a Python object
@@ -1033,83 +1030,6 @@ py_get_attr_types <- function(x,
     py_resolve_module_proxy(x)
 
   py_get_attr_types_impl(x, names, resolve_properties)
-}
-
-#' Get an item from a Python object
-#'
-#' Retrieve an item from a Python object, similar to how
-#' \code{x[name]} might be used in Python code to access an
-#' item indexed by `key` on an object `x`. The object's
-#' `__getitem__` method will be called.
-#'
-#' @param x A Python object.
-#' @param key The key used for item lookup.
-#' @param silent Boolean; when \code{TRUE}, attempts to access
-#'   missing items will return \code{NULL} rather than
-#'   throw an error.
-#'
-#' @family item-related APIs
-#' @export
-py_get_item <- function(x, key, silent = FALSE) {
-  ensure_python_initialized()
-  if (py_is_module_proxy(x))
-    py_resolve_module_proxy(x)
-
-  # NOTE: for backwards compatibility, we make sure to return an R NULL on error
-  if (silent) {
-    tryCatch(py_get_item_impl(x, key, FALSE), error = function(e) NULL)
-  } else {
-    py_get_item_impl(x, key, FALSE)
-  }
-
-}
-
-#' Set an item for a Python object
-#'
-#' Set an item on a Python object, similar to how
-#' \code{x[name] = value} might be used in Python code to
-#' set an item called `name` with value `value` on object
-#' `x`. The object's `__setitem__` method will be called.
-#'
-#' @param x A Python object.
-#' @param name The item name.
-#' @param value The item value.
-#'
-#' @return The (mutated) object `x`, invisibly.
-#'
-#' @family item-related APIs
-#' @export
-py_set_item <- function(x, name, value) {
-  ensure_python_initialized()
-  if (py_is_module_proxy(x))
-    py_resolve_module_proxy(x)
-  py_set_item_impl(x, name, value)
-  invisible(x)
-}
-
-#' Delete / remove an item from a Python object
-#'
-#' Delete an item associated with a Python object, as
-#' through its `__delitem__` method.
-#'
-#' @param x A Python object.
-#' @param name The item name.
-#'
-#' @return The (mutated) object `x`, invisibly.
-#'
-#' @family item-related APIs
-#' @export
-py_del_item <- function(x, name) {
-  ensure_python_initialized()
-  if (py_is_module_proxy(x))
-    py_resolve_module_proxy(x)
-
-  if (!py_has_attr(x, "__delitem__"))
-    stop("Python object has no '__delitem__' method", call. = FALSE)
-  delitem <- py_to_r(py_get_attr(x, "__delitem__", silent = FALSE))
-
-  delitem(name)
-  invisible(x)
 }
 
 
@@ -1312,22 +1232,6 @@ py_capture_output <- function(expr, type = c("stdout", "stderr")) {
 
 }
 
-py_flush_output <- function() {
-
-  if (!is_python3())
-    return()
-
-  sys <- import("sys", convert = TRUE)
-
-  if (!is.null(sys$stdout) && is.function(sys$stdout$flush))
-    sys$stdout$flush()
-
-  if (!is.null(sys$stderr) && is.function(sys$stderr$flush))
-    sys$stderr$flush()
-
-}
-
-
 
 #' Run Python code
 #'
@@ -1519,9 +1423,7 @@ py_resolve_module_proxy <- function(proxy) {
   py_module_proxy_import(proxy)
 
   # clear the global tracking of delay load modules
-  .globals$delay_load_module <- NULL
-  .globals$delay_load_environment <- NULL
-  .globals$delay_load_priority <- 0
+  .globals$delay_load_imports <- NULL
 
   # call on_load if provided
   if (is.function(on_load))
@@ -1780,12 +1682,12 @@ py_last_error <- function(exception) {
     # set as the last exception
     r_trace <- NULL
     if (inherits(exception, "py_error")) {
-      r_trace <- exception$r_trace
+      r_trace <- exception$trace
       exception <- attr(exception, "exception", TRUE)
     }
 
-    if(is.null(r_trace))
-      r_trace <- as_r_value(py_get_attr(exception, "r_trace", TRUE))
+    if (is.null(r_trace))
+      r_trace <- as_r_value(py_get_attr(exception, "trace", TRUE))
 
     if (!is.null(exception) &&
         !inherits(exception, "python.builtin.Exception"))
@@ -1794,7 +1696,7 @@ py_last_error <- function(exception) {
     on.exit({
       .globals$py_last_exception <- exception
       .globals$last_r_trace <- r_trace
-      })
+    })
     return(invisible(.globals$py_last_exception))
   }
 
@@ -1826,7 +1728,7 @@ py_last_error <- function(exception) {
   )
   out$r_call <- conditionCall(e)
   out$r_class <- as_r_value(py_get_attr(e, "r_class", TRUE)) %||% class(e)
-  out$r_trace <- py_get_attr(e, "r_trace", TRUE) %||% .globals$last_r_trace
+  out$r_trace <- py_get_attr(e, "trace", TRUE) %||% .globals$last_r_trace
   out <- lapply(out, as_r_value)
   attr(out, "exception") <- e
   class(out) <- "py_error"

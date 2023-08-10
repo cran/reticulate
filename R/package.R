@@ -19,9 +19,10 @@ NULL
 .globals$required_python_version <- NULL
 .globals$use_python_versions <- c()
 .globals$py_config <- NULL
-.globals$delay_load_module <- NULL
-.globals$delay_load_environment <- NULL
-.globals$delay_load_priority <- 0
+.globals$delay_load_imports <- data.frame(module = character(),
+                                          priority = integer(),
+                                          environment = character(),
+                                          stringsAsFactors = FALSE)
 .globals$suppress_warnings_handlers <- list()
 .globals$class_filters <- list(
 
@@ -46,26 +47,24 @@ ensure_python_initialized <- function(required_module = NULL) {
   if (is_python_initialized())
     return()
 
-  # give delay load modules priority
-  use_environment <- NULL
-  if (!is.null(.globals$delay_load_module)) {
-    required_module <- .globals$delay_load_module
-    use_environment <- .globals$delay_load_environment
-    .globals$delay_load_module <- NULL # one shot
-    .globals$delay_load_environment <- NULL
-    .globals$delay_load_priority <- 0
-  }
-
   # notify front-end (if any) that Python is about to be initialized
   callback <- getOption("reticulate.python.beforeInitialized")
   if (is.function(callback))
     callback()
 
+  # make sure this module is used for an environment name.
+  if(!is.null(required_module))
+    register_delay_load_import(required_module)
+
   # perform initialization
-  .globals$py_config <- initialize_python(required_module, use_environment)
+  .globals$py_config <- initialize_python()
+
+  # clear the global list of delay_load requests
+  .globals$delay_load_imports <- NULL
 
   # remap output streams to R output handlers
   remap_output_streams()
+  set_knitr_python_stdout_hook()
 
   # generate 'R' helper object
   py_inject_r()
@@ -110,13 +109,13 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
 
   # provide hint to install Miniconda if no Python is found
   python_not_found <- function(msg) {
-    hint <- "Use reticulate::install_miniconda() if you'd like to install a Miniconda Python environment."
+    hint <- "Please create a default virtual environment with `reticulate::virtualenv_create('r-reticulate')`."
     stop(paste(msg, hint, sep = "\n"), call. = FALSE)
   }
 
   # resolve top level module for search
   if (!is.null(required_module))
-    required_module <- strsplit(required_module, ".", fixed = TRUE)[[1]][[1]]
+    required_module <- strsplit(required_module, ".", fixed = TRUE)[[1L]][[1L]]
 
   # find configuration
   config <- local({
@@ -296,6 +295,8 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
   config
 }
 
+# unused presently, formerly called from initialize_python()
+# https://github.com/rstudio/reticulate/commit/e8c82a1f95eb97c4e5fc27b6550a4498827438e0#r122213856
 check_forbidden_initialization <- function() {
 
   if (is_python_initialized())

@@ -40,6 +40,10 @@ py_validate_xptr <- function(x) {
     invisible(.Call(`_reticulate_py_validate_xptr`, x))
 }
 
+py_flush_output <- function() {
+    .Call(`_reticulate_py_flush_output`)
+}
+
 conditionMessage_from_py_exception <- function(exc) {
     .Call(`_reticulate_conditionMessage_from_py_exception`, exc)
 }
@@ -276,6 +280,10 @@ py_id <- function(object) {
 
 py_capsule <- function(x) {
     .Call(`_reticulate_py_capsule`, x)
+}
+
+py_slice <- function(start = NULL, stop = NULL, step = NULL) {
+    .Call(`_reticulate_py_slice`, start, stop, step)
 }
 
 readline <- function(prompt) {

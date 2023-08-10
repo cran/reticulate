@@ -2,8 +2,9 @@
 knitr::opts_chunk$set(eval = FALSE)
 
 ## ---- eval = FALSE------------------------------------------------------------
-#  install_scipy <- function(method = "auto", conda = "auto") {
-#    reticulate::py_install("scipy", method = method, conda = conda)
+#  install_scipy <- function(envname = "r-scipy", method = "auto", ...) {
+#    reticulate::py_install("scipy", envname = envname,
+#                           method = method, ...)
 #  }
 
 ## -----------------------------------------------------------------------------

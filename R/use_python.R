@@ -62,9 +62,9 @@
 #'
 #' @param required
 #'   Is the requested copy of Python required? If `TRUE`, an error will be
-#'   emitted if the requested copy of Python does not exist. Otherwise, the
+#'   emitted if the requested copy of Python does not exist. If `FALSE`, the
 #'   request is taken as a hint only, and scanning for other versions will still
-#'   proceed.
+#'   proceed. A value of `NULL` (the default), is equivalent to `TRUE`.
 #'
 #' @importFrom utils file_test
 #'
@@ -114,20 +114,24 @@ use_python <- function(python, required = NULL) {
   }
 
   if (required) {
-    if (!is.null(prior_required_python <-
-                 .globals$required_python_version) &&
+    # warn if we're overriding a previous request that will be ignored.
+    prior_required_python <- .globals$required_python_version
+    if (!is.null(prior_required_python) &&
         !isTRUE(canonical_path(prior_required_python) == canonical_path(python)))
-      warningf(
-        'Previous request to `use_python("%s", required = TRUE)` will be ignored. It is superseded by request to `use_python("%s")',
+      warningf(heredoc(c(
+        'Previous request to `use_python("%s", required = TRUE)` will be ignored.',
+        'It is superseded by request to `use_python("%s")')),
         prior_required_python, python)
 
     .globals$required_python_version <- python
 
-    if (!is.na(python_w_precedence <-
-               Sys.getenv("RETICULATE_PYTHON", NA)) &&
+    # warn if this setting will be ignored because RETICULATE_PYTHON is set
+    python_w_precedence <- Sys.getenv("RETICULATE_PYTHON", NA)
+    if (!is.na(python_w_precedence) &&
         !isTRUE(canonical_path(python_w_precedence) == canonical_path(python)))
-      warningf(
-        'The request to `use_python("%s")` will be ignored because the environment variable RETICULATE_PYTHON is set to "%s"',
+      warningf(heredoc(c(
+        'The request to `use_python("%s")` will be ignored because the',
+        'environment variable RETICULATE_PYTHON is set to "%s"')),
         python, python_w_precedence)
   }
 
@@ -193,7 +197,14 @@ use_condaenv <- function(condaenv = NULL, conda = "auto", required = NULL) {
   #
   # TODO: what if there are multiple conda installations? users could still
   # use 'use_python()' explicitly to target a specific install
-  conda <- conda_binary(conda)
+  conda <- tryCatch(conda_binary(conda), error = identity)
+  if (inherits(conda, "error")) {
+    if (required)
+      stop(conda)
+    else
+      return(invisible(NULL))
+  }
+
   if (identical(condaenv, "base")) {
     bin <- dirname(conda)
     suffix <- if (is_windows()) "../python.exe" else "python"

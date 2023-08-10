@@ -64,6 +64,16 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// py_flush_output
+SEXP py_flush_output();
+RcppExport SEXP _reticulate_py_flush_output() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(py_flush_output());
+    return rcpp_result_gen;
+END_RCPP
+}
 // conditionMessage_from_py_exception
 std::string conditionMessage_from_py_exception(PyObjectRef exc);
 RcppExport SEXP _reticulate_conditionMessage_from_py_exception(SEXP excSEXP) {
@@ -704,6 +714,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// py_slice
+PyObjectRef py_slice(SEXP start, SEXP stop, SEXP step);
+RcppExport SEXP _reticulate_py_slice(SEXP startSEXP, SEXP stopSEXP, SEXP stepSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type start(startSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type stop(stopSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type step(stepSEXP);
+    rcpp_result_gen = Rcpp::wrap(py_slice(start, stop, step));
+    return rcpp_result_gen;
+END_RCPP
+}
 // readline
 SEXP readline(const std::string& prompt);
 RcppExport SEXP _reticulate_readline(SEXP promptSEXP) {
@@ -742,6 +765,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_reticulate_is_python3", (DL_FUNC) &_reticulate_is_python3, 0},
     {"_reticulate_py_is_null_xptr", (DL_FUNC) &_reticulate_py_is_null_xptr, 1},
     {"_reticulate_py_validate_xptr", (DL_FUNC) &_reticulate_py_validate_xptr, 1},
+    {"_reticulate_py_flush_output", (DL_FUNC) &_reticulate_py_flush_output, 0},
     {"_reticulate_conditionMessage_from_py_exception", (DL_FUNC) &_reticulate_conditionMessage_from_py_exception, 1},
     {"_reticulate_py_none_impl", (DL_FUNC) &_reticulate_py_none_impl, 0},
     {"_reticulate_py_is_callable", (DL_FUNC) &_reticulate_py_is_callable, 1},
@@ -798,6 +822,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_reticulate_py_has_method", (DL_FUNC) &_reticulate_py_has_method, 2},
     {"_reticulate_py_id", (DL_FUNC) &_reticulate_py_id, 1},
     {"_reticulate_py_capsule", (DL_FUNC) &_reticulate_py_capsule, 1},
+    {"_reticulate_py_slice", (DL_FUNC) &_reticulate_py_slice, 3},
     {"_reticulate_readline", (DL_FUNC) &_reticulate_readline, 1},
     {"_reticulate_py_register_interrupt_handler", (DL_FUNC) &_reticulate_py_register_interrupt_handler, 0},
     {"_reticulate_py_interrupts_pending", (DL_FUNC) &_reticulate_py_interrupts_pending, 1},

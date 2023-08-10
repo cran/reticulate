@@ -236,6 +236,7 @@ bool LibPython::loadSymbols(bool python3, std::string* pError)
   LOAD_PYTHON_SYMBOL(PyIter_Next)
   LOAD_PYTHON_SYMBOL(PyLong_AsLong)
   LOAD_PYTHON_SYMBOL(PyLong_FromLong)
+  LOAD_PYTHON_SYMBOL(PySlice_New)
   LOAD_PYTHON_SYMBOL(PyBool_FromLong)
   LOAD_PYTHON_SYMBOL(PyDict_New)
   LOAD_PYTHON_SYMBOL(PyDict_Contains)
@@ -396,6 +397,41 @@ bool import_numpy_api(bool python3, std::string* pError) {
   }
 
   return true;
+}
+
+
+int flush_std_buffers() {
+  int status = 0;
+  PyObject* tmp = NULL;
+  PyObject *error_type, *error_value, *error_traceback;
+  PyErr_Fetch(&error_type, &error_value, &error_traceback);
+
+  PyObject* sys_stdout(PySys_GetObject("stdout"));  // returns borrowed reference
+  if (sys_stdout == NULL)
+    status = -1;
+  else
+    tmp = PyObject_CallMethod(sys_stdout, "flush", NULL);
+
+  if (tmp == NULL)
+    status = -1;
+  else {
+    Py_DecRef(tmp);
+    tmp = NULL;
+  }
+
+  PyObject* sys_stderr(PySys_GetObject("stderr"));  // returns borrowed reference
+  if (sys_stderr == NULL)
+    status = -1;
+  else
+    tmp = PyObject_CallMethod(sys_stderr, "flush", NULL);
+
+  if (tmp == NULL)
+    status = -1;
+  else
+    Py_DecRef(tmp);
+
+  PyErr_Restore(error_type, error_value, error_traceback);
+  return status;
 }
 
 
