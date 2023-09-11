@@ -1,3 +1,42 @@
+# reticulate 1.32.0
+
+- reticulate now supports casting R data.frames to Pandas data.frames using nullable
+  data types, allowing users to preserve NA's from R atomic vectors. This feature is
+  opt-in and can be enabled by setting the R option `reticulate.pandas_use_nullable_dtypes`
+  to `TRUE`. (#1439)
+  
+- reticulate now exports a `chooseOpsMethod()` method, allowing for Ops dispatch 
+  to more specialized Ops methods defined for Python objects.
+  
+- `py_discover_config()` will now warn instead of error upon encountering a 
+  broken Python installation. (#1441, #1459)
+  
+- Fixed issue where Python would raise exception "OSError: [WinError 6] The handle is invalid" 
+  when opening a subprocess while running in Rstudio on Windows. (#1448, #518)
+  
+- Fixed issue where the multiprocessing Python module would crash or hang when spawning a 
+  `Process()` on Windows. (#1430, #1346, fixed in #1461)
+  
+- Fixed issue where `virtualenv_create()` would fail to discover a 'virtualenv' module 
+  in the system Python installation on Ubuntu. Reticulate will no longer discover 
+  and attempt to use the `venv` module stub present on Ubuntu systems
+  where the `python3-venv` apt package has not been installed. 
+  (mlverse/pysparklyr#11, #1437, #1455)
+  
+- Fixed issue where the user was prompted to create an 'r-reticulate' venv 
+  in the RStudio IDE before reticulate was requested to initialize Python. (#1450, #1456)
+  
+- Improved error message when reticulate attempts to initialize a virtual environment 
+  after the Python installation it was created from is no longer available. (#1149, #1457)
+  
+- Improved error message on Fedora when attempting to create a virtual environment
+  from the system python before running `dnf install python3-pip`.
+  
+- Fixed issue where `install_python()` on macOS in the RStudio IDE would fail to discover
+  and use brew for Python build dependencies.
+
+- Fixed error with `virtualenv_create(python = "/usr/bin/python")` on centos7. (#1467)
+
 # reticulate 1.31
 
 ## Python Installation Management

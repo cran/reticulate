@@ -275,7 +275,7 @@ py_compare <- function(a, b, op) {
 }
 
 #' @rdname Ops-python-methods
-#' @export
+#' @rawNamespace if (getRversion() >= "4.3.0") S3method("%*%",python.builtin.object)
 `%*%.python.builtin.object` <-function(x, y) {
   op <- fetch_op("@", py_eval("lambda x, y: x @ y", convert = FALSE),
                  nargs = 2L)
@@ -1612,6 +1612,23 @@ nameOfClass.python.builtin.type <- function(x) {
     as_r_value(py_get_attr_impl(x, "__name__")),
     sep = "."
   )
+}
+
+#' @rawNamespace if (getRversion() >= "4.3.0") S3method(chooseOpsMethod,python.builtin.object)
+chooseOpsMethod.python.builtin.object <- function(x, y, mx, my, cl, reverse) {
+  # If both objects are python objects, and
+  # 'my' is the default Ops method provided by reticulate
+  # (e.g, its environment is the reticulate namespace)
+  # then 'mx' must be the more specific method, select mx.
+  # e.g.,:
+  # x class: tensorflow.tensor ... python.builtin.object
+  # y class: numpy.ndarray         python.builtin.object
+  # 'x * y' gives
+  # Warning: Incompatible methods ("*.tensorflow.tensor", "*.python.builtin.object") for "*"
+  # Error in img * x : non-numeric argument to binary operator
+
+  inherits(y, "python.builtin.object") &&
+  identical(environment(my), parent.env(environment()))
 }
 
 py_set_interrupt <- function() {

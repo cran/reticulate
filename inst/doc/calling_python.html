@@ -49,7 +49,7 @@ overflow: visible;
 </style>
 <style type="text/css" data-origin="pandoc">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -546,7 +546,7 @@ side to provide Python the type it expects.</p>
 <p>For example, if a Python API requires a list and you pass a single
 element R vector it will be converted to a Python scalar. To overcome
 this simply use the R <code>list</code> function explicitly:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>foo<span class="sc">$</span><span class="fu">bar</span>(<span class="at">indexes =</span> <span class="fu">list</span>(42L))</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>foo<span class="sc">$</span><span class="fu">bar</span>(<span class="at">indexes =</span> <span class="fu">list</span>(<span class="dv">42</span><span class="dt">L</span>))</span></code></pre></div>
 <p>Similarly, a Python API might require a <code>tuple</code> rather
 than a list. In that case you can use the <code>tuple()</code>
 function:</p>
@@ -554,7 +554,7 @@ function:</p>
 <p>R named lists are converted to Python dictionaries however you can
 also explicitly create a Python dictionary using the <code>dict()</code>
 function:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">dict</span>(<span class="at">foo =</span> <span class="st">&quot;bar&quot;</span>, <span class="at">index =</span> 42L)</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">dict</span>(<span class="at">foo =</span> <span class="st">&quot;bar&quot;</span>, <span class="at">index =</span> <span class="dv">42</span><span class="dt">L</span>)</span></code></pre></div>
 <p>This might be useful if you need to pass a dictionary that uses a
 more complex object (as opposed to a string) as its key.</p>
 </div>
@@ -567,14 +567,14 @@ more complex object (as opposed to a string) as its key.</p>
 sure to use the <code>L</code> suffix within R. For example, if the
 <code>foo</code> function requires an integer as its <code>index</code>
 argument you would do this:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>foo<span class="sc">$</span><span class="fu">bar</span>(<span class="at">index =</span> 42L)</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>foo<span class="sc">$</span><span class="fu">bar</span>(<span class="at">index =</span> <span class="dv">42</span><span class="dt">L</span>)</span></code></pre></div>
 <p>Python collections are addressed using 0-based indices rather than
 the 1-based indices you might be familiar with from R. So to address the
 first item of an array in R you would write:</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>items[[<span class="dv">1</span>]]</span></code></pre></div>
 <p>Whereas if you are calling a method in Python via reticulate that
 takes an index you would write this to address the first item:</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>items<span class="sc">$</span><span class="fu">get</span>(0L)</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>items<span class="sc">$</span><span class="fu">get</span>(<span class="dv">0</span><span class="dt">L</span>)</span></code></pre></div>
 <p>Note the use of the 0-based index as well as the <code>L</code> to
 indicate t that the value is an integer.</p>
 </div>
@@ -629,6 +629,30 @@ will be re-indexed using those row names (and vice versa). Special
 handling is also available for a <code>DatetimeIndex</code> associated
 with a Pandas DataFrame; however, because R only supports character
 vectors for row names they are converted to character first.</p>
+<div id="using-pandas-nullable-data-types" class="section level3">
+<h3>Using Pandas nullable data types</h3>
+<p>Pandas has experimental support for nullable data types. Those data
+types have built-in support for missing values, represented by
+<code>pd.NA</code> and using them allows us to better represent R
+<code>NA</code> values.</p>
+<p>Users can opt-in to use Pandas nullable data types instead of numpy
+arrays by setting the <code>reticulate.pandas_use_nullable_dtypes</code>
+to <code>TRUE</code>. For example:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>  <span class="at">int =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>),</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>  <span class="at">num =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">rnorm</span>(<span class="dv">4</span>)),</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>  <span class="at">lgl =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">rep</span>(<span class="fu">c</span>(<span class="cn">TRUE</span>, <span class="cn">FALSE</span>), <span class="dv">2</span>)),</span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>  <span class="at">string =</span> <span class="fu">c</span>(<span class="cn">NA</span>, letters[<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>])</span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a>)</span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="fu">options</span>(<span class="at">reticulate.pandas_use_nullable_data_types =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="fu">r_to_py</span>(df)</span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="co">#&gt;     int       num    lgl string</span></span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a><span class="co">#&gt; 0  &lt;NA&gt;      &lt;NA&gt;   &lt;NA&gt;   &lt;NA&gt;</span></span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a><span class="co">#&gt; 1     1 -0.697855   True      a</span></span>
+<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a><span class="co">#&gt; 2     2 -0.253042  False      b</span></span>
+<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a><span class="co">#&gt; 3     3  0.385421   True      c</span></span>
+<span id="cb20-14"><a href="#cb20-14" tabindex="-1"></a><span class="co">#&gt; 4     4  0.519933  False      d</span></span></code></pre></div>
+</div>
 </div>
 <div id="sparse-matrices" class="section level2">
 <h2>Sparse Matrices</h2>
@@ -686,10 +710,10 @@ that we created earlier using <code>Matrix::sparseMatrix()</code>:</p>
 <p>The R <code>with</code> generic function can be used to interact with
 Python context manager objects (in Python you use the <code>with</code>
 keyword to do the same). For example:</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>py <span class="ot">&lt;-</span> <span class="fu">import_builtins</span>()</span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">with</span>(py<span class="sc">$</span><span class="fu">open</span>(<span class="st">&quot;output.txt&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="sc">%as%</span> file, {</span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>  file<span class="sc">$</span><span class="fu">write</span>(<span class="st">&quot;Hello, there!&quot;</span>)</span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a>})</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>py <span class="ot">&lt;-</span> <span class="fu">import_builtins</span>()</span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">with</span>(py<span class="sc">$</span><span class="fu">open</span>(<span class="st">&quot;output.txt&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="sc">%as%</span> file, {</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a>  file<span class="sc">$</span><span class="fu">write</span>(<span class="st">&quot;Hello, there!&quot;</span>)</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>})</span></code></pre></div>
 <p>This example opens a file and ensures that it is automatically closed
 at the end of the with block. Note the use of the <code>%as%</code>
 operator to alias the object created by the context manager.</p>
@@ -700,32 +724,32 @@ operator to alias the object created by the context manager.</p>
 with it using the <code>iterate()</code> function. The
 <code>iterate()</code> function can be used to apply an R function to
 each item yielded by the iterator:</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">iterate</span>(iter, print)</span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="fu">iterate</span>(iter, print)</span></code></pre></div>
 <p>If you don’t pass a function to <code>iterate</code> the results will
 be collected into an R vector:</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">iterate</span>(iter)</span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">iterate</span>(iter)</span></code></pre></div>
 <p>Note that the <code>Iterators</code> will be drained of their values
 by <code>iterate()</code>:</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="fu">iterate</span>(iter) <span class="co"># results are not empty</span></span>
-<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">iterate</span>(iter) <span class="co"># results are empty since items have already been drained</span></span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="fu">iterate</span>(iter) <span class="co"># results are not empty</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">iterate</span>(iter) <span class="co"># results are empty since items have already been drained</span></span></code></pre></div>
 <div id="element-level-iteration" class="section level3">
 <h3>Element Level Iteration</h3>
 <p>You can also iterate on an element-by-element basis using the
 <code>iter_next()</code> function. For example:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="cf">while</span> (<span class="cn">TRUE</span>) {</span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>  item <span class="ot">&lt;-</span> <span class="fu">iter_next</span>(iter)</span>
-<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(item))</span>
-<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a>    <span class="cf">break</span></span>
-<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="cf">while</span> (<span class="cn">TRUE</span>) {</span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>  item <span class="ot">&lt;-</span> <span class="fu">iter_next</span>(iter)</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(item))</span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a>    <span class="cf">break</span></span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a>}</span></code></pre></div>
 <p>By default <code>iter_next()</code> will return <code>NULL</code>
 when the iteration is complete but you can provide a custom
 <code>completed</code> value it will be returned instead. For
 example:</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="cf">while</span> (<span class="cn">TRUE</span>) {</span>
-<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>  item <span class="ot">&lt;-</span> <span class="fu">iter_next</span>(iter, <span class="at">completed =</span> <span class="cn">NA</span>)</span>
-<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.na</span>(item))</span>
-<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a>    <span class="cf">break</span></span>
-<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="cf">while</span> (<span class="cn">TRUE</span>) {</span>
+<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a>  item <span class="ot">&lt;-</span> <span class="fu">iter_next</span>(iter, <span class="at">completed =</span> <span class="cn">NA</span>)</span>
+<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.na</span>(item))</span>
+<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a>    <span class="cf">break</span></span>
+<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a>}</span></code></pre></div>
 <p>Note that some iterators/generators in Python are infinite. In that
 case the caller will need custom logic to determine when to terminate
 the loop.</p>
@@ -742,29 +766,29 @@ of the <code>yield</code> keyword is that it enables successive
 iterations to use the state of previous iterations. In R, this can be
 done by returning a function that mutates its enclosing environment via
 the &lt;&lt;- operator. For example:</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="co"># define a generator function</span></span>
-<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a>sequence_generator <span class="ot">&lt;-</span><span class="cf">function</span>(start) {</span>
-<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a>  value <span class="ot">&lt;-</span> start</span>
-<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a>  <span class="cf">function</span>() {</span>
-<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a>    value <span class="ot">&lt;&lt;-</span> value <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a>    value</span>
-<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a>  }</span>
-<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a>}</span>
-<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a></span>
-<span id="cb30-10"><a href="#cb30-10" tabindex="-1"></a><span class="co"># convert the function to a python iterator</span></span>
-<span id="cb30-11"><a href="#cb30-11" tabindex="-1"></a>iter <span class="ot">&lt;-</span> <span class="fu">py_iterator</span>(<span class="fu">sequence_generator</span>(<span class="dv">10</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># define a generator function</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a>sequence_generator <span class="ot">&lt;-</span><span class="cf">function</span>(start) {</span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>  value <span class="ot">&lt;-</span> start</span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a>  <span class="cf">function</span>() {</span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a>    value <span class="ot">&lt;&lt;-</span> value <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>    value</span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a>  }</span>
+<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a>}</span>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a></span>
+<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="co"># convert the function to a python iterator</span></span>
+<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a>iter <span class="ot">&lt;-</span> <span class="fu">py_iterator</span>(<span class="fu">sequence_generator</span>(<span class="dv">10</span>))</span></code></pre></div>
 <p>If you want to indicate the end of the iteration, return
 <code>NULL</code> from the function:</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a>sequence_generator <span class="ot">&lt;-</span><span class="cf">function</span>(start) {</span>
-<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a>  value <span class="ot">&lt;-</span> start</span>
-<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>  <span class="cf">function</span>() {</span>
-<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a>    value <span class="ot">&lt;&lt;-</span> value <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a>    <span class="cf">if</span> (value <span class="sc">&lt;</span> <span class="dv">100</span>)</span>
-<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>      value</span>
-<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a>    <span class="cf">else</span></span>
-<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a>      <span class="cn">NULL</span></span>
-<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a>  }</span>
-<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a>sequence_generator <span class="ot">&lt;-</span><span class="cf">function</span>(start) {</span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a>  value <span class="ot">&lt;-</span> start</span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a>  <span class="cf">function</span>() {</span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a>    value <span class="ot">&lt;&lt;-</span> value <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a>    <span class="cf">if</span> (value <span class="sc">&lt;</span> <span class="dv">100</span>)</span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a>      value</span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a>      <span class="cn">NULL</span></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a>  }</span>
+<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a>}</span></code></pre></div>
 <p>Note that you can change the value that indicates the end of the
 iteration using the <code>completed</code> parameter
 (e.g. <code>py_iterator(func, completed = NA)</code>).</p>
@@ -782,10 +806,10 @@ and then we use <a href="https://docs.python.org/3/library/inspect.html">inspect
 module</a> to get the converted function’s argument spec. You can see
 that the signature of the wrapped function looks different than the
 original R function’s signature.</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="sc">&gt;</span> inspect <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;inspect&quot;</span>)</span>
-<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="sc">&gt;</span> converted_func <span class="ot">&lt;-</span> <span class="fu">r_to_py</span>(<span class="cf">function</span>(a, <span class="at">b =</span> <span class="fl">1.5</span>) {})</span>
-<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="sc">&gt;</span> inspect<span class="sc">$</span><span class="fu">getargspec</span>(converted_func)</span>
-<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="fu">ArgSpec</span>(<span class="at">args=</span>[], <span class="at">varargs=</span><span class="st">&#39;args&#39;</span>, <span class="at">keywords=</span><span class="st">&#39;kwargs&#39;</span>, <span class="at">defaults=</span>None)</span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="sc">&gt;</span> inspect <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;inspect&quot;</span>)</span>
+<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="sc">&gt;</span> converted_func <span class="ot">&lt;-</span> <span class="fu">r_to_py</span>(<span class="cf">function</span>(a, <span class="at">b =</span> <span class="fl">1.5</span>) {})</span>
+<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a><span class="sc">&gt;</span> inspect<span class="sc">$</span><span class="fu">getargspec</span>(converted_func)</span>
+<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a><span class="fu">ArgSpec</span>(<span class="at">args=</span>[], <span class="at">varargs=</span><span class="st">&#39;args&#39;</span>, <span class="at">keywords=</span><span class="st">&#39;kwargs&#39;</span>, <span class="at">defaults=</span>None)</span></code></pre></div>
 <p>This default conversion typically works fine, however some Python
 libraries have strict checking on the function signatures of user
 provided callbacks. In these cases the generic
@@ -795,9 +819,9 @@ function so that the wrapped function has exactly the same signature as
 that of the original R function, e.g. one argument <code>a</code>
 without default value and another argument <code>b</code> with default
 value 1.5.</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="sc">&gt;</span> wrapped_func <span class="ot">&lt;-</span> <span class="fu">py_func</span>(<span class="cf">function</span>(a, <span class="at">b =</span> <span class="fl">1.5</span>) {})</span>
-<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="sc">&gt;</span> inspect<span class="sc">$</span><span class="fu">getargspec</span>(wrapped_func)</span>
-<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a><span class="fu">ArgSpec</span>(<span class="at">args=</span>[<span class="st">&#39;a&#39;</span>, <span class="st">&#39;b&#39;</span>], <span class="at">varargs=</span>None, <span class="at">keywords=</span>None, <span class="at">defaults=</span>(<span class="fl">1.5</span>,))</span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="sc">&gt;</span> wrapped_func <span class="ot">&lt;-</span> <span class="fu">py_func</span>(<span class="cf">function</span>(a, <span class="at">b =</span> <span class="fl">1.5</span>) {})</span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="sc">&gt;</span> inspect<span class="sc">$</span><span class="fu">getargspec</span>(wrapped_func)</span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a><span class="fu">ArgSpec</span>(<span class="at">args=</span>[<span class="st">&#39;a&#39;</span>, <span class="st">&#39;b&#39;</span>], <span class="at">varargs=</span>None, <span class="at">keywords=</span>None, <span class="at">defaults=</span>(<span class="fl">1.5</span>,))</span></code></pre></div>
 <p>Note that the signature of the R function must not contain esoteric
 Python-incompatible constructs. For example, we cannot have R function
 with signature like <code>function(a = 1, b)</code> since Python

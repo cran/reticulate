@@ -1,7 +1,7 @@
 Package: reticulate
 Type: Package
 Title: Interface to 'Python'
-Version: 1.31
+Version: 1.32.0
 Authors@R: c(
   person("Tomasz", "Kalinowski", role = c("ctb", "cre"),
          email = "tomasz@posit.co"),
@@ -41,7 +41,7 @@ LinkingTo: Rcpp
 RoxygenNote: 7.2.3
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2023-08-09 17:18:48 UTC; tomasz
+Packaged: 2023-09-11 18:26:48 UTC; tomasz
 Author: Tomasz Kalinowski [ctb, cre],
   Kevin Ushey [aut],
   JJ Allaire [aut],
@@ -55,4 +55,4 @@ Author: Tomasz Kalinowski [ctb, cre],
     http://tinythreadpp.bitsnbites.eu/)
 Maintainer: Tomasz Kalinowski <tomasz@posit.co>
 Repository: CRAN
-Date/Publication: 2023-08-10 15:40:02 UTC
+Date/Publication: 2023-09-11 20:20:02 UTC

@@ -4,11 +4,12 @@
 #' R interface to Python modules, classes, and functions. When calling into
 #' Python R data types are automatically converted to their equivalent Python
 #' types. When values are returned from Python to R they are converted back to R
-#' types. The reticulate package is compatible with all versions of Python >= 2.7.
+#' types. The reticulate package is compatible with all versions of Python >= 3.6.
 #' Integration with NumPy requires NumPy version 1.6 or higher.
 #'
 #' @docType package
 #' @name reticulate
+#' @aliases reticulate-package
 #' @keywords internal
 #' @useDynLib reticulate, .registration = TRUE
 #' @importFrom Rcpp evalCpp
@@ -65,6 +66,9 @@ ensure_python_initialized <- function(required_module = NULL) {
   # remap output streams to R output handlers
   remap_output_streams()
   set_knitr_python_stdout_hook()
+
+  if (is_windows() && identical(.Platform$GUI, "RStudio"))
+    import("rpytools.subprocess")$patch_subprocess_Popen()
 
   # generate 'R' helper object
   py_inject_r()
@@ -245,10 +249,21 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
 
   }
 
-  if (is_windows()) {
+  local({
     # patch sys.executable to point to python.exe, not Rterm.exe or rsession-utf8.exe, #1258
-    py_run_string_impl("import sys; sys.executable = sys.argv[0]", local = TRUE)
-  }
+    patch <- sprintf("import sys; sys.executable  = r'''%s'''",
+                     config$executable)
+    py_run_string_impl(patch, local = TRUE)
+  })
+
+  if (nzchar(config$base_executable)) local({
+    # just like sys.executable, patch to point to python.exe, not Rterm.exe
+    # need to patch for multiprocessing to work on windows, perhaps other things too.
+    # in venvs, _base_executable should point to the venv starter, #1430
+    patch <- sprintf("import sys; sys._base_executable = r'''%s'''",
+                     config$base_executable)
+    py_run_string_impl(patch, local = TRUE)
+  })
 
   # ensure modules can be imported from the current working directory
   py_run_string_impl("import sys; sys.path.insert(0, '')", local = TRUE)

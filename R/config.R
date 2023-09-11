@@ -165,8 +165,8 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   main_process_info <- main_process_python_info()
   if (!is.null(main_process_info)) {
     python_version <- normalize_python_path(main_process_info$python)$path
-    config <- python_config(python_version, required_module, forced = "the current process")
-    return(config)
+    try(return(python_config(python_version, required_module,
+                             forced = "the current process")))
   }
 
   # if PYTHON_SESSION_INITIALIZED is specified then use it without scanning
@@ -175,8 +175,8 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   py_session_initialized <- py_session_initialized_binary()
   if (!is.null(py_session_initialized)) {
     python_version <- normalize_python_path(py_session_initialized)$path
-    config <- python_config(python_version, required_module, forced = "PYTHON_SESSION_INITIALIZED")
-    return(config)
+    try(return(python_config(python_version, required_module,
+                             forced = "PYTHON_SESSION_INITIALIZED")))
   }
 
   # if RETICULATE_PYTHON is specified then use it without scanning further
@@ -188,8 +188,8 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
       stop("Python specified in RETICULATE_PYTHON (", reticulate_env, ") does not exist")
 
     python_version <- python_version$path
-    config <- python_config(python_version, required_module, forced = "RETICULATE_PYTHON")
-    return(config)
+    try(return(python_config(python_version, required_module,
+                             forced = "RETICULATE_PYTHON")))
 
   }
 
@@ -205,8 +205,8 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
       stop("Python specified in RETICULATE_PYTHON_ENV (", reticulate_python_env, ") does not exist")
     })
 
-    config <- python_config(python, required_module, forced = "RETICULATE_PYTHON_ENV")
-    return(config)
+    try(return(python_config(python, required_module,
+                             forced = "RETICULATE_PYTHON_ENV")))
 
   }
 
@@ -215,17 +215,17 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   required_version <- .globals$required_python_version
   if (!is.null(required_version)) {
     python_version <- normalize_python_path(required_version)$path
-    config <- python_config(python_version, required_module, forced = "use_python() function")
-    return(config)
+    try(return(python_config(python_version, required_module, 
+                             forced = "use_python() function")))
   }
 
   # check if we're running in an activated venv
   if (is_virtualenv(envpath <- Sys.getenv("VIRTUAL_ENV", NA))) {
     # If this check ends up being too strict, we can alternatively do:
     # if (python_info(Sys.which("python"))$type == "virtualenv") {
-    config <- python_config(virtualenv_python(envpath), required_module,
-                            forced = "VIRTUAL_ENV")
-    return(config)
+    try(return(python_config(
+      virtualenv_python(envpath), required_module,
+      forced = "VIRTUAL_ENV")))
   }
 
   # if we're working within a project that contains a pyproject.toml file,
@@ -244,10 +244,9 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   for (dirpath in c("./venv", "./virtualenv", "./.venv", "./.virtualenv")) {
     if (dir.exists(dirpath) && is_virtualenv(dirpath)) {
       python <- virtualenv_python(dirpath)
-      config <- python_config(
+      try(return(python_config(
         python, required_module,
-        forced = sprintf("'%s' existing in the current working directory", dirpath))
-      return(config)
+        forced = sprintf("'%s' existing in the current working directory", dirpath))))
     }
   }
 
@@ -258,10 +257,10 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
       next
     python <- tryCatch(py_resolve(envname), error = identity)
     if (!inherits(python, "error"))
-      return(python_config(
+      try(return(python_config(
         python, required_module,
         forced = sprintf('import("%s")', required_module)
-      ))
+      )))
   }
 
   # check for `use_python(required = FALSE)`. This should rarely be triggered
@@ -270,9 +269,10 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   # first call of use_*(,required = FALSE) wins
   optional_requested_use_pythons <- reticulate_python_versions()
   for (python in optional_requested_use_pythons) {
-    config <- python_config(python, required_module,
-                            forced = "use_python(, required = FALSE)")
-    return(config)
+    try(return(python_config(
+      python, required_module,
+      forced = "use_python(, required = FALSE)"
+      )))
   }
 
   # look in virtual environments that have a required module derived name,
@@ -281,10 +281,10 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
     envname <- paste0("r-", module)
     python <- tryCatch(py_resolve(envname), error = identity)
     if (!inherits(python, "error"))
-      return(python_config(
+      try(return(python_config(
         python, required_module,
         forced = sprintf('import("%s")', required_module)
-      ))
+      )))
   }
 
   # if RETICULATE_PYTHON_FALLBACK is specified then use it
@@ -294,14 +294,14 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
     if (!python_version$exists)
       stop("Python specified in RETICULATE_PYTHON_FALLBACK (", reticulate_env, ") does not exist")
     python_version <- python_version$path
-    config <- python_config(python_version, required_module, python_version, forced = "RETICULATE_PYTHON_FALLBACK")
-    return(config)
+    try(return(python_config(python_version, required_module, python_version, 
+                             forced = "RETICULATE_PYTHON_FALLBACK")))
   }
 
 
   ## At this point, the user, (and package authors on behalf of the user), has
   ## expressed no preference for any particular python installation, or the
-  ## preference expressed is for the python environment that don't exist.
+  ## preference expressed is for a python environment that don't exist.
   ##
   ## In other words,
   ##  - no use_python(), use_virtualenv(), use_condaenv()
@@ -311,21 +311,22 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   ##  - we're not running under an already activated venv (i.e., no VIRTUAL_ENV env var)
   ##  - no configured poetry or pipfile or venv in the current working directory
 
-  # Look for a "r-reticulate" venv. if found, use that.
+  # Look for a "r-reticulate" venv or condaenv. if found, use that.
+  # If not found, try to get permission to create one.
   # This is the default in the absence of any expressed preference by the user.
-  python <- tryCatch(py_resolve("r-reticulate"), error = identity)
+  python <- tryCatch(py_resolve("r-reticulate"), error = function(e) {
+    envpath <- try_create_default_virtualenv(package = "reticulate")
+    if (!is.null(envpath))
+      virtualenv_python(envpath)
+    else
+      e
+  })
   if (!inherits(python, "error"))
-    return(python_config(python, required_module))
+    try(return(python_config(python, required_module)))
 
-  # if we couldn't find a "r-reticulate" env, try to create one
-  # and look for it again
-  create_default_virtualenv(package = "reticulate")
-  python <- tryCatch(py_resolve("r-reticulate"), error = identity)
-  if (!inherits(python, "error"))
-    return(python_config(python, required_module))
 
-  # At this point, user has expressed no preference, and has declined
-  # to use the create the "r-reticulate" venv.
+  # At this point, user has expressed no preference, and we do not have user permission
+  # to create the "r-reticulate" venv
 
   # fall back to using the PATH python, or fail.
   # We intentionally do not go on a fishing expedition for every possible python,
@@ -339,12 +340,14 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
     Sys.which("python")
   ))
 
-  if (is_windows())
-    append(python_versions) <- local({
-      df <- py_versions_windows()
-      df$executable_path[df$type == "PythonCore"]
-    })
-
+  windows_registry_python <- character()
+  if (is_windows()) {
+    append(python_versions) <- windows_registry_python <-
+      local({
+        df <- py_versions_windows()
+        df$executable_path[df$type == "PythonCore"]
+      })
+  }
 
   # filter locations by existence
   if (length(python_versions) > 0)
@@ -374,7 +377,11 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   for (python_version in python_versions) {
 
     # get the config
-    config <- python_config(python_version, required_module, python_versions)
+    config <- try(python_config(python_version, required_module, python_versions,
+                                forced = if (python_version %in% windows_registry_python)
+                                  "Windows Registry" else "PATH"))
+    if(inherits(config, "try-error"))
+      next
 
     # if we have a required module ensure it's satisfied.
     # also check architecture (can be an issue on windows)
@@ -390,9 +397,9 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
 
   # no preferred found, return first with valid config if we have it or NULL
   if (length(valid_python_versions) > 0)
-    return(python_config(valid_python_versions[[1]], required_module, python_versions))
+    try(return(python_config(valid_python_versions[[1]], required_module, python_versions)))
   else if (length(python_versions) > 0)
-    return(python_config(python_versions[[1]], required_module, python_versions))
+    try(return(python_config(python_versions[[1]], required_module, python_versions)))
   else
     return(NULL)
 }
@@ -437,12 +444,15 @@ py_discover_config_fallbacks <- function() {
 
 }
 
-create_default_virtualenv <- function(package = "reticulate", ...) {
+try_create_default_virtualenv <- function(package = "reticulate", ...) {
 
   # If the environment already exists, use it
   envname <- paste0("r-", package)
   if (virtualenv_exists(envname))
     return(virtualenv_python(envname))
+
+  if (!isTRUE(getOption("reticulate.python.initializing")))
+    return(NULL)
 
   permission <- tolower(Sys.getenv("RETICULATE_AUTOCREATE_PACKAGE_VENV", ""))
 
@@ -644,13 +654,30 @@ python_munge_path <- function(python) {
 
 python_config_impl <- function(python) {
 
+  if(!file.exists(python)) {
+    # Test if `python` is broken symlink, which can happen with a venv if the
+    # venv starter is moved/removed
+    msg <- paste0("Error running ", shQuote(python), ": No such file.")
+    info <- python_info(python)
+    if (info$type == "virtualenv") {
+      msg <- paste0(sep = "", c(msg, "\n",
+          "The Python installation used to create the virtualenv has been moved or removed",
+          if(is.null(info$starter)) "." else ":\n  ", shQuote(info$starter)
+        ))
+    }
+    stop(msg)
+  }
+
   script <- system.file("config/config.py", package = "reticulate")
-  config <- system2(
+  config <- tryCatch(system2(
     command = python,
     args    = shQuote(script),
     stdout  = TRUE,
     stderr  = FALSE
-  )
+  ), error = function(e) {
+    e$message <- paste(e$message, shQuote(python))
+    stop(e)
+  })
 
   # check for error
   status <- attr(config, "status")
@@ -841,6 +868,8 @@ python_config <- function(python,
     base_exec_prefix     = config$BaseExecPrefix,
     virtualenv           = virtualenv,
     virtualenv_activate  = virtualenv_activate,
+    executable           = config$Executable, # sys.executable
+    base_executable      = config$BaseExecutable, # sys._base_executable; exe for venv starter
     version_string       = version_string,
     version              = version,
     architecture         = architecture,
@@ -936,6 +965,16 @@ is_ubuntu <- function() {
   if (is_unix() && file.exists("/etc/lsb-release")) {
     lsbRelease <- readLines("/etc/lsb-release")
     any(grepl("Ubuntu", lsbRelease))
+  } else {
+    FALSE
+  }
+}
+
+
+is_fedora <- function() {
+  if (is_unix() && file.exists("/etc/os-release")) {
+    os_info <- readLines("/etc/os-release")
+    any(grepl("Fedora", os_info))
   } else {
     FALSE
   }
