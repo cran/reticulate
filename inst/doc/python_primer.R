@@ -14,38 +14,38 @@ knitr::opts_chunk$set(
 )
 
 ## -----------------------------------------------------------------------------
-#  library(reticulate)
+library(reticulate)
 
 ## -----------------------------------------------------------------------------
-#  if (TRUE) {
-#    cat("This is one expression. \n")
-#    cat("This is another expression. \n")
-#  }
+if (TRUE) {
+  cat("This is one expression. \n")
+  cat("This is another expression. \n")
+}
 
 ## -----------------------------------------------------------------------------
-#  library(reticulate)
-#  l <- r_to_py(list(1, 2, 3))
-#  it <- as_iterator(l)
-#  
-#  iter_next(it)
-#  iter_next(it)
-#  iter_next(it)
-#  iter_next(it, completed = "StopIteration")
+library(reticulate)
+l <- r_to_py(list(1, 2, 3))
+it <- as_iterator(l)
+
+iter_next(it)
+iter_next(it)
+iter_next(it)
+iter_next(it, completed = "StopIteration")
 
 ## -----------------------------------------------------------------------------
-#  my_function <- function(name = "World") {
-#    cat("Hello", name, "\n")
-#  }
-#  
-#  my_function()
-#  my_function("Friend")
+my_function <- function(name = "World") {
+  cat("Hello", name, "\n")
+}
 
-## ---- eval = FALSE------------------------------------------------------------
+my_function()
+my_function("Friend")
+
+## ----eval = FALSE-------------------------------------------------------------
 #  dplyr <- loadNamespace("dplyr")
 
-## ---- error = TRUE------------------------------------------------------------
-#  library(reticulate)
-#  py$a_strict_Python_function(3)             # error
-#  py$a_strict_Python_function(3L)            # success
-#  py$a_strict_Python_function(as.integer(3)) # success
+## ----error = TRUE-------------------------------------------------------------
+library(reticulate)
+py$a_strict_Python_function(3)             # error
+py$a_strict_Python_function(3L)            # success
+py$a_strict_Python_function(as.integer(3)) # success
 

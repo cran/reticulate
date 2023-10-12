@@ -3,7 +3,15 @@
 
 
 def patch_subprocess_Popen():
-  import subprocess
-  from functools import partial
+    from functools import wraps
+    import subprocess
 
-  subprocess.Popen = partial(subprocess.Popen, stdin = subprocess.DEVNULL)
+    og_Popen__init__ = subprocess.Popen.__init__
+
+    @wraps(subprocess.Popen.__init__)
+    def __init__(self, *args, **kwargs):
+        if kwargs.get("stdin") is None:
+            kwargs["stdin"] = subprocess.DEVNULL
+        return og_Popen__init__(self, *args, **kwargs)
+
+    subprocess.Popen.__init__ = __init__
