@@ -252,8 +252,25 @@ eng_python <- function(options) {
     compile_mode <- if (suppress) "exec" else "single"
 
     # run code and capture output
-    captured_stdout <- if (capture_errors)
-      tryCatch(py_compile_eval(snippet, compile_mode), error = identity)
+    captured_stdout <- if (capture_errors) {
+      tryCatch(
+        py_compile_eval(snippet, compile_mode),
+        error = function(e) {
+
+          # if the chunk option is error = FALSE (the default).
+          # we'll need to bail and not evaluate to the next python expression.
+          if (identical(options$error, FALSE))
+            had_error <- TRUE
+
+          # format the exception object
+          etype <- py_get_attr(e, "__class__")
+          traceback <- import("traceback")
+          paste0(traceback$format_exception_only(etype, e),
+                 collapse = "")
+        }
+      )
+
+    }
     else
       py_compile_eval(snippet, compile_mode)
 
@@ -304,10 +321,8 @@ eng_python <- function(options) {
       pending_source_index <- range[2] + 1
 
       # bail if we had an error with 'error=FALSE'
-      if (identical(options$error, FALSE) && inherits(captured, "error")) {
-        had_error <- TRUE
+      if (had_error && identical(options$error, FALSE))
         break
-      }
 
     }
   }
@@ -394,7 +409,11 @@ eng_python_initialize <- function(options, envir) {
 
 }
 
-eng_python_knit_figure_path <- function(options, suffix = NULL) {
+eng_python_knit_include_graphics <-
+  function(options, suffix = NULL, write_figure = function(path) NULL) {
+
+  # ensure that both the figure file saving code, as well as
+  # knitr::include_graphics(), are run with the correct working directory.
 
   # we need to work in either base.dir or output.dir, depending
   # on which of the two has been requested by the user. (note
@@ -411,32 +430,36 @@ eng_python_knit_figure_path <- function(options, suffix = NULL) {
   # construct plot path
   plot_counter <- yoink("knitr", "plot_counter")
   number <- plot_counter()
-  path <- knitr::fig_path(
+  paths <- knitr::fig_path(
     suffix  = suffix %||% options$dev,
     options = options,
     number  = number
   )
 
-  # ensure parent path exists
-  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  for (path in paths) {
+    # ensure parent path exists
+    dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
 
-  # return path
-  path
+    # write figures
+    write_figure(path)
+  }
+
+  # include the first requested path
+  knitr::include_graphics(paths[1])
 
 }
 
 eng_python_matplotlib_show <- function(plt, options) {
 
-  # get figure path
-  path <- eng_python_knit_figure_path(options)
+  on.exit(plt$close())
 
-  # save the current figure
-  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-  plt$savefig(path, dpi = options$dpi)
-  plt$close()
-
-  # include the requested path
-  knitr::include_graphics(path)
+  # save figure file, return knitr::include_graphics() wrapped figure path
+  eng_python_knit_include_graphics(
+    options, write_figure = function(path) {
+      # save the current figure to all requested devices
+      plt$savefig(path, dpi = options$dpi)
+    }
+  )
 
 }
 
@@ -506,6 +529,9 @@ eng_python_initialize_matplotlib <- function(options, envir) {
     return()
 
   plt <- import("matplotlib.pyplot", convert = FALSE)
+
+  # set up figure dimensions
+  plt$rc("figure", figsize = tuple(options$fig.width, options$fig.height))
 
   # override show implementation
   plt$show <- function(...) {
@@ -622,7 +648,7 @@ eng_python_is_altair_chart <- function(value) {
   # support different API versions, assuming that the class name
   # otherwise remains compatible
   classes <- class(value)
-  pattern <- "^altair\\.vegalite\\.v[[:digit:]]+\\.api\\.Chart$"
+  pattern <- "^altair\\.vegalite\\.v[[:digit:]]+\\.api\\.(HConcat|VConcat|Layer|Repeat|Facet)?Chart$"
   any(grepl(pattern, classes))
 
 }
@@ -669,9 +695,12 @@ eng_python_autoprint <- function(captured, options) {
   } else if (eng_python_is_seaborn_output(value)) {
 
     # get figure path
-    path <- eng_python_knit_figure_path(options)
-    value$savefig(path)
-    .engine_context$pending_plots$push(knitr::include_graphics(path))
+    included_path <- eng_python_knit_include_graphics(
+      options, write_figure = function(path) {
+      value$savefig(path)
+  })
+
+    .engine_context$pending_plots$push(included_path)
     return("")
 
   } else if (inherits(value, "pandas.core.frame.DataFrame")) {
@@ -690,26 +719,33 @@ eng_python_autoprint <- function(captured, options) {
              py_module_available("psutil") &&
              py_module_available("kaleido")) {
 
-    path <- eng_python_knit_figure_path(options)
-    value$write_image(
-      file   = path,
-      width  = options$out.width.px,
-      height = options$out.height.px
+    included_path <- eng_python_knit_include_graphics(
+      options, write_figure = function(path) {
+        value$write_image(
+          file   = path,
+          width  = options$out.width.px,
+          height = options$out.height.px
+        )
+      }
     )
-    .engine_context$pending_plots$push(knitr::include_graphics(path))
+    .engine_context$pending_plots$push(included_path)
     return("")
 
   } else if (eng_python_is_altair_chart(value)) {
 
     # set width if it's not already set
-    width <- value$width
+    # This only applies to Chart objects, compound charts like HConcatChart
+    # don't have a 'width' or 'height' property attribute.
+    # TODO: add support for propagating width/height options from knitr to
+    # altair compound charts
+    width <- py_get_attr(value, "width", TRUE)
     if (inherits(width, "altair.utils.schemapi.UndefinedType")) {
       width <- options$altair.fig.width %||% options$out.width.px %||% 810L
       value <- value$properties(width = width)
     }
 
     # set height if it's not already set
-    height <- value$height
+    height <- py_get_attr(value, "height", TRUE)
     if (inherits(height, "altair.utils.schemapi.UndefinedType")) {
       height <- options$altair.fig.height %||% options$out.height.px %||% 400L
       value <- value$properties(height = height)
@@ -723,9 +759,13 @@ eng_python_autoprint <- function(captured, options) {
       data <- as_r_value(value$to_html(output_div = id))
       .engine_context$pending_plots$push(knitr::raw_html(data))
     } else {
-      path <- eng_python_knit_figure_path(options)
-      value$save(path)
-      .engine_context$pending_plots$push(knitr::include_graphics(path))
+
+      included_path <- eng_python_knit_include_graphics(
+        options, write_figure = function(path) {
+          value$save(path)
+        }
+      )
+      .engine_context$pending_plots$push(included_path)
     }
 
     return("")
