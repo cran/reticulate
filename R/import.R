@@ -36,8 +36,11 @@
 #' want to avoid initializing Python before the user has explicitly requested it),
 #' then passing `TRUE` is normally the right choice.
 #'
-#' You can also provide a list of named functions, which act as callbacks to be
-#' run when the module is later loaded. For example:
+#' You can also provide a named list: `"before_load"`, `"on_load"` and
+#' `"on_error"` can be functions , which act as callbacks to be run when the
+#' module is later loaded. `"environment"` can be a character
+#' vector of preferred python environment names to
+#' search for and use. For example:
 #'
 #' ```
 #' delay_load = list(
@@ -51,6 +54,7 @@
 #'   # run if an error occurs during module import
 #'   on_error = function(error) { ... }
 #'
+#'   environment = c("r-preferred-venv1", "r-preferred-venv2")
 #' )
 #' ```
 #'
@@ -137,14 +141,13 @@ register_delay_load_import <- function(module, delay_load = NULL) {
 
   } else if (is.list(delay_load)) {
 
-    spec$priority <- delay_load$priority %||% 0L
-    spec$environment <- delay_load$environment %||% NA_character_
+    spec$priority <- as.integer(delay_load$priority %||% 0L)
+    spec$environment <- as.character(delay_load$environment %||% NA_character_)
     hooks <- delay_load
 
   }
-
-  storage.mode(spec$priority) <- "integer"
-  storage.mode(spec$environment) <- "character"
+  # maybe recycle 'module', 'priority' if length(environment) > 1
+  spec <- as.data.frame(spec, stringsAsFactors = FALSE)
 
   df <- .globals$delay_load_imports
   df <- rbind(df, spec, stringsAsFactors = FALSE)

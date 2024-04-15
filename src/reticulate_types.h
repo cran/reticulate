@@ -10,64 +10,132 @@ using namespace reticulate::libpython;
 #include <Rcpp.h>
 
 inline void python_object_finalize(SEXP object);
+SEXP py_callable_as_function(SEXP refenv, bool convert);
+SEXP py_class_names(PyObject*);
+SEXP py_to_r_wrapper(SEXP ref);
+bool is_py_object(SEXP x);
+bool try_py_resolve_module_proxy(SEXP);
+SEXP new_refenv();
 
-class PyObjectRef : public Rcpp::Environment {
+extern SEXP sym_py_object;
+extern SEXP sym_convert;
+extern SEXP sym_simple;
+extern SEXP sym_pyobj;
+
+
+
+class PyObjectRef: public Rcpp::RObject {
 
 public:
 
-  explicit PyObjectRef(SEXP object) : Rcpp::Environment(object) {}
-
-  explicit PyObjectRef(PyObject* object, bool convert) :
-      Rcpp::Environment(Rcpp::Environment::empty_env().new_child(false)) {
-    set(object);
-    assign("convert", convert);
+  explicit PyObjectRef(SEXP object, bool check = true) : Rcpp::RObject(object) {
+    if(!check) return;
+    if(is_py_object(object)) return;
+    Rcpp::stop("Expected a python object, received a %s",
+               Rf_type2char(TYPEOF(object)));
   }
 
-  PyObject* get() const {
+  explicit PyObjectRef(PyObject* object, bool convert, bool simple = true) {
+    // this steals a reference to 'object'.
+    // (i.e., we call Py_DecRef on it eventually, from the xtptr finalizer)
+    SEXP xptr = PROTECT(R_MakeExternalPtr((void*) object, R_NilValue, R_NilValue));
+    R_RegisterCFinalizer(xptr, python_object_finalize);
 
-    SEXP pyObject = getFromEnvironment("pyobj");
-    if (pyObject != R_NilValue) {
-      PyObject* obj = (PyObject*)R_ExternalPtrAddr(pyObject);
-      if (obj != NULL)
-        return obj;
+    SEXP refenv = PROTECT(new_refenv());
+    Rf_defineVar(sym_pyobj, xptr, refenv);
+    Rf_defineVar(sym_convert, Rf_ScalarLogical(convert), refenv);
+    bool callable = PyCallable_Check(object);
+    if (callable || !simple)
+      Rf_defineVar(sym_simple, Rf_ScalarLogical(false), refenv);
+    Rf_setAttrib(refenv, R_ClassSymbol, py_class_names(object));
+
+    if (callable) {
+      SEXP r_fn = PROTECT(py_callable_as_function(refenv, convert));
+      r_fn = PROTECT(py_to_r_wrapper(r_fn));
+      this->set__(r_fn); // PROTECT()
+      UNPROTECT(4);
+    } else {
+      this->set__(refenv);
+      UNPROTECT(2);
     }
 
-    Rcpp::stop("Unable to access object (object is from previous session and is now invalid)");
+  }
+
+  void set(PyObject* object) {
+    // used to populate delay_load module proxies
+    SEXP refenv = get_refenv();
+    SEXP xptr = PROTECT(R_MakeExternalPtr((void*) object, R_NilValue, R_NilValue));
+    R_RegisterCFinalizer(xptr, python_object_finalize);
+    Rf_defineVar(sym_pyobj, xptr, refenv);
+    UNPROTECT(1);
+  }
+
+  // get() will initialize python + resolve module proxies as needed
+  // or throw an exception if it can't return a valid PyObject*
+  PyObject* get() const {
+
+    SEXP xptr = Rf_findVarInFrame(get_refenv(), sym_pyobj);
+
+    if(TYPEOF(xptr) == EXTPTRSXP) {
+      PyObject* pyobj = (PyObject*) R_ExternalPtrAddr(xptr);
+      if(pyobj == NULL)
+        Rcpp::stop("Unable to access object (object is from previous session and is now invalid)");
+      return pyobj;
+    }
+
+    // might be a (lazy) module_proxy
+    if(xptr == R_UnboundValue) {
+      if(try_py_resolve_module_proxy(get_refenv())) {
+        return get();
+      }
+    }
+
+    Rcpp::stop("malformed pyobj");
+    return NULL; // unreachable, for compiler
+  }
+
+  SEXP get_refenv() const {
+
+    SEXP sexp = this->get__();
+    while(TYPEOF(sexp) == CLOSXP)
+      sexp = Rf_getAttrib(sexp, sym_py_object);
+
+    if (TYPEOF(sexp) != ENVSXP)
+      Rcpp::stop("malformed py_object, has type %s", Rf_type2char(TYPEOF(sexp)));
+
+    return sexp;
   }
 
   operator PyObject*() const {
     return get();
   }
 
+  // This will *not* initialize Python or resolve module proxies
   bool is_null_xptr() const {
-    SEXP pyObject = getFromEnvironment("pyobj");
-    if (pyObject == NULL)
-      return true;
-    else if (pyObject == R_NilValue)
-      return true;
-    else if ((PyObject*)R_ExternalPtrAddr(pyObject) == NULL)
-      return true;
-    else
-      return false;
-  }
-
-  void set(PyObject* object) {
-    Rcpp::RObject xptr = R_MakeExternalPtr((void*) object, R_NilValue, R_NilValue);
-    R_RegisterCFinalizer(xptr, python_object_finalize);
-    assign("pyobj", xptr);
+    SEXP xptr = Rf_findVarInFrame(get_refenv(), sym_pyobj);
+    if(TYPEOF(xptr) == EXTPTRSXP)
+      return ((PyObject*) R_ExternalPtrAddr(xptr) == NULL);
+    if(xptr == R_UnboundValue || xptr == R_NilValue)
+      return true; // return true for lazy module proxy
+    return false; // should never happen
   }
 
   bool convert() const {
-    Rcpp::RObject pyObject = getFromEnvironment("convert");
-    if (pyObject == R_NilValue)
-      return true;
-    else
-      return Rcpp::as<bool>(pyObject);
+    SEXP sexp = Rf_findVarInFrame(get_refenv(), sym_convert);
+
+    if(TYPEOF(sexp) == LGLSXP)
+      return (bool) Rf_asLogical(sexp);
+
+    return true;
   }
 
+  bool simple() const {
+    SEXP sexp = Rf_findVarInFrame(get_refenv(), sym_simple);
 
-  SEXP getFromEnvironment(const std::string& name) const {
-    return Rcpp::Environment::get(name);
+    if(TYPEOF(sexp) == LGLSXP)
+      return (bool) Rf_asLogical(sexp);
+
+    return true;
   }
 
 };

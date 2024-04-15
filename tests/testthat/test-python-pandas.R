@@ -113,7 +113,11 @@ test_that("complex names are handled", {
 
   p <- pd$DataFrame(data = d)
   r <- py_to_r(p)
-  expect_equal(names(r), c("col1", "(col1, col2)"))
+  expect_equal(names(r)[1], "col1")
+  # pandas 2.2 removed index.format(), and users must pass custom formatters now,
+  # we default to using __str__ for formatting, which given a tuple, falls back
+  # to __repr__ (which prints strings with quotes).
+  expect_in(names(r)[2], c("(col1, col2)", "('col1', 'col2')"))
 
 })
 
@@ -143,8 +147,26 @@ test_that("Time zones are respected if available", {
   converted <- py_to_r(before)
   after <- r_to_py(converted)
 
-  # check if both are the same in *local* timezone
+  expect_true(py_to_r(before$equals(after)))
+
+  # !! this expect_equal() silently succeeds if py_to_r()
+  # returns a df containing python objects.
   expect_equal(py_to_r(before), py_to_r(after))
+
+  expect_type(unlist(py_to_r(before)), "double") # py_ref / env would fail to simplify
+  expect_type(unlist(py_to_r(after)), "double") # py_ref / env would fail to simplify
+
+  attr(converted, "pandas.index") <- NULL
+  expect_identical(converted, structure(
+    list(TZ = list(
+      as.POSIXct(format = "%Y%m%d%H%M%OS", '20130102003020', tz = 'US/Pacific'),
+      as.POSIXct(format = "%Y%m%d%H%M%OS", '20130102003020', tz = 'CET'),
+      as.POSIXct(format = "%Y%m%d%H%M%OS", '20130102003020', tz = 'UTC'),
+      as.POSIXct(format = "%Y%m%d%H%M%OS", '20130102003020', tz = 'Hongkong')
+    )),
+    row.names = c(NA, -4L),
+    class = "data.frame"
+  ))
 
 })
 
@@ -311,4 +333,84 @@ test_that("Round strip for string columns with NA's work correctly", {
 
   r <- py_to_r(p)
   expect_true(is.na(r$string[1]))
+})
+
+
+
+if(getRversion() < "4")
+  list2DF <- function (x = list(), nrow = 0L)
+  {
+    stopifnot(is.list(x), is.null(nrow) || nrow >= 0L)
+    if (n <- length(x)) {
+      if (length(nrow <- unique(lengths(x))) > 1L)
+        stop("all variables should have the same length")
+    }
+    else {
+      if (is.null(nrow))
+        nrow <- 0L
+    }
+    if (is.null(names(x)))
+      names(x) <- character(n)
+    class(x) <- "data.frame"
+    attr(x, "row.names") <- .set_row_names(nrow)
+    x
+  }
+
+test_that("pandas simplification behavior", {
+  skip_if_no_pandas()
+  # https://github.com/rstudio/reticulate/issues/1534
+  py_run_string("
+import pandas
+df = pandas.DataFrame({'col1':[True]})
+df_none = pandas.DataFrame({'col1':[True, None]})
+")
+
+  expect_equal_df <- function(x, y, ...) {
+    attr(x, "pandas.index") <- NULL
+    attr(y, "pandas.index") <- NULL
+    expect_equal(x, y, ...)
+  }
+
+
+  expect_equal_df(py$df, list2DF(list(col1 = TRUE)))
+  expect_equal_df(py$df_none, list2DF(list(col1 = list(TRUE, NULL))))
+
+  py_run_string("df_none['col1'] = df_none['col1'].astype('boolean')")
+  expect_equal_df(py$df_none, list2DF(list(col1 = c(TRUE, NA))))
+
+  simplify_nullable_logical_columns <- function(df) {
+    df[] <- lapply(df, function(col) {
+      if (is.list(col)) {
+        # bail early if we can't simplify
+        for (el in col)
+          switch(typeof(el),
+                 "NULL" = next,
+                 "logical" = if (length(el) != 1) return(col),
+                 return(col))
+
+        col <- vapply(col, function(x) if(is.null(x)) NA else x, TRUE,
+                      USE.NAMES = FALSE)
+      }
+      col
+    })
+    df
+  }
+
+
+  py_run_string("
+import pandas
+df = pandas.DataFrame({
+  'col1': [True, None, False, None],
+  'col2': [True, False, 1, None],
+})")
+
+  expect_equal_df(py$df, list2DF(list(col1 = list(TRUE, NULL, FALSE, NULL),
+                                      col2 = list(TRUE, FALSE, 1L, NULL))))
+
+  expect_equal_df(
+    simplify_nullable_logical_columns(py$df),
+    list2DF(list(col1 = c(TRUE, NA, FALSE, NA),
+                 col2 = list(TRUE, FALSE, 1L, NULL))))
+
+
 })

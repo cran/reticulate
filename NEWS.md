@@ -1,8 +1,93 @@
+# reticulate 1.36.0
+
+- Internal refactoring and optimization now give a faster experience,
+  especially for workflows that frequently access Python objects from R.
+  For example, simple attribute access like `sys$path` is ~2.5x times faster, and
+  a sample workload of `py_to_r(np_array(1:3) + np_array(1:3))` benchmarks
+  ~3.5x faster when compared to the previous CRAN release.
+
+- Fixed issue where callable python objects created with `convert = FALSE` would not be
+  wrapped in an R function (#1522).
+
+- Fixed issue where `py_to_r()` S3 methods would not be called on arguments supplied to
+  R functions being called from Python (#1522).
+
+- `install_python()` will now build optimized versions of Python on macOS and Linux (#1567)
+
+- Default Python version installed by `install_python()` is now 3.10 (was 3.9) (#1574).
+
+- Output of `reticulate::py_last_error()` now includes a hint, showing how to access
+  the full R call stack (#1572).
+
+- Fixed an issue where nested `py_capture_output()` calls result in a lost reference
+  to the original `sys.stdout` and `sys.stderr`, resulting in no further visible output
+  from Python, and eventually, a segfault. (#1564)
+
+- Fixed issues reported by rchk, as requested by CRAN (#1581).
+
+- `py_to_r(x)` now returns `x` unmodified if `x` is not a Python object,
+  instead of signaling an error.
+
+- New `as.data.frame()` method exported for Python Polars DataFrames (#1568)
+
+- Fixed an issue where printing a delayed module (`import("foo", delay_load = TRUE)`)
+  would output `<pointer: 0x0>`.
+
+- `py_validate_xptr()` will now attempt to resolve delayed modules before
+  signaling an error (#1561).
+
+- R packages can now express multiple preferred Python environments to
+  search for and use if they exist, by supplying a character vector to `import()`:
+  `import("foo", delay_load = list(environment = c("r-foo", "r-bar")))` (#1559)
+
+- Reticulate will no longer warn about ignored `use_python(,required = FALSE)` calls (#1562).
+
+- `reticulate` now prefers using the agg matplotlib backend when the R session
+  is non-interactive. The backend can also be overridden via the `MPLBACKEND` or
+  `RETICULATE_MPLBACKEND` environment variables when necessary (#1556).
+
+- `attr(x, "tzone")` attributes are (better) preserved when converting POSIXt to Python.
+  POSIXt types with a non-empty `tzone` attr convert to a `datetime.datetime`,
+  otherwise they convert to NumPy `datetime64[ns]` arrays.
+
+- Fixed an issue where calling `py_set_item()` on a subclassed dict would
+  not invoke a custom `__setitem__` method.
+
+- `py_del_attr(x, name)` now returns `x` invisibly
+
+- `source_python()` no longer exports the `r` symbol to the R global environment.
+  (the "R Interface Object" that is used by Python code get a reference to the
+  R `globalenv()`)
+
+- Fixed hang encountered (sometimes) when attempting to call `iterate()`
+  on an exhausted `py_iterator()` object multiple times (#1539).
+
+- `iterate(simplify=TRUE)` rewritten in C for speed improvements (#1539).
+
+- Update for Pandas 2.2 deprecation of `Index.format()` (#1537, #1538).
+
+- Updates for CRAN R-devel (R 4.4) (#1554).
+
+- Fixed an issue where `py_discover_config()` would discover `python` (v2) on the PATH
+  in preference of `python3` on the PATH. (#1547)
+
+- Fixed an issue where reticulate would error when using conda environments created
+  with the (new) `conda env create` command. (#1535, #1543)
+
+- Fixed an issue where reticulate would error when using a conda environment
+  where the original conda binary that was used to create the environment
+  is no longer available (#1555)
+
+- Fixed an issue where a user would be unable to accept the prompt to create
+  the default "r-reticulate" venv (#1557).
+
+- `is_py_object()` is now exported (#1573).
+
 # reticulate 1.35.0
 
 - Subclassed Python list and dict objects are no longer automatically converted
   to R vectors. Additionally, the S3 R `class` attribute for Python objects is
-  now constructed using the Python `type(object)` directly, rather than from the 
+  now constructed using the Python `type(object)` directly, rather than from the
   `object.__class__` attribute. See #1531 for details and context.
 
 - R external pointers (EXTPTRSXP objects) now round-trip through
@@ -18,7 +103,7 @@
 - Added support for partially unexpanded variables like `$USER` in
   `XDG_DATA_HOME` and similar (#1513, #1514)
 
-## Knitr Python Engine Changes: 
+## Knitr Python Engine Changes:
 
 - The knitr python engine now formats captured python exceptions to include the
   exception type and any exception notes when chunk options
@@ -35,7 +120,7 @@
   where matplotlib was first imported would be the wrong size
   (reported in #1523, fixed in #1530)
 
-- Fixed an issue where the knitr engine would not correctly display altair 
+- Fixed an issue where the knitr engine would not correctly display altair
   compound charts if more than one were present in a document (#1500, #1532).
 
 # reticulate 1.34.0
@@ -104,7 +189,7 @@
   `vignette("python_dependencies", package = "reticulate")`
 
 - New function `virtualenv_starter()`, which can be used to find a suitable
-  python binary for creating a virtual environmnent. This is now the default
+  python binary for creating a virtual environment. This is now the default
   method for finding the python binary when calling
   `virtualenv_create(version = <version>)`.
 
@@ -149,8 +234,8 @@
 - The knitr engine gains a `jupyter_compat` option, enabling
   reticulate to better match the behavior of Jupyter. When this chunk
   option is set to `TRUE`, only the return value from the last
-  expression in a chunk is auto-printed. (#1391, #1394, contributed by
-  @matthew-brett)
+  expression in a chunk is auto-printed.
+  (#1391, #1394, contributed by @matthew-brett)
 
 - The knitr engine now more reliably detects and displays matplotlib
   pending plots, without the need for a matplotlib artist object to be

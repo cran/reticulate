@@ -13,6 +13,10 @@ is_python3 <- function() {
     .Call(`_reticulate_is_python3`)
 }
 
+was_python_initialized_by_reticulate <- function() {
+    .Call(`_reticulate_was_python_initialized_by_reticulate`)
+}
+
 #' Check if a Python object is a null externalptr
 #'
 #' @param x Python object
@@ -56,6 +60,24 @@ py_is_callable <- function(x) {
     .Call(`_reticulate_py_is_callable`, x)
 }
 
+#' Check if x is a Python object
+#'
+#' Checks if `x` is a Python object, more efficiently
+#' than `inherits(x, "python.builtin.object")`.
+#'
+#' @param x An \R or Python.
+#'
+#' @return \code{TRUE} or \code{FALSE}.
+#' @export
+#' @keywords internal
+is_py_object <- function(x) {
+    .Call(`_reticulate_is_py_object`, x)
+}
+
+py_to_r_cpp <- function(x) {
+    .Call(`_reticulate_py_to_r_cpp`, x)
+}
+
 py_get_formals <- function(callable) {
     .Call(`_reticulate_py_get_formals`, callable)
 }
@@ -74,10 +96,6 @@ main_process_python_info <- function() {
 
 py_clear_error <- function() {
     invisible(.Call(`_reticulate_py_clear_error`))
-}
-
-was_python_initialized_by_reticulate <- function() {
-    .Call(`_reticulate_was_python_initialized_by_reticulate`)
 }
 
 py_initialize <- function(python, libpython, pythonhome, virtualenv_activate, python3, interactive, numpy_load_error) {
@@ -122,32 +140,87 @@ py_list_attributes_impl <- function(x) {
     .Call(`_reticulate_py_list_attributes_impl`, x)
 }
 
-py_has_attr_impl <- function(x, name) {
-    .Call(`_reticulate_py_has_attr_impl`, x, name)
+py_get_convert <- function(x) {
+    .Call(`_reticulate_py_get_convert`, x)
 }
 
-py_get_attr_impl <- function(x, key, silent = FALSE) {
-    .Call(`_reticulate_py_get_attr_impl`, x, key, silent)
+py_set_convert <- function(x, value) {
+    .Call(`_reticulate_py_set_convert`, x, value)
 }
 
-py_get_item_impl <- function(x, key, silent = FALSE) {
-    .Call(`_reticulate_py_get_item_impl`, x, key, silent)
+py_new_ref <- function(x, convert) {
+    .Call(`_reticulate_py_new_ref`, x, convert)
 }
 
-py_set_attr_impl <- function(x, name, value) {
-    invisible(.Call(`_reticulate_py_set_attr_impl`, x, name, value))
+#' Check if a Python object has an attribute
+#'
+#' Check whether a Python object \code{x} has an attribute
+#' \code{name}.
+#'
+#' @param x A python object.
+#' @param name The attribute to be accessed.
+#'
+#' @return \code{TRUE} if the object has the attribute \code{name}, and
+#'   \code{FALSE} otherwise.
+#' @export
+py_has_attr <- function(x, name) {
+    .Call(`_reticulate_py_has_attr`, x, name)
 }
 
-py_del_attr_impl <- function(x, name) {
-    invisible(.Call(`_reticulate_py_del_attr_impl`, x, name))
+#' Get an attribute of a Python object
+#'
+#' @param x Python object
+#' @param name Attribute name
+#' @param silent \code{TRUE} to return \code{NULL} if the attribute
+#'  doesn't exist (default is \code{FALSE} which will raise an error)
+#'
+#' @return Attribute of Python object
+#' @export
+py_get_attr <- function(x, name, silent = FALSE) {
+    .Call(`_reticulate_py_get_attr`, x, name, silent)
 }
 
-py_set_item_impl <- function(x, key, val) {
-    invisible(.Call(`_reticulate_py_set_item_impl`, x, key, val))
+#' Set an attribute of a Python object
+#'
+#' @param x Python object
+#' @param name Attribute name
+#' @param value Attribute value
+#'
+#' @export
+py_set_attr <- function(x, name, value) {
+    invisible(.Call(`_reticulate_py_set_attr`, x, name, value))
 }
 
-py_get_attr_types_impl <- function(x, attrs, resolve_properties) {
-    .Call(`_reticulate_py_get_attr_types_impl`, x, attrs, resolve_properties)
+#' Delete an attribute of a Python object
+#'
+#' @param x A Python object.
+#' @param name The attribute name.
+#'
+#' @export
+py_del_attr <- function(x, name) {
+    invisible(.Call(`_reticulate_py_del_attr`, x, name))
+}
+
+#' @rdname py_get_item
+#' @export
+py_get_item <- function(x, key, silent = FALSE) {
+    .Call(`_reticulate_py_get_item`, x, key, silent)
+}
+
+#' @rdname py_get_item
+#' @export
+py_set_item <- function(x, key, value) {
+    invisible(.Call(`_reticulate_py_set_item`, x, key, value))
+}
+
+#' @rdname py_get_item
+#' @export
+py_del_item <- function(x, key) {
+    invisible(.Call(`_reticulate_py_del_item`, x, key))
+}
+
+py_get_attr_types <- function(x, attrs, resolve_properties = FALSE) {
+    .Call(`_reticulate_py_get_attr_types`, x, attrs, resolve_properties)
 }
 
 py_ref_to_r_with_convert <- function(x, convert) {
@@ -204,14 +277,6 @@ py_module_proxy_import <- function(proxy) {
 
 py_list_submodules <- function(module) {
     .Call(`_reticulate_py_list_submodules`, module)
-}
-
-py_iterate <- function(x, f) {
-    .Call(`_reticulate_py_iterate`, x, f)
-}
-
-py_iter_next <- function(iterator, completed) {
-    .Call(`_reticulate_py_iter_next`, iterator, completed)
 }
 
 py_run_string_impl <- function(code, local = FALSE, convert = TRUE) {
@@ -284,6 +349,20 @@ py_capsule <- function(x) {
 
 py_slice <- function(start = NULL, stop = NULL, step = NULL) {
     .Call(`_reticulate_py_slice`, start, stop, step)
+}
+
+#' @rdname iterate
+#' @export
+as_iterator <- function(x) {
+    .Call(`_reticulate_as_iterator`, x)
+}
+
+py_iter_next <- function(iterator, completed) {
+    .Call(`_reticulate_py_iter_next`, iterator, completed)
+}
+
+py_iterate <- function(x, f, simplify = TRUE) {
+    .Call(`_reticulate_py_iterate`, x, f, simplify)
 }
 
 readline <- function(prompt) {

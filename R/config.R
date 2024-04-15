@@ -145,6 +145,9 @@ py_module_available <- function(module) {
 #' discovered on a system as well as which one will be chosen for use with
 #' reticulate.
 #'
+#' The order of discovery is documented in `vignette("versions")`, also available online
+#' [here](https://rstudio.github.io/reticulate/articles/versions.html#order-of-discovery)
+#'
 #' @param required_module A optional module name that will be used to select the
 #'   Python environment used.
 #'
@@ -306,6 +309,7 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   ## In other words,
   ##  - no use_python(), use_virtualenv(), use_condaenv()
   ##  - no RETICULATE_PYTHON, RETICULATE_PYTHON_ENV, or RETICULATE_PYTHON_FALLBACK env vars
+  ##  - no existing venv in the current working directory named: venv .venv virtualenv or .virtualenv
   ##  - no env named 'r-bar' if there was a call like `import('foo', delay_load = list(environment = "r-bar"))`
   ##  - no env named 'r-foo' if there was a call like `import('foo')`
   ##  - we're not running under an already activated venv (i.e., no VIRTUAL_ENV env var)
@@ -385,13 +389,13 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
 
     # if we have a required module ensure it's satisfied.
     # also check architecture (can be an issue on windows)
-    has_python_gte_27 <- as.numeric_version(config$version) >= "2.7"
+    has_python_gte_36 <- as.numeric_version(config$version) >= "3.6"
     has_compatible_arch <- !is_incompatible_arch(config)
     has_preferred_numpy <- !is.null(config$numpy) && config$numpy$version >= "1.6"
     if (has_compatible_arch && has_preferred_numpy)
-      valid_python_versions <- c(valid_python_versions, python_version)
+      append(valid_python_versions) <- python_version
     has_required_module <- is.null(config$required_module) || !is.null(config$required_module_path)
-    if (has_python_gte_27 && has_compatible_arch && has_preferred_numpy && has_required_module)
+    if (has_python_gte_36 && has_compatible_arch && has_preferred_numpy && has_required_module)
       return(config)
   }
 
@@ -454,6 +458,14 @@ try_create_default_virtualenv <- function(package = "reticulate", ...) {
   if (!isTRUE(getOption("reticulate.python.initializing")))
     return(NULL)
 
+  # if we're in a recursive call, return NULL (we've already asked.)
+  #   py_discover_config() -> try_create_default_virtualenv() ->
+  #   virtualenv_create() -> virtualenv_starter() -> py_exe() ->
+  #   py_discover_config() -> try_create_default_virtualenv()
+  for(cl in sys.calls()[-length(sys.calls())])
+    if (identical(cl[[1L]], quote(try_create_default_virtualenv)))
+      return(NULL)
+
   permission <- tolower(Sys.getenv("RETICULATE_AUTOCREATE_PACKAGE_VENV", ""))
 
   if (permission %in% c("false", "0", "no"))
@@ -462,7 +474,7 @@ try_create_default_virtualenv <- function(package = "reticulate", ...) {
   if (permission == "") {
     if (is_interactive()) {
       permission <- utils::askYesNo(sprintf(
-        "Would you like to create a default python environment for the %s package?",
+        "Would you like to create a default Python environment for the %s package?",
         package))
       if (!isTRUE(permission))
         return(NULL)

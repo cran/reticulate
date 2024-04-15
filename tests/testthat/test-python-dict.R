@@ -35,7 +35,7 @@ test_that("Dictionary items can be get / set / removed with py_item APIs", {
   one <- r_to_py(1)
 
   py_set_item(d, "apple", one)
-  expect_equal(py_get_item(d, "apple"), one)
+  expect_equal(py_id(py_get_item(d, "apple")), py_id(one))
 
   py_del_item(d, "apple")
   expect_error(py_get_item(d, "apple"))
@@ -67,6 +67,22 @@ test_that("ordered dictionaries with non-string keys can be converted", {
 
   result <- py_to_r(od)
   expect_identical(result, list("(42.0,)" = 42))
+
+})
+
+test_that("ordered dictionaries can be converted", {
+  skip_if_no_python()
+
+  collections <- import("collections", convert = FALSE)
+  od <- collections$OrderedDict(list(tuple("a", 1),
+                                     tuple("b", 2),
+                                     tuple("c", 3)))
+
+  result <- py_eval("lambda x: x")(od) # implicit conversion to R
+  expect_identical(result, list(a = 1, b = 2, c = 3))
+
+  result <- py_eval("lambda x: x", convert = FALSE)(od) # no conversion
+  expect_identical(py_id(result), py_id(od))
 
 })
 
@@ -112,5 +128,33 @@ df_dict = {i[0] if isinstance(i, tuple) else i: df for i, df in random_df.groupb
   expect_identical(rdf_list, unname(rdf_dict))
   expect_identical(sort(names(rdf_dict)),
                    sort(c("sas", "stata", "spss", "python", "r", "julia")))
+
+})
+
+
+
+test_that("py_to_r(list) converts recursively", {
+  skip_if_no_python()
+
+  expect_identical(py_eval("[1, [2, [3, 4]]]"),
+                   list(1L, list(2L, c(3L, 4L))))
+
+  str <- "[1, {'b': 3, 'c': ['d', 4]}, [3, 5]]"
+  exp <- list(1L, list(b = 3L, c = list("d", 4L)), c(3L, 5L))
+
+  expect_identical(py_eval(str), exp)
+
+  x <- py_eval(str, convert = FALSE)
+  expect_true(is_py_object(x))
+  expect_s3_class(x, "python.builtin.list")
+  expect_s3_class(x, "python.builtin.object")
+  expect_identical(py_to_r(x), exp)
+
+  x1 <- x[1]
+  expect_true(is_py_object(x1))
+  expect_s3_class(x1, "python.builtin.dict")
+  expect_s3_class(x1, "python.builtin.object")
+  expect_identical(py_to_r(x1), exp[[2]])
+
 
 })

@@ -46,7 +46,9 @@ class RGenerator(object):
         if threading.current_thread() is not threading.main_thread():
             if not self._pending_tend_queue:
                 self._pending_tend_queue = True
-                rpycall.call_python_function_on_main_thread(self._tend_queue, min_fetch)
+                rpycall.call_python_function_on_main_thread(
+                    self._tend_queue, min_fetch
+                )
             return
 
         # We're on the main thread, call the generator and put values on the queue.
@@ -67,7 +69,7 @@ class RGenerator(object):
         try:
             # only wait/block-thread/yield-to-another-thread if the R generator
             # is not exhausted.
-            val = self.values_queue.get(block=~self.completed)
+            val = self.values_queue.get(block=(not self.completed))
             if val is _completed_sentinel:
                 raise StopIteration()
             return val
