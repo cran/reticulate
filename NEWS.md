@@ -1,6 +1,20 @@
+# reticulate 1.36.1
+
+- Fix issue where `py_to_r()` method for Pandas DataFrames would error 
+  if `py_to_r()` S3 methods were defined for Pandas subtypes, 
+  (as done by {anndata}) (#1591).
+  
+- "Python Dependencies" vignette edits (@salim-b, #1586)
+
+- Added an option for extra command-line arguments in 
+  `conda_create()` and `conda_install()` (#1585).
+
+- Fixed issue where `conda_install()` would ignore user-specified 
+  channels during Python installation (#1594).
+
 # reticulate 1.36.0
 
-- Internal refactoring and optimization now give a faster experience,
+- Internal refactoring and optimizations now give a faster experience,
   especially for workflows that frequently access Python objects from R.
   For example, simple attribute access like `sys$path` is ~2.5x times faster, and
   a sample workload of `py_to_r(np_array(1:3) + np_array(1:3))` benchmarks
