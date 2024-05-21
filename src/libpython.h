@@ -95,6 +95,7 @@ typedef int (*inquiry)(PyObject *);
 typedef int (*visitproc)(PyObject *, void *);
 typedef int (*traverseproc)(PyObject *, visitproc, void *);
 typedef void (*freefunc)(void *);
+typedef void (*PyOS_sighandler_t)(int);
 
 typedef struct PyModuleDef_Base {
   PyObject_HEAD3
@@ -144,6 +145,7 @@ LIBPYTHON_EXTERN PyObject* Py_Tuple;
 LIBPYTHON_EXTERN PyObject* Py_Complex;
 LIBPYTHON_EXTERN PyObject* Py_ByteArray;
 LIBPYTHON_EXTERN PyObject* PyExc_KeyboardInterrupt;
+LIBPYTHON_EXTERN PyObject* PyExc_RuntimeError;
 LIBPYTHON_EXTERN PyObject* PyExc_ValueError;
 
 void initialize_type_objects(bool python3);
@@ -192,8 +194,11 @@ void initialize_type_objects(bool python3);
 #define PyBool_Check(o)      ((o == Py_False) || (o == Py_True))
 #define PyFunction_Check(op) ((PyTypeObject*)(Py_TYPE(op)) == PyFunction_Type)
 #define PyMethod_Check(op)   ((PyTypeObject *)(Py_TYPE(op)) == PyMethod_Type)
+#define PyExceptionClass_Check(x)                                       \
+    (PyType_Check((x)) &&                                               \
+     PyType_FastSubclass((PyTypeObject*)(x), Py_TPFLAGS_BASE_EXC_SUBCLASS))
 
-LIBPYTHON_EXTERN void (*Py_Initialize)();
+LIBPYTHON_EXTERN void (*Py_InitializeEx)(int);
 LIBPYTHON_EXTERN int (*Py_IsInitialized)();
 LIBPYTHON_EXTERN const char* (*Py_GetVersion)();
 LIBPYTHON_EXTERN char* (*Py_GetProgramFullPath_v2)();
@@ -277,6 +282,7 @@ LIBPYTHON_EXTERN int (*PyString_AsStringAndSize)(
 
 LIBPYTHON_EXTERN PyObject* (*PyString_FromString)(const char *);
 LIBPYTHON_EXTERN PyObject* (*PyString_FromStringAndSize)(const char *, Py_ssize_t);
+LIBPYTHON_EXTERN int (*PyUnicode_CompareWithASCIIString)(PyObject *unicode, const char *string);
 
 LIBPYTHON_EXTERN PyObject* (*PyUnicode_EncodeLocale)(PyObject *unicode, const char *errors);
 LIBPYTHON_EXTERN PyObject* (*PyUnicode_AsEncodedString)(PyObject *unicode, const char *encoding, const char *errors);
@@ -306,6 +312,8 @@ LIBPYTHON_EXTERN void (*PyErr_PrintEx)(int set_sys_last_vars);
 LIBPYTHON_EXTERN void (*PyErr_Fetch)(PyObject **, PyObject **, PyObject **);
 LIBPYTHON_EXTERN void (*PyErr_Restore)(PyObject *, PyObject *, PyObject *);
 LIBPYTHON_EXTERN void (*PyErr_SetNone)(PyObject*);
+LIBPYTHON_EXTERN void (*PyErr_SetObject)(PyObject*, PyObject*);
+LIBPYTHON_EXTERN void (*PyErr_SetString)(PyObject*, const char *);
 LIBPYTHON_EXTERN void (*PyErr_BadArgument)();
 LIBPYTHON_EXTERN PyObject* (*PyErr_Occurred)(void);
 LIBPYTHON_EXTERN void (*PyErr_NormalizeException)(PyObject**, PyObject**, PyObject**);
@@ -374,6 +382,9 @@ LIBPYTHON_EXTERN void (*Py_SetProgramName_v3)(wchar_t *);
 
 LIBPYTHON_EXTERN void (*Py_SetPythonHome)(char *);
 LIBPYTHON_EXTERN void (*Py_SetPythonHome_v3)(wchar_t *);
+
+LIBPYTHON_EXTERN PyOS_sighandler_t (*PyOS_getsig)(int i);
+LIBPYTHON_EXTERN PyOS_sighandler_t (*PyOS_setsig)(int i, PyOS_sighandler_t h);
 
 LIBPYTHON_EXTERN void (*PySys_SetArgv)(int, char **);
 LIBPYTHON_EXTERN void (*PySys_SetArgv_v3)(int, wchar_t **);

@@ -645,7 +645,9 @@ SEXP py_class_names(PyObject* object) {
   std::vector<std::string> classNames;
 
   Py_ssize_t len = PyTuple_Size(classes);
-  classNames.reserve(len+2); // +2 to possibly add python.builtin.object and python.builtin.iterator
+  classNames.reserve(len+2);
+  // +2 to possibly add python.builtin.object and python.builtin.iterator,
+  // or "error" and "condition"
 
   // add the bases to the R class attribute
   for (Py_ssize_t i = 0; i < len; i++) {
@@ -655,12 +657,22 @@ SEXP py_class_names(PyObject* object) {
 
   // add python.builtin.object if we don't already have it
   if (classNames.empty() || classNames.back() != "python.builtin.object") {
+    // typically already there for exceptions (most objects, actually)
     classNames.push_back("python.builtin.object");
   }
 
   // if it's an iterator, include python.builtin.iterator, before python.builtin.object
   if(PyIter_Check(object))
     classNames.insert(classNames.end() - 1, "python.builtin.iterator");
+
+  // if it's a BaseException instance, append "error"/"interrupt" and "condition"
+  if (PyExceptionInstance_Check(object)) {
+    if (PyErr_GivenExceptionMatches(type, PyExc_KeyboardInterrupt))
+      classNames.push_back("interrupt");
+    else
+      classNames.push_back("error");
+    classNames.push_back("condition");
+  }
 
   RObject classNames_robj = Rcpp::wrap(classNames); // convert + protect
   return eval_call(r_func_py_filter_classes, (SEXP) classNames_robj);
@@ -800,24 +812,28 @@ SEXP py_fetch_error(bool maybe_reuse_cached_r_trace) {
   // TODO: we need to add a guardrail to catch cases when
   // this is being invoked from not the main thread
 
-  // check whether this error was signaled via an interrupt.
-  // the intention here is to catch cases where reticulate is running
-  // Python code, an interrupt is signaled and caught by that code,
-  // and then the associated error is returned. in such a case, we
-  // want to forward that interrupt back to R so that the user is then
-  // returned back to the top level.
-  if (reticulate::signals::getPythonInterruptsPending()) {
-    PyErr_Clear();
-    reticulate::signals::setInterruptsPending(false);
-    reticulate::signals::setPythonInterruptsPending(false);
-    throw Rcpp::internal::InterruptedException();
-  }
 
   PyObject *excType, *excValue, *excTraceback;
   PyErr_Fetch(&excType, &excValue, &excTraceback);  // we now own the PyObjects
 
   if (!excType) {
     Rcpp::stop("Unknown Python error.");
+  }
+
+  if (PyErr_GivenExceptionMatches(excType, PyExc_KeyboardInterrupt)) {
+    // Technically, we can safely delete this if branch and let the
+    // KeyboardInterrupt fall through the standard exception raising codepath.
+    // Meaning, we can treat it as a regular Exception, augment it with a
+    // traceback, and then signal it as an interrupt condition that also
+    // inherits from "python.builtin.KeyBoardInterrupt" (signaled via
+    // base::stop(<cond>) in the Rcpp wrapper).
+    //
+    // We intercept early here just to avoid the overhead.
+    if (excTraceback) Py_DecRef(excTraceback);
+    if (excValue) Py_DecRef(excValue);
+    Py_DecRef(excType);
+
+    throw Rcpp::internal::InterruptedException();
   }
 
   PyErr_NormalizeException(&excType, &excValue, &excTraceback);
@@ -2270,7 +2286,6 @@ extern "C" PyObject* call_r_function(PyObject *self, PyObject* args, PyObject* k
 
   RObject call_r_func_call(Rf_lang4(call_r_function_s, rFunction, rArgs, rKeywords));
 
-  PyObject *out = PyTuple_New(2);
   try {
     // use current_env() here so that in case of error, rlang::trace_back()
     // prints this frame as a node of the parent rather than a top-level call.
@@ -2284,21 +2299,55 @@ extern "C" PyObject* call_r_function(PyObject *self, PyObject* args, PyObject* k
 
     // result is either
     // (return_value, NULL) or
-    // (NULL, Exception object converted from r_error_condition_object)
-    PyTuple_SetItem(out, 0, r_to_py(result[0], convert)); // value (or NULL)
-    PyTuple_SetItem(out, 1, r_to_py(result[1], true));   // Exception (or NULL)
+    // (NULL, condition)
+    if (result[1] == R_NilValue)  // no error
+      return (r_to_py(result[0], convert));
+
+    // R signaled an error
+    // Convert the R error condition to a Python Exception
+    PyObject* value = r_to_py(result[1], true);
+    PyObjectPtr value_(value); // decref on scope exit
+
+    // Prepare to raise the Exception
+    // The Python API requires that we separately provide the exception type
+    PyObject *exc_type;
+
+    // If the condition converted to an Exception instance,
+    // Take the type from that. This is the most common path.
+    if (PyExceptionInstance_Check(value)) {
+      exc_type = (PyObject *)Py_TYPE(value);
+    }
+    // The interrupt R calling handler returns a string for simplicity
+    else if (PyUnicode_Check(value) &&
+             PyUnicode_CompareWithASCIIString(value, "KeyboardInterrupt") == 0) {
+      exc_type = PyExc_KeyboardInterrupt;
+      value = NULL;
+    }
+    // the following two cases should never happen, but catch them just in case
+    // The calling handler returned a BaseException class, (not an instance of an Exception)
+    else if (PyExceptionClass_Check(value)) {
+      exc_type = value;
+      value = NULL;
+    }
+    // Catch-all fallback
+    else {
+      exc_type = PyExc_RuntimeError;
+    }
+
+    // Raise the exception
+    PyErr_SetObject(exc_type, value);
+
   } catch(const Rcpp::internal::InterruptedException& e) {
-    PyTuple_SetItem(out, 0, r_to_py(R_NilValue, true));
-    PyTuple_SetItem(out, 1, as_python_str("KeyboardInterrupt"));
+    // should rarely happen, since we also set an R level interrupt handler
+    PyErr_SetNone(PyExc_KeyboardInterrupt);
   } catch(const std::exception& e) {
-    PyTuple_SetItem(out, 0, r_to_py(R_NilValue, true));
-    PyTuple_SetItem(out, 1, as_python_str(e.what()));
+    PyErr_SetString(PyExc_RuntimeError, e.what());
   } catch(...) {
-    PyTuple_SetItem(out, 0, r_to_py(R_NilValue, true));
-    PyTuple_SetItem(out, 1, as_python_str("(Unknown exception occurred)"));
+    PyErr_SetString(PyExc_RuntimeError, "(Unknown exception occurred)");
   }
 
-  return out;
+  // Tell Python we raised an exception
+  return NULL;
 }
 
 struct PythonCall {
@@ -2393,11 +2442,101 @@ extern "C" PyObject* call_python_function_on_main_thread(
 }
 
 
+static void
+interrupt_handler(int signum) {
+  // This handler is called by the OS when signaling a SIGINT
+
+  // Tell R that an interrupt is pending. This will cause R to signal an
+  // "interrupt" R condition next time R_CheckUserInterrupt() is called
+  R_interrupts_pending = 1;
+
+  // Tell Python there is an interrupt pending. Internally, this calls Python
+  // trip_signal(), but does not raise the exception yet. This will cause Python
+  // to call the installed Python handler next time PyCheckSignals() is called.
+  // The installed Python handler will then be expected to raise a
+  // KeyboardInterrupt exception.
+  //
+  // This does *not* need the GIL, it is safe to call from the c handler.
+  PyErr_SetInterrupt();
+
+  // Now, it is a race between R and Python to handle the interrupt.
+  // i.e., if R_CheckUserInterrupt() or PyCheckSignals(), is called first.
+
+  // Reinstall this C handler, as it may have been cleared when invoked by the OS
+  PyOS_setsig(signum, interrupt_handler);
+}
+
+// [[Rcpp::export]]
+void install_interrupt_handlers() {
+  // Installs a C handler and a Python handler
+  //
+  // Exported as an R symbol in case the user did some action that cleared the
+  // handlers, e.g., calling signal.signal() in Python, and wants to restore
+  // the correct handler.
+
+  // First, install the Python handler
+  PyObject *main = PyImport_AddModule("__main__"); // borrowed ref
+  PyObject *main_dict = PyModule_GetDict(main); // borrowed ref
+  PyObjectPtr locals(PyDict_New());
+
+  const char* string =
+    "from rpycall import python_interrupt_handler\n"
+    "from signal import signal, SIGINT\n"
+    "signal(SIGINT, python_interrupt_handler)\n";
+
+  PyObjectPtr result(PyRun_StringFlags(string, Py_file_input, main_dict, locals, NULL));
+  if (result.is_null()) {
+    PyErr_Print();
+    Rcpp::warning("Failed to set interrupt signal handlers");
+    return;
+  }
+
+  // install the C handler.
+  //
+  // This *must* be after setting the Python handler, because signal.signal()
+  // will also reset the OS C handler to one that is not aware of R.
+  PyOS_setsig(SIGINT, interrupt_handler);
+}
+
+extern "C"
+PyObject* python_interrupt_handler(PyObject *module, PyObject *args)
+{
+  // This handler is called by Python from PyCheckSignals(), if
+  // it sees that trip_signals() had been called.
+
+  // args will be (signalnum, frame), but we ignore them
+
+  if (R_interrupts_pending == 0) {
+    // R won the race to handle the interrupt. The interrupt has already been
+    // signaled as an R condition. There is nothing for this handler to do.
+     Py_IncRef(Py_None); return Py_None;
+  }
+
+  if (R_interrupts_suspended) {
+    // Can't handle the interrupt right now, reschedule self.
+    //
+    // Note, if this rescheduling approach ends up being too aggressive, we can
+    // alternatively rely on rescheduling by the event polling worker, which
+    // already runs on a throttled schedule. (Perhaps deferring to that after `n`
+    // of these aggressive reschedules).
+    PyErr_SetInterrupt();
+    Py_IncRef(Py_None); return Py_None;
+  }
+
+  // Tell R we handled the interrupt and raise a KeyboardInterrupt exception.
+  R_interrupts_pending = 0;
+  PyErr_SetNone(PyExc_KeyboardInterrupt);
+  return NULL;
+}
+
+
 PyMethodDef RPYCallMethods[] = {
   { "call_r_function", (PyCFunction)call_r_function,
     METH_VARARGS | METH_KEYWORDS, "Call an R function" },
   { "call_python_function_on_main_thread", (PyCFunction)call_python_function_on_main_thread,
     METH_VARARGS | METH_KEYWORDS, "Call a Python function on the main thread" },
+  { "python_interrupt_handler", (PyCFunction)python_interrupt_handler,
+    METH_VARARGS, "Handle an interrupt signal" },
   { NULL, NULL, 0, NULL }
 };
 
@@ -2633,11 +2772,12 @@ void py_initialize(const std::string& python,
       PyImport_AppendInittab("rpycall", &initializeRPYCall);
 
       // initialize python
-      Py_Initialize();
+      Py_InitializeEx(0); // 0 means "do not install signal handlers"
       s_was_python_initialized_by_reticulate = true;
       const wchar_t *argv[1] = {s_python_v3.c_str()};
       PySys_SetArgv_v3(1, const_cast<wchar_t**>(argv));
 
+      install_interrupt_handlers();
     }
 
   } else { // python2
@@ -2652,7 +2792,7 @@ void py_initialize(const std::string& python,
 
     if (!Py_IsInitialized()) {
       // initialize python
-      Py_Initialize();
+      Py_InitializeEx(0);
       s_was_python_initialized_by_reticulate = true;
     }
 
@@ -2662,6 +2802,9 @@ void py_initialize(const std::string& python,
 
     const char *argv[1] = {s_python.c_str()};
     PySys_SetArgv(1, const_cast<char**>(argv));
+
+    PyOS_setsig(SIGINT, interrupt_handler);
+    install_interrupt_handlers();
   }
 
   s_main_thread = tthread::this_thread::get_id();
@@ -3889,10 +4032,6 @@ PyObjectRef r_convert_date(DateVector dates, bool convert) {
 
 }
 
-// [[Rcpp::export]]
-void py_set_interrupt_impl() {
-  PyErr_SetInterrupt();
-}
 
 // [[Rcpp::export]]
 SEXP py_list_length(PyObjectRef x) {
@@ -4227,4 +4366,3 @@ bool try_py_resolve_module_proxy(SEXP proxy) {
   Rcpp::Function py_resolve_module_proxy = pkgEnv["py_resolve_module_proxy"];
   return py_resolve_module_proxy(proxy);
 }
-

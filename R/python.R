@@ -1,9 +1,64 @@
 
 #' @export
 print.python.builtin.object <- function(x, ...) {
-  writeLines(py_repr(x))
+  formatted <- c(
+    py_repr(x),
+    py_format_signature(x)
+  )
+
+  writeLines(formatted)
   invisible(x)
 }
+
+
+py_format_signature <- function(x, ...) {
+  if (!py_is_callable(x))
+    return(NULL)
+
+  inspect <- import("inspect")
+  get_formatted_signature <- function(x, drop_first = FALSE) {
+    tryCatch({
+      sig <- inspect$signature(x)
+      if (drop_first) {
+        # i.e., drop first positional arg, most typically: 'self'
+        #
+        # We only need to do this if inspect.signature() errored on the the
+        # callable itself, but succeeded on callable.__init__. This can happen
+        # for some built-in-C class where methods are slot wrappers.
+        # E.g., builtin exceptions like 'RuntimeError'.
+        sig <- inspect$Signature(
+          parameters = iterate(sig$parameters$values())[-1],
+          return_annotation = sig$return_annotation
+        )
+      }
+
+      formatted <- py_str_impl(sig)
+
+      # split long signatures across multiple lines, so they're readable
+      # if (py_len(sig$parameters) > 5L) {
+      if (nchar(formatted) > 60) {
+        for (formatted_arg in iterate(sig$parameters$values(), py_str_impl))
+          formatted <- sub(formatted_arg,
+                           paste0("\n   ", formatted_arg),
+                           formatted, fixed = TRUE)
+
+        formatted <- sub(", /,", ",\n   /,", formatted, fixed = TRUE) # positional only separator
+        formatted <- sub(", *,", ",\n   *,", formatted, fixed = TRUE) # kw-only separator
+        formatted <- sub("\\)($| ->)", "\n)\\1", formatted) # final closing parens )
+      }
+      formatted
+    },
+    error = function(e) NULL)
+  }
+
+  formatted_sig <- get_formatted_signature(x) %||%
+    get_formatted_signature(py_get_attr(x, "__init__", TRUE), TRUE) %||%
+    get_formatted_signature(py_get_attr(x, "__new__", TRUE), TRUE) %||%
+    "(?)"
+
+  sprintf(" signature: %s", formatted_sig)
+}
+
 
 
 #' @importFrom utils str
@@ -1376,22 +1431,14 @@ py_inject_hooks <- function() {
 
   builtins <- import_builtins(convert = TRUE)
 
-  input <- function(prompt = "") {
-
-    response <- tryCatch(
-      readline(prompt),
-      interrupt = identity
-    )
-
-    if (inherits(response, "interrupt"))
-      stop("KeyboardInterrupt", call. = FALSE)
-
-    r_to_py(response)
-
-  }
-
   # override input function
   if (interactive() && was_python_initialized_by_reticulate()) {
+    # PyOS_ReadlineFunctionPointer() is not part of the stable ABI.
+    # PyOS_InputHook() only has one slot - used by other thigns like tkinter.
+    input <- function(prompt = "") {
+      readline(prompt)
+    }
+
     name <- if (is_python3()) "input" else "raw_input"
     builtins[[name]] <- input
   }
@@ -1487,9 +1534,6 @@ chooseOpsMethod.python.builtin.object <- function(x, y, mx, my, cl, reverse) {
   identical(environment(my), parent.env(environment()))
 }
 
-py_set_interrupt <- function() {
-  py_set_interrupt_impl()
-}
 
 #' @export
 format.python.builtin.traceback <- function(x, ..., limit = NULL) {
@@ -1772,4 +1816,3 @@ format_py_exception_traceback_with_clickable_filepaths <- function(etb) {
 
   cli::col_silver(hint)
 }
-

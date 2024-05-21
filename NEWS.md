@@ -1,15 +1,33 @@
+# reticulate 1.37.0
+
+- Interrupting Python no longer leads to segfaults.
+  (#1601, fixed in #1602)
+
+- Print method for Python callables now includes the callable’s signature.
+  (#1605, #1607)
+
+- Reticulate now installs successfully on Windows ARM64.
+  (#1609, contributed by @andrjohns)
+
+- `virtualenv_starter()` no longer warns when encountering broken symlinks.
+  (#1598)
+
+- Fixed issue where configuring reticulate `conda_*` functions 
+  to use the executable `mamba` instead of `conda` was ignored.
+  (#1608, contributed by @AlexandreGuinaudeau)
+
 # reticulate 1.36.1
 
-- Fix issue where `py_to_r()` method for Pandas DataFrames would error 
-  if `py_to_r()` S3 methods were defined for Pandas subtypes, 
+- Fix issue where `py_to_r()` method for Pandas DataFrames would error
+  if `py_to_r()` S3 methods were defined for Pandas subtypes,
   (as done by {anndata}) (#1591).
-  
+
 - "Python Dependencies" vignette edits (@salim-b, #1586)
 
-- Added an option for extra command-line arguments in 
+- Added an option for extra command-line arguments in
   `conda_create()` and `conda_install()` (#1585).
 
-- Fixed issue where `conda_install()` would ignore user-specified 
+- Fixed issue where `conda_install()` would ignore user-specified
   channels during Python installation (#1594).
 
 # reticulate 1.36.0
