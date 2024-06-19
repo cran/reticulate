@@ -367,8 +367,8 @@ bool has_null_bytes(PyObject* str) {
 }
 
 // helpers to narrow python array type to something convertable from R,
-// guaranteed to return NPY_BOOL, NPY_LONG, NPY_DOUBLE, or NPY_CDOUBLE
-// (throws an exception if it's unable to return one of these types)
+// guaranteed to return NPY_BOOL, NPY_LONG, NPY_DOUBLE, NPY_CDOUBLE,
+// or -1 if it's unable to return one of these types.
 int narrow_array_typenum(int typenum) {
 
   switch(typenum) {
@@ -408,11 +408,12 @@ int narrow_array_typenum(int typenum) {
   case NPY_STRING:
   case NPY_UNICODE:
   case NPY_OBJECT:
+  case NPY_VSTRING:
     break;
 
     // unsupported
   default:
-    stop("Conversion from numpy array type %d is not supported", typenum);
+    typenum = -1;
     break;
   }
 
@@ -501,20 +502,11 @@ SEXP current_env(void) {
     // are looking for to begin with. We use instead this workaround:
     // Call `sys.frame()` from a closure to push a new frame on the
     // stack, and use negative indexing to get the previous frame.
-    ParseStatus status;
-    SEXP code = PROTECT(Rf_mkString("sys.frame(-1)"));
-    SEXP parsed = PROTECT(R_ParseVector(code, -1, &status, R_NilValue));
-    SEXP body = VECTOR_ELT(parsed, 0);
-
-    SEXP fn = PROTECT(Rf_allocSExp(CLOSXP));
-    SET_FORMALS(fn, R_NilValue);
-    SET_BODY(fn, body);
-    SET_CLOENV(fn, R_BaseEnv);
-
+    SEXP fn = PROTECT(R_ParseEvalString("function() sys.frame(-1)", R_BaseEnv));
     SEXP call = Rf_lang1(fn);
     R_PreserveObject(call);
 
-    UNPROTECT(3);
+    UNPROTECT(1);
     return call;
   }();
 
@@ -606,7 +598,7 @@ std::string as_r_class(PyObject* classPtr) {
 
 }
 
-SEXP py_class_names(PyObject* object) {
+SEXP py_class_names(PyObject* object, bool exception) {
 
   // Py_TYPE() usually returns a borrowed reference to object.__class__
   // but can differ if __class__ was modified after the object was created.
@@ -666,7 +658,7 @@ SEXP py_class_names(PyObject* object) {
     classNames.insert(classNames.end() - 1, "python.builtin.iterator");
 
   // if it's a BaseException instance, append "error"/"interrupt" and "condition"
-  if (PyExceptionInstance_Check(object)) {
+  if (exception) {
     if (PyErr_GivenExceptionMatches(type, PyExc_KeyboardInterrupt))
       classNames.push_back("interrupt");
     else
@@ -675,7 +667,13 @@ SEXP py_class_names(PyObject* object) {
   }
 
   RObject classNames_robj = Rcpp::wrap(classNames); // convert + protect
-  return eval_call(r_func_py_filter_classes, (SEXP) classNames_robj);
+  RObject out = eval_call(r_func_py_filter_classes, (SEXP) classNames_robj);
+  return out;
+}
+
+
+SEXP py_class_names(PyObject* object) {
+  return py_class_names(object, (bool) PyExceptionInstance_Check(object));
 }
 
 
@@ -719,6 +717,27 @@ bool inherits2(SEXP object, const char* name) {
     for (int i = Rf_length(klass)-1; i >= 0; i--) {
       if (strcmp(CHAR(STRING_ELT(klass, i)), name) == 0)
         return true;
+    }
+  }
+  return false;
+}
+
+bool inherits2(SEXP object, const char* name1, const char* name2) {
+  // like inherits in R, but iterates over the class STRSXP vector
+  // in reverse, since python.builtin.object is typically at the tail.
+  SEXP klass = Rf_getAttrib(object, R_ClassSymbol);
+  if (TYPEOF(klass) == STRSXP) {
+
+    int i = Rf_length(klass)-1;
+
+    for (; i >= 0; i--) {
+      if (strcmp(CHAR(STRING_ELT(klass, i)), name2) == 0) {
+        // found name2, now look for name1
+        for (i--; i >= 0; i--)
+          if (strcmp(CHAR(STRING_ELT(klass, i)), name1) == 0)
+            return true; // found name1 also
+        break; // did not find name1
+      }
     }
   }
   return false;
@@ -780,20 +799,13 @@ bool traceback_enabled() {
 
 SEXP get_current_call(void) {
   static SEXP call = []() {
-    ParseStatus status;
-    SEXP code = PROTECT(Rf_mkString("sys.call(-1)"));
-    SEXP parsed = PROTECT(R_ParseVector(code, -1, &status, R_NilValue));
-    SEXP body = VECTOR_ELT(parsed, 0);
 
-    SEXP fn = PROTECT(Rf_allocSExp(CLOSXP));
-    SET_FORMALS(fn, R_NilValue);
-    SET_BODY(fn, body);
-    SET_CLOENV(fn, R_BaseEnv);
+    SEXP fn = PROTECT(R_ParseEvalString("function() sys.call(-1)", R_BaseEnv));
 
     SEXP call = Rf_lang1(fn);
     R_PreserveObject(call);
 
-    UNPROTECT(3);
+    UNPROTECT(1);
     return call;
   }();
 
@@ -891,10 +903,10 @@ SEXP py_fetch_error(bool maybe_reuse_cached_r_trace) {
   // for shallow call stacks. So we fetch the call directly
   // using the R API.
   if (!PyObject_HasAttrString(excValue, "call")) {
-    // Technically we don't need to protct call, since
+    // Technically we don't need to protect call, since
     // it would already be protected by it's inclusion in the R callstack,
     // but rchk flags it anyway, and so ...
-    RObject r_call(  get_current_call() );
+    RObject r_call( get_current_call() );
     PyObject* r_call_capsule(py_capsule_new(r_call));
     PyObject_SetAttrString(excValue, "call", r_call_capsule);
     Py_DecRef(r_call_capsule);
@@ -943,22 +955,35 @@ class PyFlushOutputOnScopeExit {
 };
 
 
-// [[Rcpp::export]]
-std::string conditionMessage_from_py_exception(PyObjectRef exc) {
-  // invoke 'traceback.format_exception_only(<traceback>)'
-  PyObjectPtr tb_module(py_import("traceback"));
-  if (tb_module.is_null())
-    return "<unknown python exception, traceback module not found>";
 
-  PyObjectPtr format_exception_only(
-      PyObject_GetAttrString(tb_module, "format_exception_only"));
-  if (format_exception_only.is_null())
-    return "<unknown python exception, traceback format fn not found>";
+std::string conditionMessage_from_py_exception(PyObject* exc) {
+  // invoke 'traceback.format_exception_only(<traceback>)'
+
+  static PyObject* format_exception_only = []() {
+    PyObjectPtr tb_module(py_import("traceback"));
+    if (tb_module.is_null()) {
+      PyErr_Print();
+      Rcpp::stop("Failed to format Python Exception; could not import traceback module");
+    }
+
+    PyObject* format_exception_only = PyObject_GetAttrString(tb_module, "format_exception_only");
+
+    if (format_exception_only == NULL) {
+      PyErr_Print();
+      Rcpp::stop("Failed to format Python Exception; could not get traceback.format_exception_only");
+    }
+
+    return format_exception_only;
+  }();
+
 
   PyObjectPtr formatted(PyObject_CallFunctionObjArgs(
-      format_exception_only, Py_TYPE(exc.get()), exc.get(), NULL));
-  if (formatted.is_null())
-    return "<unknown python exception, traceback format fn returned NULL>";
+      format_exception_only, Py_TYPE(exc), exc, NULL));
+
+  if (formatted.is_null()) {
+    PyErr_Print();
+    Rcpp::stop("Failed to format Python Exception; traceback.format_exception_only() raised an Exception");
+  }
 
   // build error text
   std::ostringstream oss;
@@ -967,14 +992,12 @@ std::string conditionMessage_from_py_exception(PyObjectRef exc) {
   for (Py_ssize_t i = 0, n = PyList_Size(formatted); i < n; i++)
     oss << as_std_string(PyList_GetItem(formatted, i));
 
-  static std::string hint;
-
-  if (hint.empty()) {
+  static std::string hint = []() {
     Environment pkg_env(Environment::namespace_env("reticulate"));
     Function hint_fn = pkg_env[".py_last_error_hint"];
     CharacterVector r_result = hint_fn();
-    hint = Rcpp::as<std::string>(r_result[0]);
-  }
+    return Rcpp::as<std::string>(r_result[0]);
+  }();
 
   oss << hint;
   std::string error = oss.str();
@@ -991,7 +1014,7 @@ std::string conditionMessage_from_py_exception(PyObjectRef exc) {
 
     std::string trunc("<...truncated...>");
 
-    // Tensorflow since ~2.6 has been including a currated traceback as part of
+    // TensorFlow since ~2.6 has been including a curated traceback as part of
     // the formatted exception message, with the most user-actionable content
     // towards the tail. Since the tail is the most useful part of the message,
     // truncate from the middle of the exception by default, after including the
@@ -1008,6 +1031,11 @@ std::string conditionMessage_from_py_exception(PyObjectRef exc) {
   }
 
   return error;
+}
+
+// [[Rcpp::export]]
+std::string conditionMessage_from_py_exception(PyObjectRef exc) {
+  return conditionMessage_from_py_exception(exc.get());
 }
 
 // check whether the PyObject can be mapped to an R scalar type
@@ -1223,6 +1251,8 @@ bool is_py_object(SEXP x) {
     case ENVSXP:
     case CLOSXP:
       return inherits2(x, "python.builtin.object");
+    case VECSXP:
+      return inherits2(x, "python.builtin.object", "condition");
     }
   }
   return false;
@@ -1432,6 +1462,10 @@ SEXP py_to_r_cpp(PyObject* x, bool convert, bool simple) {
     // determine the target type of the array
     int og_typenum = PyArray_TYPE(array);
     int typenum = narrow_array_typenum(og_typenum);
+    if (typenum == -1) {
+      simple = false;
+      goto cant_convert;
+    }
 
     if(og_typenum == NPY_DATETIME) {
       PyObjectPtr dtype_str(as_python_str("datetime64[ns]"));
@@ -1492,20 +1526,30 @@ SEXP py_to_r_cpp(PyObject* x, bool convert, bool simple) {
       case NPY_CDOUBLE: {
         npy_complex128* pData = (npy_complex128*)PyArray_DATA(array);
         rArray = Rf_allocArray(CPLXSXP, dimsVector);
+        Rcomplex* rArray_ptr = COMPLEX(rArray);
         for (int i=0; i<len; i++) {
           npy_complex128 data = pData[i];
           Rcomplex cpx;
           cpx.r = data.real;
           cpx.i = data.imag;
-          COMPLEX(rArray)[i] = cpx;
+          rArray_ptr[i] = cpx;
         }
         break;
       }
 
       case NPY_STRING:
+      case NPY_VSTRING:
       case NPY_UNICODE: {
 
-        PyObjectPtr nditerArgs(PyTuple_New(1));
+        static PyObject* nditerArgs = []() {
+          PyObject* flags = PyTuple_New(1);
+          // iterating over a StringDType requires us to pass 'refs_ok' flag,
+          // since StringDTypes are really refs under the hood.
+          PyTuple_SetItem(flags, 0, as_python_str("refs_ok")); // steals ref
+          PyObject* args = PyTuple_New(2);
+          PyTuple_SetItem(args, 1, flags); // steals ref
+          return args;
+        }();
         // PyTuple_SetItem steals reference the array, but it's already wraped
         // into PyObjectPtr earlier (so it gets deleted after the scope of this function)
         // To avoid trying to delete it twice, we need to increase its ref count here.
@@ -1513,6 +1557,7 @@ SEXP py_to_r_cpp(PyObject* x, bool convert, bool simple) {
         Py_IncRef((PyObject*)array);
 
         PyObjectPtr iter(PyObject_Call(get_np_nditer(), nditerArgs, NULL));
+        PyTuple_SetItem(nditerArgs, 0, NULL); // clear ref to array
 
         if (iter.is_null()) {
           throw PythonException(py_fetch_error());
@@ -1581,6 +1626,10 @@ SEXP py_to_r_cpp(PyObject* x, bool convert, bool simple) {
     PyArray_DescrPtr descrPtr(PyArray_DescrFromScalar(x));
     int og_typenum = descrPtr.get()->type_num;
     int typenum = narrow_array_typenum(og_typenum);
+    if (typenum == -1) {
+      simple = false;
+      goto cant_convert;
+    }
 
     PyObjectPtr x_;
     if(og_typenum == NPY_DATETIME) {
@@ -1675,6 +1724,7 @@ SEXP py_to_r_cpp(PyObject* x, bool convert, bool simple) {
 
   } // end convert == true && simple == true
 
+  cant_convert:
   Py_IncRef(x);
   return PyObjectRef(x, convert, simple);
 
@@ -4365,4 +4415,28 @@ bool try_py_resolve_module_proxy(SEXP proxy) {
   Rcpp::Environment pkgEnv = Rcpp::Environment::namespace_env("reticulate");
   Rcpp::Function py_resolve_module_proxy = pkgEnv["py_resolve_module_proxy"];
   return py_resolve_module_proxy(proxy);
+}
+
+
+
+SEXP py_exception_as_condition(PyObject* object, SEXP refenv) {
+  static SEXP names = []() {
+    SEXP names = Rf_allocVector(STRSXP, 2);
+    R_PreserveObject(names);
+    SET_STRING_ELT(names, 0, Rf_mkChar("message"));
+    SET_STRING_ELT(names, 1, Rf_mkChar("call"));
+    return names;
+  }();
+  SEXP out = PROTECT(Rf_allocVector(VECSXP, 2));
+
+  SET_VECTOR_ELT(out, 0, Rcpp::wrap(conditionMessage_from_py_exception(object)));
+  PyObject* call = py_get_attr(object, "call");
+  if(call != NULL)
+    SET_VECTOR_ELT(out, 1, py_to_r(call, true));
+
+  Rf_setAttrib(out, R_NamesSymbol, names);
+  Rf_setAttrib(out, R_ClassSymbol, Rf_getAttrib(refenv, R_ClassSymbol));
+  Rf_setAttrib(out, sym_py_object, refenv);
+  UNPROTECT(1);
+  return out;
 }

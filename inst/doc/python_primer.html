@@ -60,7 +60,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -624,7 +624,7 @@ called with <code>next()</code> until it is exhausted.</p>
 <div class="sourceCode" id="cb50"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" tabindex="-1"></a>l <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>]</span>
 <span id="cb50-2"><a href="#cb50-2" tabindex="-1"></a>it <span class="op">=</span> <span class="bu">iter</span>(l) <span class="co"># create an iterator object</span></span>
 <span id="cb50-3"><a href="#cb50-3" tabindex="-1"></a>it</span>
-<span id="cb50-4"><a href="#cb50-4" tabindex="-1"></a><span class="co">#&gt; &lt;list_iterator object at 0x787d926b19f0&gt;</span></span></code></pre></div>
+<span id="cb50-4"><a href="#cb50-4" tabindex="-1"></a><span class="co">#&gt; &lt;list_iterator object at 0x1350eba60&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb51"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" tabindex="-1"></a></span>
 <span id="cb51-2"><a href="#cb51-2" tabindex="-1"></a><span class="co"># call `next` on the iterator until it is exhausted:</span></span>
 <span id="cb51-3"><a href="#cb51-3" tabindex="-1"></a><span class="bu">next</span>(it)</span>
@@ -790,7 +790,7 @@ for demonstration purposes.</p>
 <div class="sourceCode" id="cb78"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb78-1"><a href="#cb78-1" tabindex="-1"></a></span>
 <span id="cb78-2"><a href="#cb78-2" tabindex="-1"></a>instance <span class="op">=</span> MyClass()</span>
 <span id="cb78-3"><a href="#cb78-3" tabindex="-1"></a>instance</span>
-<span id="cb78-4"><a href="#cb78-4" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x787d9278a7e0&gt;</span></span></code></pre></div>
+<span id="cb78-4"><a href="#cb78-4" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x135221c10&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb79"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb79-1"><a href="#cb79-1" tabindex="-1"></a><span class="bu">type</span>(instance)</span>
 <span id="cb79-2"><a href="#cb79-2" tabindex="-1"></a><span class="co">#&gt; &lt;class &#39;__main__.MyClass&#39;&gt;</span></span></code></pre></div>
 <p>Like the <code>def</code> statement, the <code>class</code> statement
@@ -842,14 +842,14 @@ before <code>__init__</code>).</p>
 <span id="cb82-3"><a href="#cb82-3" tabindex="-1"></a><span class="co">#&gt; MyClass is finished being created</span></span></code></pre></div>
 <div class="sourceCode" id="cb83"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb83-1"><a href="#cb83-1" tabindex="-1"></a></span>
 <span id="cb83-2"><a href="#cb83-2" tabindex="-1"></a>instance <span class="op">=</span> MyClass()</span>
-<span id="cb83-3"><a href="#cb83-3" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x787d91813560&gt; is initializing</span></span></code></pre></div>
+<span id="cb83-3"><a href="#cb83-3" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x135210e90&gt; is initializing</span></span></code></pre></div>
 <div class="sourceCode" id="cb84"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb84-1"><a href="#cb84-1" tabindex="-1"></a><span class="bu">print</span>(instance)</span>
-<span id="cb84-2"><a href="#cb84-2" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x787d91813560&gt;</span></span></code></pre></div>
+<span id="cb84-2"><a href="#cb84-2" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x135210e90&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb85"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb85-1"><a href="#cb85-1" tabindex="-1"></a></span>
 <span id="cb85-2"><a href="#cb85-2" tabindex="-1"></a>instance2 <span class="op">=</span> MyClass()</span>
-<span id="cb85-3"><a href="#cb85-3" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x787d928d2300&gt; is initializing</span></span></code></pre></div>
+<span id="cb85-3"><a href="#cb85-3" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x1350eafc0&gt; is initializing</span></span></code></pre></div>
 <div class="sourceCode" id="cb86"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb86-1"><a href="#cb86-1" tabindex="-1"></a><span class="bu">print</span>(instance2)</span>
-<span id="cb86-2"><a href="#cb86-2" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x787d928d2300&gt;</span></span></code></pre></div>
+<span id="cb86-2"><a href="#cb86-2" tabindex="-1"></a><span class="co">#&gt; &lt;__main__.MyClass object at 0x1350eafc0&gt;</span></span></code></pre></div>
 <p>A few things to note:</p>
 <ul>
 <li><p>the <code>class</code> statement takes a code block that is
@@ -885,12 +885,12 @@ if the function is decorated with something like
 <span id="cb87-4"><a href="#cb87-4" tabindex="-1"></a></span>
 <span id="cb87-5"><a href="#cb87-5" tabindex="-1"></a>instance <span class="op">=</span> MyClass()</span>
 <span id="cb87-6"><a href="#cb87-6" tabindex="-1"></a>instance.a_method()</span>
-<span id="cb87-7"><a href="#cb87-7" tabindex="-1"></a><span class="co">#&gt; MyClass.a_method() was called with &lt;__main__.MyClass object at 0x787d91862870&gt;</span></span></code></pre></div>
+<span id="cb87-7"><a href="#cb87-7" tabindex="-1"></a><span class="co">#&gt; MyClass.a_method() was called with &lt;__main__.MyClass object at 0x13523b3e0&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb88"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb88-1"><a href="#cb88-1" tabindex="-1"></a></span>
 <span id="cb88-2"><a href="#cb88-2" tabindex="-1"></a>MyClass.a_method()     <span class="co"># error, missing required argument `self`</span></span>
 <span id="cb88-3"><a href="#cb88-3" tabindex="-1"></a><span class="co">#&gt; TypeError: MyClass.a_method() missing 1 required positional argument: &#39;self&#39;</span></span></code></pre></div>
 <div class="sourceCode" id="cb89"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb89-1"><a href="#cb89-1" tabindex="-1"></a>MyClass.a_method(instance) <span class="co"># identical to instance.a_method()</span></span>
-<span id="cb89-2"><a href="#cb89-2" tabindex="-1"></a><span class="co">#&gt; MyClass.a_method() was called with &lt;__main__.MyClass object at 0x787d91862870&gt;</span></span></code></pre></div>
+<span id="cb89-2"><a href="#cb89-2" tabindex="-1"></a><span class="co">#&gt; MyClass.a_method() was called with &lt;__main__.MyClass object at 0x13523b3e0&gt;</span></span></code></pre></div>
 <p>Other dunder’s worth knowing about are:</p>
 <ul>
 <li><p><code>__getitem__</code>: the function invoked when subsetting an
@@ -988,14 +988,14 @@ a generator object, which is just another type of iterator.</p>
 <span id="cb95-5"><a href="#cb95-5" tabindex="-1"></a></span>
 <span id="cb95-6"><a href="#cb95-6" tabindex="-1"></a><span class="co"># At first glance it presents like a regular function</span></span>
 <span id="cb95-7"><a href="#cb95-7" tabindex="-1"></a>my_generator_constructor</span>
-<span id="cb95-8"><a href="#cb95-8" tabindex="-1"></a><span class="co">#&gt; &lt;function my_generator_constructor at 0x787d91851a80&gt;</span></span></code></pre></div>
+<span id="cb95-8"><a href="#cb95-8" tabindex="-1"></a><span class="co">#&gt; &lt;function my_generator_constructor at 0x13527c5e0&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb96"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb96-1"><a href="#cb96-1" tabindex="-1"></a><span class="bu">type</span>(my_generator_constructor)</span>
 <span id="cb96-2"><a href="#cb96-2" tabindex="-1"></a><span class="co">#&gt; &lt;class &#39;function&#39;&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb97"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb97-1"><a href="#cb97-1" tabindex="-1"></a></span>
 <span id="cb97-2"><a href="#cb97-2" tabindex="-1"></a><span class="co"># But calling it returns something special, a &#39;generator object&#39;</span></span>
 <span id="cb97-3"><a href="#cb97-3" tabindex="-1"></a>my_generator <span class="op">=</span> my_generator_constructor()</span>
 <span id="cb97-4"><a href="#cb97-4" tabindex="-1"></a>my_generator</span>
-<span id="cb97-5"><a href="#cb97-5" tabindex="-1"></a><span class="co">#&gt; &lt;generator object my_generator_constructor at 0x787d918041a0&gt;</span></span></code></pre></div>
+<span id="cb97-5"><a href="#cb97-5" tabindex="-1"></a><span class="co">#&gt; &lt;generator object my_generator_constructor at 0x1274bfc10&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb98"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb98-1"><a href="#cb98-1" tabindex="-1"></a><span class="bu">type</span>(my_generator)</span>
 <span id="cb98-2"><a href="#cb98-2" tabindex="-1"></a><span class="co">#&gt; &lt;class &#39;generator&#39;&gt;</span></span></code></pre></div>
 <div class="sourceCode" id="cb99"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb99-1"><a href="#cb99-1" tabindex="-1"></a></span>
@@ -1064,20 +1064,20 @@ code in the current Python session (though this is relatively uncommon
 in practice).</p>
 <div class="sourceCode" id="cb106"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb106-1"><a href="#cb106-1" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb106-2"><a href="#cb106-2" tabindex="-1"></a>sys.path</span>
-<span id="cb106-3"><a href="#cb106-3" tabindex="-1"></a><span class="co">#&gt; [&#39;&#39;, &#39;/home/tomasz/.pyenv/versions/3.12.2/bin&#39;, &#39;/tmp/Rtmp91Av9y/Rinst28b2717319bc9/reticulate/config&#39;, &#39;/home/tomasz/.pyenv/versions/3.12.2/lib/python312.zip&#39;, &#39;/home/tomasz/.pyenv/versions/3.12.2/lib/python3.12&#39;, &#39;/home/tomasz/.pyenv/versions/3.12.2/lib/python3.12/lib-dynload&#39;, &#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python3.12/site-packages&#39;, &#39;/tmp/Rtmp91Av9y/Rinst28b2717319bc9/reticulate/python&#39;, &#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python312.zip&#39;, &#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python3.12&#39;, &#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python3.12/lib-dynload&#39;]</span></span></code></pre></div>
+<span id="cb106-3"><a href="#cb106-3" tabindex="-1"></a><span class="co">#&gt; [&#39;&#39;, &#39;/Users/tomasz/.pyenv/versions/3.12.2/bin&#39;, &#39;/private/var/folders/hn/ck2j_bjx0kjg65jxqtbcb91c0000gp/T/RtmpNjLvuW/Rinstf09016353aee/reticulate/config&#39;, &#39;/Users/tomasz/.pyenv/versions/3.12.2/lib/python312.zip&#39;, &#39;/Users/tomasz/.pyenv/versions/3.12.2/lib/python3.12&#39;, &#39;/Users/tomasz/.pyenv/versions/3.12.2/lib/python3.12/lib-dynload&#39;, &#39;/Users/tomasz/.virtualenvs/r-reticulate/lib/python3.12/site-packages&#39;, &#39;/private/var/folders/hn/ck2j_bjx0kjg65jxqtbcb91c0000gp/T/RtmpNjLvuW/Rinstf09016353aee/reticulate/python&#39;, &#39;/Users/tomasz/.virtualenvs/r-reticulate/lib/python312.zip&#39;, &#39;/Users/tomasz/.virtualenvs/r-reticulate/lib/python3.12&#39;, &#39;/Users/tomasz/.virtualenvs/r-reticulate/lib/python3.12/lib-dynload&#39;]</span></span></code></pre></div>
 <p>You can inspect where a module was loaded from by accessing the
 dunder <code>__path__</code> or <code>__file__</code> (especially useful
 when troubleshooting installation issues):</p>
 <div class="sourceCode" id="cb107"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb107-1"><a href="#cb107-1" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb107-2"><a href="#cb107-2" tabindex="-1"></a>os.<span class="va">__file__</span></span>
-<span id="cb107-3"><a href="#cb107-3" tabindex="-1"></a><span class="co">#&gt; &#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python3.12/os.py&#39;</span></span></code></pre></div>
+<span id="cb107-3"><a href="#cb107-3" tabindex="-1"></a><span class="co">#&gt; &#39;/Users/tomasz/.virtualenvs/r-reticulate/lib/python3.12/os.py&#39;</span></span></code></pre></div>
 <div class="sourceCode" id="cb108"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb108-1"><a href="#cb108-1" tabindex="-1"></a>numpy.__path__</span>
-<span id="cb108-2"><a href="#cb108-2" tabindex="-1"></a><span class="co">#&gt; [&#39;/home/tomasz/.virtualenvs/r-reticulate/lib/python3.12/site-packages/numpy&#39;]</span></span></code></pre></div>
+<span id="cb108-2"><a href="#cb108-2" tabindex="-1"></a><span class="co">#&gt; [&#39;/Users/tomasz/.virtualenvs/r-reticulate/lib/python3.12/site-packages/numpy&#39;]</span></span></code></pre></div>
 <p>Once a module is loaded, you can access symbols from the module using
 <code>.</code> (equivalent to <code>::</code>, or maybe
 <code>$.environment</code>, in R).</p>
 <div class="sourceCode" id="cb109"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb109-1"><a href="#cb109-1" tabindex="-1"></a>numpy.<span class="bu">abs</span>(<span class="op">-</span><span class="dv">1</span>)</span>
-<span id="cb109-2"><a href="#cb109-2" tabindex="-1"></a><span class="co">#&gt; 1</span></span></code></pre></div>
+<span id="cb109-2"><a href="#cb109-2" tabindex="-1"></a><span class="co">#&gt; np.int64(1)</span></span></code></pre></div>
 <p>There is also special syntax for specifying the symbol a module is
 bound to upon import, and for importing only some specific symbols.</p>
 <div class="sourceCode" id="cb110"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb110-1"><a href="#cb110-1" tabindex="-1"></a><span class="im">import</span> numpy        <span class="co"># import</span></span>
@@ -1236,12 +1236,12 @@ working directory (equivalent to R’s <code>withr::with_dir()</code>)</p>
 <span id="cb123-14"><a href="#cb123-14" tabindex="-1"></a></span>
 <span id="cb123-15"><a href="#cb123-15" tabindex="-1"></a></span>
 <span id="cb123-16"><a href="#cb123-16" tabindex="-1"></a>getcwd()</span>
-<span id="cb123-17"><a href="#cb123-17" tabindex="-1"></a><span class="co">#&gt; &#39;/tmp/Rtmp91Av9y/Rbuild28b27343e5bb2/reticulate/vignettes&#39;</span></span></code></pre></div>
+<span id="cb123-17"><a href="#cb123-17" tabindex="-1"></a><span class="co">#&gt; &#39;/private/var/folders/hn/ck2j_bjx0kjg65jxqtbcb91c0000gp/T/RtmpNjLvuW/Rbuildf09058873b0a/reticulate/vignettes&#39;</span></span></code></pre></div>
 <div class="sourceCode" id="cb124"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb124-1"><a href="#cb124-1" tabindex="-1"></a><span class="cf">with</span> wd_context(<span class="st">&quot;..&quot;</span>):</span>
 <span id="cb124-2"><a href="#cb124-2" tabindex="-1"></a>  <span class="bu">print</span>(<span class="st">&quot;in the context, wd is:&quot;</span>, getcwd())</span>
-<span id="cb124-3"><a href="#cb124-3" tabindex="-1"></a><span class="co">#&gt; in the context, wd is: /tmp/Rtmp91Av9y/Rbuild28b27343e5bb2/reticulate</span></span></code></pre></div>
+<span id="cb124-3"><a href="#cb124-3" tabindex="-1"></a><span class="co">#&gt; in the context, wd is: /private/var/folders/hn/ck2j_bjx0kjg65jxqtbcb91c0000gp/T/RtmpNjLvuW/Rbuildf09058873b0a/reticulate</span></span></code></pre></div>
 <div class="sourceCode" id="cb125"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb125-1"><a href="#cb125-1" tabindex="-1"></a>getcwd()</span>
-<span id="cb125-2"><a href="#cb125-2" tabindex="-1"></a><span class="co">#&gt; &#39;/tmp/Rtmp91Av9y/Rbuild28b27343e5bb2/reticulate/vignettes&#39;</span></span></code></pre></div>
+<span id="cb125-2"><a href="#cb125-2" tabindex="-1"></a><span class="co">#&gt; &#39;/private/var/folders/hn/ck2j_bjx0kjg65jxqtbcb91c0000gp/T/RtmpNjLvuW/Rbuildf09058873b0a/reticulate/vignettes&#39;</span></span></code></pre></div>
 </div>
 <div id="learning-more" class="section level3">
 <h3>Learning More</h3>

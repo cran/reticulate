@@ -1,3 +1,18 @@
+# reticulate 1.38.0
+
+- Python Exceptions converted to R conditions are now R lists instead
+  of R environments, for compatability with {rlang} and {purrr}.
+  (tidyverse/purrr#1104, r-lib/rlang#1664, #1617)
+  
+- Internal updates for NumPy 2.0 (#1621)
+
+- Added support for converting NumPy StringDType arrays to R character arrays. (#1623)
+
+- Internal updates for compliance with R's upcoming formalized C API. (#1625)
+
+- Fixed an issue where attempting to convert a NumPy array with a non-simple 
+  dtype to R would signal an error. (#1613, fixed in #1614).
+
 # reticulate 1.37.0
 
 - Interrupting Python no longer leads to segfaults.
@@ -12,8 +27,8 @@
 - `virtualenv_starter()` no longer warns when encountering broken symlinks.
   (#1598)
 
-- Fixed issue where configuring reticulate `conda_*` functions 
-  to use the executable `mamba` instead of `conda` was ignored.
+- Fixed an issue where configuration for reticulate `conda_*` functions to use
+  the executable `mamba` instead of `conda` was ignored.
   (#1608, contributed by @AlexandreGuinaudeau)
 
 # reticulate 1.36.1
