@@ -22,6 +22,7 @@ extern SEXP sym_py_object;
 extern SEXP sym_convert;
 extern SEXP sym_simple;
 extern SEXP sym_pyobj;
+extern bool is_py_finalized;
 
 
 
@@ -158,29 +159,19 @@ extern bool s_is_python_initialized;
 class GILScope {
  private:
   PyGILState_STATE gstate;
-  bool acquired = false;
 
  public:
   GILScope() {
-    if (s_is_python_initialized) {
       gstate = PyGILState_Ensure();
-      acquired = true;
     }
-  }
-
-  GILScope(bool force) {
-    if (force) {
-      gstate = PyGILState_Ensure();
-      acquired = true;
-    }
-  }
 
   ~GILScope() {
-    if (acquired) PyGILState_Release(gstate);
+     PyGILState_Release(gstate);
   }
 };
 
 inline void python_object_finalize(SEXP object) {
+  if (is_py_finalized) return;
   GILScope gilscope;
   PyObject* pyObject = (PyObject*)R_ExternalPtrAddr(object);
   if (pyObject != NULL)
@@ -196,22 +187,6 @@ struct PythonException {
 };
 
 
-// This custom BEGIN_RCPP is effectively identical to upstream
-// except for the last line, which we use to ensure that the
-// GIL is acquired when calling into Python (and released otherwise).
-// Limitations of the macro preprocessor make it difficult to
-// do this in a more elegant way.
-
-#undef BEGIN_RCPP
-#define BEGIN_RCPP                           \
-  int rcpp_output_type = 0;                  \
-  int nprot = 0;                             \
-  (void)rcpp_output_type;                    \
-  SEXP rcpp_output_condition = R_NilValue;   \
-  (void)rcpp_output_condition;               \
-  static SEXP stop_sym = Rf_install("stop"); \
-  try {                                      \
-    GILScope gilscope;
 
 // This custom END_RCPP is effectively identical to upstream
 // except for the addition of one additional catch block, which

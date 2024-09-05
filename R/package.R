@@ -31,12 +31,18 @@ is_python_initialized <- function() {
   !is.null(.globals$py_config)
 }
 
+is_python_finalized <- function() {
+  identical(.globals$finalized, TRUE)
+}
 
 ensure_python_initialized <- function(required_module = NULL) {
 
   # nothing to do if python is initialized
   if (is_python_initialized())
     return()
+
+  if (is_python_finalized())
+    stop("py_initialize() cannot be called more than once per R session or after py_finalize(). Please start a new R session.")
 
   # notify front-end (if any) that Python is about to be initialized
   callback <- getOption("reticulate.python.beforeInitialized")
@@ -57,7 +63,7 @@ ensure_python_initialized <- function(required_module = NULL) {
   remap_output_streams()
   set_knitr_python_stdout_hook()
 
-  if (is_windows() && identical(.Platform$GUI, "RStudio"))
+  if (is_windows() && ( is_rstudio() || is_positron() ))
     import("rpytools.subprocess")$patch_subprocess_Popen()
 
   # generate 'R' helper object
@@ -218,6 +224,8 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
 
   )
 
+  reg.finalizer(.globals, function(e) py_finalize(), onexit = TRUE)
+
   # set available flag indicating we have py bindings
   config$available <- TRUE
 
@@ -254,6 +262,14 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
   # if this is a conda installation, set QT_QPA_PLATFORM_PLUGIN_PATH
   # https://github.com/rstudio/reticulate/issues/586
   py_set_qt_qpa_platform_plugin_path(config)
+
+  if (was_python_initialized_by_reticulate()) {
+    allow_threads <- Sys.getenv("RETICULATE_ALLOW_THREADS", "true")
+    allow_threads <- tolower(allow_threads) %in% c("true", "1", "yes")
+    if (allow_threads) {
+      py_allow_threads_impl(TRUE)
+    }
+  }
 
   # return config
   config
