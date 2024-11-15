@@ -204,7 +204,8 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
                     config$libpython,
                     config$pythonhome,
                     config$virtualenv_activate,
-                    config$version >= "3.0",
+                    config$version$major,
+                    config$version$minor,
                     interactive(),
                     numpy_load_error)
 
@@ -224,7 +225,9 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
 
   )
 
-  reg.finalizer(.globals, function(e) py_finalize(), onexit = TRUE)
+  # allow disabling the Python finalizer
+  if (!tolower(Sys.getenv("RETICULATE_DISABLE_PYTHON_FINALIZER")) %in% c("true", "1", "yes"))
+    reg.finalizer(.globals, function(e) py_finalize(), onexit = TRUE)
 
   # set available flag indicating we have py bindings
   config$available <- TRUE

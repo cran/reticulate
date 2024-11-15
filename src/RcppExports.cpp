@@ -200,18 +200,19 @@ BEGIN_RCPP
 END_RCPP
 }
 // py_initialize
-void py_initialize(const std::string& python, const std::string& libpython, const std::string& pythonhome, const std::string& virtualenv_activate, bool python3, bool interactive, const std::string& numpy_load_error);
-RcppExport SEXP _reticulate_py_initialize(SEXP pythonSEXP, SEXP libpythonSEXP, SEXP pythonhomeSEXP, SEXP virtualenv_activateSEXP, SEXP python3SEXP, SEXP interactiveSEXP, SEXP numpy_load_errorSEXP) {
+void py_initialize(const std::string& python, const std::string& libpython, const std::string& pythonhome, const std::string& virtualenv_activate, int python_major_version, int python_minor_version, bool interactive, const std::string& numpy_load_error);
+RcppExport SEXP _reticulate_py_initialize(SEXP pythonSEXP, SEXP libpythonSEXP, SEXP pythonhomeSEXP, SEXP virtualenv_activateSEXP, SEXP python_major_versionSEXP, SEXP python_minor_versionSEXP, SEXP interactiveSEXP, SEXP numpy_load_errorSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type python(pythonSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type libpython(libpythonSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type pythonhome(pythonhomeSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type virtualenv_activate(virtualenv_activateSEXP);
-    Rcpp::traits::input_parameter< bool >::type python3(python3SEXP);
+    Rcpp::traits::input_parameter< int >::type python_major_version(python_major_versionSEXP);
+    Rcpp::traits::input_parameter< int >::type python_minor_version(python_minor_versionSEXP);
     Rcpp::traits::input_parameter< bool >::type interactive(interactiveSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type numpy_load_error(numpy_load_errorSEXP);
-    py_initialize(python, libpython, pythonhome, virtualenv_activate, python3, interactive, numpy_load_error);
+    py_initialize(python, libpython, pythonhome, virtualenv_activate, python_major_version, python_minor_version, interactive, numpy_load_error);
     return R_NilValue;
 END_RCPP
 }
@@ -649,13 +650,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // py_convert_pandas_series
-SEXP py_convert_pandas_series(PyObjectRef series);
-RcppExport SEXP _reticulate_py_convert_pandas_series(SEXP seriesSEXP) {
+SEXP py_convert_pandas_series(PyObjectRef series_);
+RcppExport SEXP _reticulate_py_convert_pandas_series(SEXP series_SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< PyObjectRef >::type series(seriesSEXP);
-    rcpp_result_gen = Rcpp::wrap(py_convert_pandas_series(series));
+    Rcpp::traits::input_parameter< PyObjectRef >::type series_(series_SEXP);
+    rcpp_result_gen = Rcpp::wrap(py_convert_pandas_series(series_));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -824,12 +825,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // readline
-SEXP readline(const std::string& prompt);
+SEXP readline(const char* prompt);
 RcppExport SEXP _reticulate_readline(SEXP promptSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const std::string& >::type prompt(promptSEXP);
+    Rcpp::traits::input_parameter< const char* >::type prompt(promptSEXP);
     rcpp_result_gen = Rcpp::wrap(readline(prompt));
     return rcpp_result_gen;
 END_RCPP
@@ -854,7 +855,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_reticulate_py_activate_virtualenv", (DL_FUNC) &_reticulate_py_activate_virtualenv, 1},
     {"_reticulate_main_process_python_info", (DL_FUNC) &_reticulate_main_process_python_info, 0},
     {"_reticulate_py_clear_error", (DL_FUNC) &_reticulate_py_clear_error, 0},
-    {"_reticulate_py_initialize", (DL_FUNC) &_reticulate_py_initialize, 7},
+    {"_reticulate_py_initialize", (DL_FUNC) &_reticulate_py_initialize, 8},
     {"_reticulate_py_finalize", (DL_FUNC) &_reticulate_py_finalize, 0},
     {"_reticulate_py_is_none", (DL_FUNC) &_reticulate_py_is_none, 1},
     {"_reticulate_py_compare_impl", (DL_FUNC) &_reticulate_py_compare_impl, 3},

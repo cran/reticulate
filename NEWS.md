@@ -1,3 +1,42 @@
+# reticulate 1.40.0
+
+- The S3 classes for some (rarely encountered) Python objects have changed.
+  Only Python objects with non-standard `__module__` values are affected.
+  If a Python object’s parent class’s `__module__` attribute does not resolve to a string,
+  reticulate:
+    - Attempts to resolve it from the class's class, if it's a metaclass.
+    - If no string can be resolved, reticulate no longer implicitly prepends
+      'python.builtin.' as the class prefix, instead it uses just the `__name__`.
+  (See #1686 for more context)
+
+- Added support for Python 3.13. Note that Python 3.13 removed support
+  for `classmethod` descriptors, which may affect the S3 class of
+  some Python objects that use metaclass properties to resolve a class’s
+  `__module__` or `__name__` attribute. (#1686, #1698)
+
+- `py_is_null_xptr()` and `[[` now load delayed modules (#1688).
+
+- Fixed error when attempting to use a python venv created with `uv` (#1678)
+
+- Resolved an issue where `py_discover_config()` attempted to detect
+  Windows App Store Python installations. These are now excluded from 
+  discovery by both `py_discover_config()` and `virtualenv_starter()` (#1656, #1673).
+
+- Fixed an error when converting an empty NumPy char array to R (#1662).
+
+- Fixed an error when using reticulate with radian (#1668, #1670).
+
+- Fixed a segfault encountered when running the Python session finalizer (#1663, #1664).
+
+- Resolved a segfault in RStudio when rapidly switching between 
+  R and Python chunks in a Quarto document (#1665).
+
+- Improved behavior when the conda binary used to create an environment 
+  cannot be resolved (contributed by @tl-hbk, #1654, #1659).
+
+- Added Positron support for the Variables Pane and `repl_python()`
+  (#1692, #1641, #1648, #1658, #1681, #1687).
+
 # reticulate 1.39.0
 
 - Python background threads can now run in parallel with the R session (#1641).
