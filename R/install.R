@@ -85,6 +85,25 @@ py_install <- function(packages,
 {
   check_forbidden_install("Python packages")
 
+  if (is.null(envname) && is_epheremal_venv_initialized()) {
+    if (!is.null(python_version)) {
+      stop(
+        "Python version requirements cannot be ",
+        "changed after Python has been initialized"
+      )
+    }
+    warning(
+      "An ephemeral virtual environment managed by 'reticulate' is currently in use.\n",
+      "To add more packages to your current session, call `py_require()` instead\n",
+      "of `py_install()`. Running:\n  ",
+      paste0(
+        "`py_require(", paste0(sprintf("\"%s\"", packages), collapse = ", "), ")`"
+      )
+    )
+    py_require(packages)
+    return(invisible())
+  }
+
   # if 'envname' was not provided, use the 'active' version of Python
   if (is.null(envname)) {
 

@@ -131,6 +131,7 @@ virtualenv_create <- function(
     python <- virtualenv_starter(version)
 
 
+  local_prefix_python_lib_to_ld_library_path(python)
   check_can_be_virtualenv_starter(python, version)
 
   module <- module %||% virtualenv_module(python)
@@ -543,14 +544,24 @@ virtualenv_starter <- function(version = NULL, all = FALSE) {
     p <- p[utils::file_test("-f", p)]
     v <- numeric_version(vapply(p, function(python_path)
       tryCatch({
+        env <- character()
+        if (is_linux()) {
+          libpath <- file.path(dirname(dirname(python_path)), "lib")
+          if (file.exists(libpath)) {
+            ldpath <- paste(libpath, Sys.getenv("LD_LIBRARY_PATH"), sep = ":")
+            env <- paste("LD_LIBRARY_PATH=", ldpath, sep = "")
+          }
+        }
         v <- suppressWarnings(system2(
           python_path, "-EV",
-          stdout = TRUE, stderr = TRUE))
+          stdout = TRUE, stderr = TRUE,
+          env = env))
         # v should be something like "Python 3.10.6"
         if ((attr(v, "status") %||% 0) ||
             length(v) != 1L ||
             !startsWith(v, "Python "))
           return(NA_character_)
+        v <- sub("\\+.*$", "", v)
         substr(v, 8L, 999L)
       }, error = function(e) NA_character_), ""), strict = FALSE)
     df <- data.frame(version = v, path = p,
@@ -681,12 +692,14 @@ as_version_constraint_checkers <- function(version) {
   ver <- numeric_version(ver)
 
   .mapply(function(op, ver) {
-    op <- get(op, mode = "function")
+    op <- as.symbol(op)
     force(ver)
 
     # return a "checker" function that takes a vector of versions and returns
     # a logical vector of if the version satisfies the constraint.
-    function(x) {
+    rlang::zap_srcref(eval(bquote(function(x) {
+      op <- .(op)
+      ver <- .(ver)
       x <- numeric_version(x)
       # if the constraint version is missing minor or patch level, set
       # to 0, so we can match on all, equivalent to pip style syntax like '3.8.*'
@@ -696,7 +709,7 @@ as_version_constraint_checkers <- function(version) {
           x[, lvl] <- 0L
         }
       op(x, ver)
-    }
+    })))
   }, list(op, ver), NULL)
 }
 

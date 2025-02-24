@@ -48,8 +48,9 @@ overflow: visible;
 }
 </style>
 <style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -60,7 +61,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -340,6 +341,26 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
+<div class="alert alert-info">
+<blockquote>
+<h2 id="updated-guidance"><strong>⚠ Updated Guidance</strong></h2>
+<p>This vignette provides guidance for how to help reticulate discover
+and use self-managed Python installations. This is generally no longer
+necessary nor recommended beginning with Reticulate version 1.41.</p>
+<p>We now recommend using <code>py_require()</code> to declare Python
+dependencies and leting reticulate automatically resolve
+dependencies.</p>
+<p>If you are attempting to use <code>py_require()</code> but reticulate
+is not resolving the correct environment, Consult the <a href="#order-of-discovery">Order Of Discovery</a> section below and
+ensure no Python installations higher in the order of discovery are
+present.</p>
+<p>For example, if the <code>r-reticulate</code> virtualenv is being
+discovered in favor of <code>py_require()</code>’s ephemeral env, you
+can remove it:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">virtualenv_remove</span>(<span class="st">&quot;r-reticulate&quot;</span>)</span></code></pre></div>
+<p>For more details, see the <code>py_require()</code> docs and the <a href="python_packages.html">Installing Python Packages</a> vignette.</p>
+</blockquote>
+</div>
 <div id="locating-python" class="section level2">
 <h2>Locating Python</h2>
 <p>It is not uncommon for several installations of Python to be
@@ -351,16 +372,16 @@ which Python installation to select.</p>
 been compiled with shared library support (i.e. with the
 <code>--enable-shared</code> flag).</p>
 <p>Consider the following code:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">py_eval</span>(<span class="st">&quot;1+1&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">py_eval</span>(<span class="st">&quot;1+1&quot;</span>)</span></code></pre></div>
 <p>In this case, reticulate will search for a suitable Python
 installation. In the absence of other hints (detailed below), reticulate
 will fallback to an environment named “r-reticulate”, creating it if
 necessary.</p>
 <p>Consider another case:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>scipy <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;scipy&quot;</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>scipy<span class="sc">$</span><span class="fu">amin</span>(<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>scipy <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">&quot;scipy&quot;</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>scipy<span class="sc">$</span><span class="fu">amin</span>(<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>))</span></code></pre></div>
 <p>In this case, reticulate will first look for an environment named
 “r-scipy”, and if that doesn’t exist, it will fallback to the
 environment named “r-reticulate”.</p>
@@ -382,8 +403,8 @@ binary.</p></li>
 </ol>
 <table>
 <colgroup>
-<col width="29%" />
-<col width="70%" />
+<col width="26%" />
+<col width="73%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -407,10 +428,10 @@ binary.</p></li>
 </tbody>
 </table>
 <p>For example:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">use_python</span>(<span class="st">&quot;/usr/local/bin/python&quot;</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">use_virtualenv</span>(<span class="st">&quot;~/myenv&quot;</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="st">&quot;myenv&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">use_python</span>(<span class="st">&quot;/usr/local/bin/python&quot;</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="fu">use_virtualenv</span>(<span class="st">&quot;~/myenv&quot;</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="st">&quot;myenv&quot;</span>)</span></code></pre></div>
 <p>If the <code>use_virtualenv()</code> function is supplied a name of a
 virtual environment (as opposed to a path), it will look in the
 virtualenv root directory, by default <code>~/.virtualenvs</code>, and
@@ -420,7 +441,7 @@ configurable by setting the environment variable
 binary is found on the <code>PATH</code>. If you want to use a specific
 alternate version you can use the <code>conda</code> parameter. For
 example:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="at">condaenv =</span> <span class="st">&quot;r-nlp&quot;</span>, <span class="at">conda =</span> <span class="st">&quot;/opt/anaconda3/bin/conda&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="at">condaenv =</span> <span class="st">&quot;r-nlp&quot;</span>, <span class="at">conda =</span> <span class="st">&quot;/opt/anaconda3/bin/conda&quot;</span>)</span></code></pre></div>
 <p>Note that the <code>use_*()</code> functions take an optional
 <code>required</code> argument. By default, a value of
 <code>required = NULL</code> is equivalent to
@@ -444,6 +465,10 @@ name of a virtual environment or conda environment)</p></li>
 <code>use_python()</code>, <code>use_virtualenv()</code>, and
 <code>use_condaenv()</code> with <code>required = TRUE</code> (the
 default).</p></li>
+<li><p>If the environment variable
+<code>RETICULATE_USE_MANAGED_VENV=&quot;yes&quot;</code> is set, then reticulate
+will use an ephemeral virtual environment that satisfies all the
+requirements declared via <code>py_require()</code></p></li>
 <li><p>If the environment variable <code>VIRTUAL_ENV</code> is defined
 (typically from running an <code>activate</code> script before R
 started, or from having the “Automatically activate project-local Python
@@ -474,18 +499,20 @@ exists a virtual environment or conda environment named
 <li><p>If specified, the location referenced by the
 <code>RETICULATE_PYTHON_FALLBACK</code> environment variable. (Path to a
 python binary)</p></li>
+<li><p>If a virtual environment named <code>&quot;r-reticulate&quot;</code>
+exists, it is used.</p></li>
 <li><p>In the absence of any expression of preference via one of the
-ways outlined above, reticulate falls back to using a virtual
-environment named <code>&quot;r-reticulate&quot;</code>. If one does not exist,
-reticulate will offer to create one.</p></li>
-<li><p>If the “r-reticulate” environment is not available and cannot be
-created, then we fall back to using the Python on the <code>PATH</code>,
-or on Windows, the Python referenced by the registry. If both
-<code>python</code> and <code>python3</code> are on the
-<code>PATH</code>, then reticulate will prefer <code>python3</code>,
-unless only <code>python</code> has NumPy installed, or
-<code>python3</code> is built for a different architecture than R (e.g.,
-x86).</p></li>
+ways outlined above, reticulate falls back to resolving an ephemeral
+virtual environment that satisfies all the requirement declared via
+<code>py_require()</code>. To disable this feature, you can set env var
+<code>RETICULATE_USE_MANAGED_VENV=&quot;no&quot;</code></p></li>
+<li><p>If none of the above Python installations can be used, then we
+fall back to using the Python on the <code>PATH</code>, or on Windows,
+the Python referenced by the registry. If both <code>python</code> and
+<code>python3</code> are on the <code>PATH</code>, then reticulate will
+prefer <code>python3</code>, unless only <code>python</code> has NumPy
+installed, or <code>python3</code> is built for a different architecture
+than R (e.g., x86).</p></li>
 </ol>
 </div>
 <div id="python-packages" class="section level2">
@@ -498,11 +525,11 @@ or Conda environments in the article on <a href="python_packages.html">Installin
 <p>You can use the <code>py_config()</code> function to query for
 information about the specific version of Python in use as well as a
 list of other Python versions discovered on the system:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">py_config</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">py_config</span>()</span></code></pre></div>
 <p>You can also use the <code>py_discover_config()</code> function to
 see what version of Python will be used without actually loading
 Python:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">py_discover_config</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">py_discover_config</span>()</span></code></pre></div>
 </div>
 
 

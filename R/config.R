@@ -21,14 +21,23 @@ py_config <- function() {
 #'
 #' Get the version of Python currently being used by `reticulate`.
 #'
+#' @param patch boolean, whether to include the patch level in the returned version.
+#'
 #' @return The version of Python currently used, or `NULL` if Python has
 #'   not yet been initialized by `reticulate`.
 #'
 #' @export
-py_version <- function() {
+py_version <- function(patch = FALSE) {
 
   if (!py_available(initialize = FALSE))
     return(NULL)
+
+  if (patch) {
+    sys <- import("sys")
+    minor_major_patch <- sys$version_info[NA:3]
+    version <- paste0(unlist(minor_major_patch), collapse = ".")
+    return(numeric_version(version))
+  }
 
   config <- py_config()
   numeric_version(config$version)
@@ -186,6 +195,10 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
   reticulate_env <- Sys.getenv("RETICULATE_PYTHON", unset = NA)
   if (!is.na(reticulate_env)) {
 
+    if (reticulate_env == "managed") {
+      return(python_config_ephemeral_uv_venv(required_module))
+    }
+
     python_version <- normalize_python_path(reticulate_env)
     if (!python_version$exists)
       stop("Python specified in RETICULATE_PYTHON (", reticulate_env, ") does not exist")
@@ -220,6 +233,10 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
     python_version <- normalize_python_path(required_version)$path
     try(return(python_config(python_version, required_module,
                              forced = "use_python() function")))
+  }
+
+  if (tolower(Sys.getenv("RETICULATE_USE_MANAGED_VENV")) %in% c("true", "1", "yes")) {
+    return(python_config_ephemeral_uv_venv(required_module))
   }
 
   # check if we're running in an activated venv
@@ -301,36 +318,31 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
                              forced = "RETICULATE_PYTHON_FALLBACK")))
   }
 
+  # Look for a "r-reticulate" venv or condaenv. if found, use that.
+  python <- tryCatch(py_resolve("r-reticulate", type = "virtualenv"), error = identity)
+  if (!inherits(python, "error"))
+    try(return(python_config(python, required_module)))
 
   ## At this point, the user, (and package authors on behalf of the user), has
   ## expressed no preference for any particular python installation, or the
-  ## preference expressed is for a python environment that don't exist.
+  ## preference expressed is for a python environment that does not exist.
   ##
   ## In other words,
-  ##  - no use_python(), use_virtualenv(), use_condaenv()
+  ##  - no use_python(), use_virtualenv(), use_condaenv() calls
   ##  - no RETICULATE_PYTHON, RETICULATE_PYTHON_ENV, or RETICULATE_PYTHON_FALLBACK env vars
   ##  - no existing venv in the current working directory named: venv .venv virtualenv or .virtualenv
   ##  - no env named 'r-bar' if there was a call like `import('foo', delay_load = list(environment = "r-bar"))`
   ##  - no env named 'r-foo' if there was a call like `import('foo')`
   ##  - we're not running under an already activated venv (i.e., no VIRTUAL_ENV env var)
   ##  - no configured poetry or pipfile or venv in the current working directory
+  ##  - no env named 'r-reticulate'
 
-  # Look for a "r-reticulate" venv or condaenv. if found, use that.
-  # If not found, try to get permission to create one.
-  # This is the default in the absence of any expressed preference by the user.
-  python <- tryCatch(py_resolve("r-reticulate"), error = function(e) {
-    envpath <- try_create_default_virtualenv(package = "reticulate")
-    if (!is.null(envpath))
-      virtualenv_python(envpath)
-    else
-      e
-  })
-  if (!inherits(python, "error"))
-    try(return(python_config(python, required_module)))
-
-
-  # At this point, user has expressed no preference, and we do not have user permission
-  # to create the "r-reticulate" venv
+  ## Default to using a reticulate-managed ephemeral venv that satisfies
+  ## the Python requirements declared via `py_require()`.
+  user_opted_out <- tolower(Sys.getenv("RETICULATE_USE_MANAGED_VENV")) %in% c("false", "0", "no")
+  if (!user_opted_out) {
+    return(python_config_ephemeral_uv_venv(required_module))
+  }
 
   # fall back to using the PATH python, or fail.
   # We intentionally do not go on a fishing expedition for every possible python,
@@ -420,6 +432,20 @@ py_discover_config <- function(required_module = NULL, use_environment = NULL) {
     return(NULL)
 }
 
+python_config_ephemeral_uv_venv <- function(required_module) {
+  if (isTRUE(getOption("reticulate.python.initializing"))) {
+    python <- try(uv_get_or_create_env())
+    if (!is.null(python) && !inherits(python, "try-error"))
+      try({
+        config <- python_config(python, required_module, forced = "py_require()")
+        config$ephemeral <- TRUE
+        return(config)
+        })
+  }
+  # most likely called from py_exe()
+  NULL
+}
+
 py_discover_config_fallbacks <- function() {
 
   # prefer conda python if available
@@ -484,6 +510,7 @@ try_create_default_virtualenv <- function(package = "reticulate", ...) {
     return(NULL)
 
   if (permission == "") {
+    return(NULL)
     if (is_interactive()) {
       permission <- utils::askYesNo(sprintf(
         "Would you like to create a default Python environment for the %s package?",
@@ -724,6 +751,40 @@ python_config_impl <- function(python) {
 
 }
 
+
+local_prefix_python_lib_to_ld_library_path <- function(python, envir = parent.frame()) {
+  if(!is_linux())
+    return(invisible())
+
+  oldlibpath <- prefix_python_lib_to_ld_library_path(python)
+  if (is.na(oldlibpath)) {
+    defer(Sys.unsetenv("LD_LIBRARY_PATH"), envir = envir)
+  } else {
+    defer(Sys.setenv(LD_LIBRARY_PATH = oldlibpath), envir = envir)
+  }
+
+}
+
+prefix_python_lib_to_ld_library_path <- function(python) {
+  # might need to do something similar on macOS too, eventually.
+  if(!is_linux())
+    return(invisible())
+
+  # resolve the <prefix>/lib path for both the venv, and the venv starter
+  python <- c(python, normalizePath(python, mustWork = FALSE))
+  libpath <- file.path(dirname(dirname(python)), "lib")
+  libpath <- libpath[file.exists(libpath)]
+  if (length(libpath)) {
+    oldlibpath <- Sys.getenv("LD_LIBRARY_PATH", unset = NA)
+    newlibpath <- paste0(c(libpath, oldlibpath), collapse = ":")
+    Sys.setenv(LD_LIBRARY_PATH = newlibpath)
+  }
+  invisible(oldlibpath)
+}
+
+
+
+
 python_config <- function(python,
                           required_module = NULL,
                           python_versions = python,
@@ -741,20 +802,8 @@ python_config <- function(python,
   # set LD_LIBRARY_PATH on Linux as well, just to make sure Python libraries
   # can be resolved if necessary (also need to guard against users who munge
   # LD_LIBRARY_PATH in a way that breaks dynamic lookup of Python libraries)
-  if (is_linux()) {
-    libpath <- file.path(dirname(dirname(python)), "lib")
-    if (file.exists(libpath)) {
-      oldlibpath <- Sys.getenv("LD_LIBRARY_PATH", unset = NA)
-      newlibpath <- paste(libpath, oldlibpath, sep = ":")
-      Sys.setenv(LD_LIBRARY_PATH = newlibpath)
-      on.exit({
-        if (is.na(oldlibpath))
-          Sys.unsetenv("LD_LIBRARY_PATH")
-        else
-          Sys.setenv(LD_LIBRARY_PATH = oldlibpath)
-      }, add = TRUE)
-    }
-  }
+  if (is_linux())
+    local_prefix_python_lib_to_ld_library_path(python)
 
   # collect configuration information
   if (!is.null(required_module)) {

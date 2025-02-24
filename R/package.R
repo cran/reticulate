@@ -31,6 +31,10 @@ is_python_initialized <- function() {
   !is.null(.globals$py_config)
 }
 
+is_epheremal_venv_initialized <- function() {
+  isTRUE(.globals$py_config$ephemeral)
+}
+
 is_python_finalized <- function() {
   identical(.globals$finalized, TRUE)
 }
@@ -102,7 +106,7 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
 
   # provide hint to install Miniconda if no Python is found
   python_not_found <- function(msg) {
-    hint <- "Please create a default virtual environment with `reticulate::virtualenv_create('r-reticulate')`."
+    hint <- 'See the Python "Order of Discovery" here: https://rstudio.github.io/reticulate/articles/versions.html#order-of-discovery.'
     stop(paste(msg, hint, sep = "\n"), call. = FALSE)
   }
 
@@ -164,6 +168,9 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
 
   # munge PATH for python (needed so libraries can be found in some cases)
   oldpath <- python_munge_path(config$python)
+  # also munge LD_LIBRARY_PATH on Linux
+  # (needed for Python 3.12 preinstalled on GHA runners, perhaps other installations too)
+  prefix_python_lib_to_ld_library_path(config$python)
 
   # on macOS, we need to do some gymnastics to ensure that Anaconda
   # libraries can be properly discovered (and this will only work in RStudio)

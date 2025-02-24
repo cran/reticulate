@@ -91,11 +91,10 @@ repl_python <- function(
 
 
   ensure_python_initialized()
-  if (is.null(input) &&
-      is_positron() &&
+  if (is_positron() &&
       exists(".ps.reticulate_open", inherits = TRUE)) {
 
-    eval(call(".ps.reticulate_open"))
+    eval(call(".ps.reticulate_open", input))
 
     # TODO: seems we need to rerun py_inject_r(), possibly other init hooks.
     # TODO: kernal initializion drops pre-existing objects in __main__
@@ -247,7 +246,7 @@ repl_python <- function(
     if (buffer$empty()) {
 
       # handle user requests to quit
-      if (trimmed %in% c("quit", "exit")) {
+      if (trimmed %in% c("quit", "exit", "quit()", "exit()")) {
         quit_requested <<- TRUE
         return()
       }

@@ -366,7 +366,7 @@ bool has_null_bytes(PyObject* str) {
 }
 
 // helpers to narrow python array type to something convertable from R,
-// guaranteed to return NPY_BOOL, NPY_LONG, NPY_DOUBLE, NPY_CDOUBLE,
+// guaranteed to return NPY_BOOL, NPY_LONG, NPY_DOUBLE, NPY_CDOUBLE, or NPY_VOID
 // or -1 if it's unable to return one of these types.
 int narrow_array_typenum(int typenum) {
 
@@ -410,6 +410,10 @@ int narrow_array_typenum(int typenum) {
   case NPY_VSTRING:
     break;
 
+  // raw
+  case NPY_VOID:
+    break;
+
     // unsupported
   default:
     typenum = -1;
@@ -417,6 +421,18 @@ int narrow_array_typenum(int typenum) {
   }
 
   return typenum;
+}
+
+npy_intp PyArray_ITEMSIZE(PyArrayObject* array) {
+  PyArray_Descr *descr = ((PyArrayObject_fields*)array)->descr;
+  switch (PyArray_RUNTIME_VERSION) {
+  case NPY_VERSION_2:
+    return ((_PyArray_DescrNumPy2*)descr)->elsize;
+  case NPY_VERSION_1:
+    return ((_PyArray_DescrNumPy1*)descr)->elsize;
+  default:
+    return -1;
+  }
 }
 
 int narrow_array_typenum(PyArrayObject* array) {
@@ -937,9 +953,6 @@ SEXP get_r_trace(bool maybe_use_cached = false) {
 }
 
 SEXP py_fetch_error(bool maybe_reuse_cached_r_trace) {
-
-  // TODO: we need to add a guardrail to catch cases when
-  // this is being invoked from not the main thread
 
   if(!is_main_thread()) {
     GILScope _gil;
@@ -1780,6 +1793,25 @@ SEXP py_to_r_cpp(PyObject* x, bool convert, bool simple) {
 
         break;
       }
+
+    case NPY_VOID: {
+      // convert to raw, but only if itemsize is 1.
+      // We can probably treat itemsize>1 implicitly as one of the
+      // dimensions, but we just don't support it.
+      // figureing out how to make that not surprising w.r.t. Fortran or C
+      // ordering is non-trivial.
+
+      if (PyArray_ITEMSIZE(array) != 1) {
+        simple = false;
+        goto cant_convert;
+      }
+      // ?? do we need to check allignment or endianness?
+
+      npy_ubyte* pData = (npy_ubyte*)PyArray_DATA(array);
+      rArray = Rf_allocArray(RAWSXP, dimsVector);
+      Rbyte* rArray_ptr = RAW(rArray);
+      memcpy(rArray_ptr, pData, len * sizeof(npy_ubyte));
+    }
     }
 
     // return the R Array
@@ -2091,6 +2123,11 @@ PyObject* r_to_py_numpy(RObject x, bool convert) {
   } else if (type == STRSXP) {
     typenum = NPY_OBJECT;
     data = NULL;
+  } else if (type == RAWSXP) {
+    // NPY_UBYTE (np.uint8) might be a more natural choice,
+    // but it can't roundtrip.
+    typenum = NPY_VOID;
+    data = &(RAW(sexp)[0]);
   } else {
     stop("Matrix type cannot be converted to python (only integer, "
            "numeric, complex, logical, and character matrixes can be "
@@ -2106,7 +2143,7 @@ PyObject* r_to_py_numpy(RObject x, bool convert) {
   if (typenum == NPY_BOOL) {
     // Hack to allocate some memory
     SEXP strides_s = PROTECT(Rf_allocVector(INTSXP, nd * (sizeof(npy_intp) / sizeof(int))));
-    // note: npy_intp is typicall 8 bytes, int is 4 bytes. Could hardcode to nd*2 if I
+    // note: npy_intp is typically 8 bytes, int is 4 bytes. Could hardcode to nd*2 if I
     // had more confidence in npy_intp always being 8 bytes.
     strides = (npy_intp*) INTEGER(strides_s);
     int element_size = sizeof(int);
@@ -2124,7 +2161,10 @@ PyObject* r_to_py_numpy(RObject x, bool convert) {
                                 typenum,
                                 strides,
                                 data,
-                                0,
+                                // itemsize, in bytes. Only consulted if
+                                // typenum is unsized (e.g., V, U, S). Otherwise ignored.
+                                // RAWSXP is converted to void8 (i.e., V1)
+                                typenum == NPY_VOID ? 1 : 0, // itemsize
                                 flags,
                                 NULL);
 
@@ -2792,6 +2832,7 @@ PyOS_sighandler_t install_interrupt_handlers_() {
   // the correct handler.
 
   // First, install the Python handler
+  GILScope _gil;
   PyObject *main = PyImport_AddModule("__main__"); // borrowed ref
   PyObject *main_dict = PyModule_GetDict(main); // borrowed ref
   PyObjectPtr locals(PyDict_New());
@@ -2827,7 +2868,7 @@ PyObject* python_interrupt_handler(PyObject *module, PyObject *args)
   // it sees that trip_signals() had been called.
 
   // args will be (signalnum, frame), but we ignore them
-
+  GILScope _gil;
   if (R_interrupts_pending == 0) {
     // R won the race to handle the interrupt. The interrupt has already been
     // signaled as an R condition. There is nothing for this handler to do.
@@ -2881,6 +2922,7 @@ extern "C" PyObject* initializeRPYCall(void) {
 
 // [[Rcpp::export]]
 void py_activate_virtualenv(const std::string& script) {
+  GILScope _gil;
 
   // import runpy
   PyObjectPtr runpy_module(PyImport_ImportModule("runpy"));
