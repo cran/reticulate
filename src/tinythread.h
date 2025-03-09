@@ -30,7 +30,8 @@ freely, subject to the following restrictions:
 #ifndef _TINYTHREAD_H_
 #define _TINYTHREAD_H_
 
-extern "C" void Rf_error(const char* fmt, ...);
+#include <R_ext/Error.h>
+//extern "C" void Rf_error(const char* fmt, ...);
 
 /// @file
 /// @mainpage TinyThread++ API Reference

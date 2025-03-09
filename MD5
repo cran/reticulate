@@ -1,4 +1,4 @@
-05113b070bddee0b003e7170b0571380 *DESCRIPTION
+20aad654346dfc351eebb9f7e6299ebc *DESCRIPTION
 125f2cad179bbfdb0fd704e698693a0c *NAMESPACE
 fc1b1f3bfa8fe395c6fbe2320ae34dd2 *NEWS.md
 c0dae7adf968f67975bddd6a1cb47f06 *R/RcppExports.R
@@ -170,7 +170,7 @@ e488c6bfed8864115ae67dec695a6b36 *src/readline.cpp
 5066b3c03b60414335c62da1085fa79a *src/reticulate_types.h
 abd254d04049b53a4afeae385637801e *src/signals.cpp
 5393a862043e666eeb6f1be4705acf68 *src/signals.h
-480f86917736ba85ba38e927f0f9988a *src/tinythread.h
+ae2021a6af8bd78f243913027de6d25a *src/tinythread.h
 fde06bed7d927e3e547cecf04009fdf4 *tests/testthat.R
 c3ae105a155c10367afd94fa833db055 *tests/testthat/_snaps/py_require.md
 162793d40c9a349beaac588078a171ba *tests/testthat/_snaps/python-knitr-engine/knitr-print.md
