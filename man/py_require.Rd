@@ -27,18 +27,19 @@ from local files or a git repository is also supported (see details).}
 specified date. This offers a lightweight alternative to freezing package
 versions, helping guard against Python package updates that break a
 workflow. Accepts strings formatted as RFC 3339 timestamps (e.g.,
-"2006-12-02T02:07:43Z") and local dates in the same format (e.g.,
-"2006-12-02") in your system's configured time zone. Once \code{exclude_newer}
+\code{"2006-12-02T02:07:43Z"}) and local dates in the same format (e.g.,
+\code{"2006-12-02"}) in your system's configured time zone. Once \code{exclude_newer}
 is set, only the \code{set} action can override it.}
 
 \item{action}{Determines how \code{py_require()} processes the provided
 requirements. Options are:
 \itemize{
-\item \code{add}: Adds the entries to the current set of requirements.
-\item \code{remove}: Removes \emph{exact} matches from the requirements list. Requests to remove nonexistent entries are
-ignored. For example, if \code{"numpy==2.2.2"} is in the list, passing \code{"numpy"}
-with \code{action = "remove"} will not remove it.
-\item \code{set}: Clears all existing requirements and replaces them with the
+\item \code{"add"} (the default): Adds the entries to the current set of requirements.
+\item \code{"remove"}: Removes \emph{exact} matches from the requirements list.
+Requests to remove nonexistent entries are ignored. For example, if
+\code{"numpy==2.2.2"} is in the list, passing \code{"numpy"} with \code{action="remove"}
+will not remove it.
+\item \code{"set"}: Clears all existing requirements and replaces them with the
 provided ones. Packages and the Python version can be set independently.
 }}
 }
@@ -62,7 +63,9 @@ requirements.
 Reticulate will only use an ephemeral environment if no other Python
 installation is found earlier in the \href{https://rstudio.github.io/reticulate/articles/versions.html#order-of-discovery}{Order of Discovery}.
 You can also force reticulate to use an ephemeral environment by setting
-\code{Sys.setenv(RETICULATE_USE_MANAGED_VENV="yes")}.
+\code{Sys.setenv(RETICULATE_PYTHON="managed")}, or you can disable reticulate from
+using an ephemeral environment by setting
+\code{Sys.setenv(RETICULATE_USE_MANAGED_VENV="no")}.
 
 The ephemeral virtual environment is not created until the user interacts
 with Python for the first time in the R session, typically when \code{import()} is
@@ -83,46 +86,55 @@ the Python dependencies declared by R packages in the current session.
 }
 \note{
 Reticulate uses \href{https://docs.astral.sh/uv/}{\code{uv}} to resolve Python
-dependencies. Many \code{uv} options can be customized via environment
-variables, as described
-\href{https://docs.astral.sh/uv/configuration/environment/}{here}. For example:
+dependencies. Many \code{uv} options can be customized via environment variables,
+as described \href{https://docs.astral.sh/uv/configuration/environment/}{here}.
+For example:
 \itemize{
-\item If temporarily offline, set \code{Sys.setenv(UV_OFFLINE = "1")}.
-\item To use a different index: \code{Sys.setenv(UV_INDEX = "https://download.pytorch.org/whl/cpu")}.
-\item To allow resolving a prerelease dependency: \code{Sys.setenv(UV_PRERELEASE = "allow")}.
+\item If temporarily offline, to resolve packages from cache without checking for updates, set: \cr
+\code{Sys.setenv(UV_OFFLINE = "1")}.
+\item To use an additional package index: \cr
+\code{Sys.setenv(UV_INDEX = "https://download.pytorch.org/whl/cpu")}. \cr (To add
+multiple additional indexes, \code{UV_INDEX} can be a list of space-separated
+urls).
+\item To change the default package index: \cr
+\code{Sys.setenv(UV_DEFAULT_INDEX = "https://my.org/python-packages-index/")}
+\item To allow resolving a prerelease dependency: \cr
+\code{Sys.setenv(UV_PRERELEASE = "allow")}.
+\item To force \code{uv} to create ephemeral environments using the system python: \cr
+\code{Sys.setenv(UV_PYTHON_PREFERENCE = "only-system")}
 }
+
+For more advanced customization needs, there’s also the option to configure
+\code{uv} with a user-level or system-level \code{uv.toml} file.
 \subsection{Installing from alternate sources}{
 
 The \code{packages} argument also supports declaring a dependency from a Git
 repository or a local file. Below are some examples of valid \code{packages}
 strings:
+\itemize{
+\item Install Ruff from a specific Git tag:
 
-Install Ruff from a specific Git tag:
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{  "git+https://github.com/astral-sh/ruff@v0.2.0"
+\if{html}{\out{<div class="sourceCode">}}\preformatted{"git+https://github.com/astral-sh/ruff@v0.2.0"
 }\if{html}{\out{</div>}}
+\item Install Ruff from a specific Git commit:
 
-Install Ruff from a specific Git commit:
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{  "git+https://github.com/astral-sh/ruff@1fadefa67b26508cc59cf38e6130bde2243c929d"
+\if{html}{\out{<div class="sourceCode">}}\preformatted{"git+https://github.com/astral-sh/ruff@1fadefa67b26508cc59cf38e6130bde2243c929d"
 }\if{html}{\out{</div>}}
+\item Install Ruff from a specific Git branch:
 
-Install Ruff from a specific Git branch:
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{  "git+https://github.com/astral-sh/ruff@main"
+\if{html}{\out{<div class="sourceCode">}}\preformatted{"git+https://github.com/astral-sh/ruff@main"
 }\if{html}{\out{</div>}}
-
-Install MarkItDown from the \code{main} branch---find the package in the
+\item Install MarkItDown from the \code{main} branch---find the package in the
 subdirectory 'packages/markitdown':
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{  "markitdown@git+https://github.com/microsoft/markitdown.git@main#subdirectory=packages/markitdown"
+\if{html}{\out{<div class="sourceCode">}}\preformatted{"markitdown@git+https://github.com/microsoft/markitdown.git@main#subdirectory=packages/markitdown"
 }\if{html}{\out{</div>}}
+\item Install MarkItDown from the local filesystem by providing an absolute path to
+a directory containing a \code{pyproject.toml} or \code{setup.py} file:
 
-Install MarkItDown from the local filesystem by providing an absolute path
-to a directory containing a \code{pyproject.toml} or \code{setup.py} file:
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{  "markitdown@/Users/tomasz/github/microsoft/markitdown/packages/markitdown/"
+\if{html}{\out{<div class="sourceCode">}}\preformatted{"markitdown@/Users/tomasz/github/microsoft/markitdown/packages/markitdown/"
 }\if{html}{\out{</div>}}
+}
 
 See more examples
 \href{https://docs.astral.sh/uv/pip/packages/#installing-a-package}{here} and
@@ -131,11 +143,23 @@ See more examples
 
 \subsection{Clearing the Cache}{
 
-\code{reticulate} caches ephemeral environments in the directory returned by
-\code{tools::R_user_dir("reticulate", "cache")}. To clear the cache, delete the
-directory:
+If \code{uv} is already installed on your machine, \code{reticulate} will use the
+existing \code{uv} installation as-is, including its default \verb{cache dir} location.
+To clear the caches of a self-managed \code{uv} installation, send the following
+system commands to \code{uv}:
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{unlink(tools::R_user_dir("reticulate", "cache"), recursive = TRUE)
+\if{html}{\out{<div class="sourceCode">}}\preformatted{uv cache clean
+rm -r "$(uv python dir)"
+rm -r "$(uv tool dir)"
+}\if{html}{\out{</div>}}
+
+If an existing installation of \code{uv} is not found, \code{reticulate} will
+automatically download and store it, along with other downloaded artifacts
+and ephemeral environments, in the \code{tools::R_user_dir("reticulate", "cache")}
+directory. To clear this cache, delete the directory:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{# delete uv, ephemeral virtual environments, and all downloaded artifacts
+unlink(tools::R_user_dir("reticulate", "cache"), recursive = TRUE)
 }\if{html}{\out{</div>}}
 }
 }

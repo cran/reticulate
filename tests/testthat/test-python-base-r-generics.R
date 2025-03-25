@@ -155,6 +155,10 @@ test_that("[ can infer slices, multiple args", {
   expect_identical(py_eval("x[:, ::2, :]"), py_to_r(x[, NULL:NULL:2, ]))
   expect_identical(py_eval("x[:, ::2, :]"), py_to_r(x[, NA:NA:2, ]))
 
+  expect_identical(py_eval("x[..., 1]"), py_to_r(x[.., 1]))
+  expect_identical(py_eval("x[0, ..., 1]"), py_to_r(x[0, .., 1]))
+  expect_identical(py_eval("x[0, 1, ...]"), py_to_r(x[0, 1L, ..]))
+
   # test the test is actually comparing R arrays
   py$x <- x <- np_array(x, dtype = "float64") # https://github.com/rstudio/reticulate/issues/1473
   expect_identical(py_to_r(x[, , 0]), array(as.double(1:16), c(4, 4)))
@@ -167,5 +171,26 @@ test_that("[ can infer slices, multiple args", {
   py_run_string("x[:, 2, :] = 99")
   x[, 2, ] <- 99L
   expect_identical(py_eval("x"), py_to_r(x))
+
+})
+
+
+test_that("[ passes through python objects", {
+
+  skip_if_no_numpy()
+
+  np <- import("numpy", convert = FALSE)
+
+  x <- np$arange(10L)
+  ir <- 3L
+  ip <- np$array(3L)
+
+  expect_equal(py_to_r(x[ir]), 3L)
+  expect_equal(py_to_r(x[ip]), 3L)
+
+  expect_equal(py_to_r(x[ir:NA]), array(3:9))
+  expect_equal(py_to_r(x[ip:NA]), array(3:9))
+  expect_equal(py_to_r(x[NA:ir]), array(0:2))
+  expect_equal(py_to_r(x[NA:ip]), array(0:2))
 
 })

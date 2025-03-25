@@ -918,7 +918,7 @@ void py_validate_xptr(PyObjectRef x)
 }
 
 bool option_is_true(const std::string& name) {
-  SEXP valueSEXP = Rf_GetOption(Rf_install(name.c_str()), R_BaseEnv);
+  SEXP valueSEXP = Rf_GetOption1(Rf_install(name.c_str()));
   return Rf_isLogical(valueSEXP) && (as<bool>(valueSEXP) == true);
 }
 
@@ -1421,7 +1421,7 @@ SEXP py_to_r_cpp(PyObject* x, bool convert, bool simple = true);
 //' @keywords internal
 // [[Rcpp::export]]
 bool is_py_object(SEXP x) {
-  if(OBJECT(x)) {
+  if(Rf_isObject(x)) {
     switch (TYPEOF(x)) {
     case ENVSXP:
     case CLOSXP:
@@ -2211,7 +2211,7 @@ PyObject* r_to_py_cpp(RObject x, bool convert);
 // returns a new reference
 PyObject* r_to_py(RObject x, bool convert) {
   // if the object bit is not set, we can skip R dispatch
-  if (OBJECT(x) == 0)
+  if (Rf_isObject(x) == 0)
     return r_to_py_cpp(x, convert);
 
   if(is_py_object(x)) {
@@ -2797,10 +2797,34 @@ extern "C" PyObject* schedule_python_function_on_main_thread(
   return Py_None;
 }
 
+#ifdef _WIN32
 
-static void
-interrupt_handler(int signum) {
-  // This handler is called by the OS when signaling a SIGINT
+static void (*s_interrupt_handler)(int) = nullptr;
+
+static int win32_interrupt_handler(long unsigned int ignored) {
+  if (s_interrupt_handler != nullptr) {
+    s_interrupt_handler(SIGINT);
+  }
+  return TRUE;
+}
+
+#endif
+
+static PyOS_sighandler_t reticulate_setsig(int signum, PyOS_sighandler_t handler) {
+
+#ifdef _WIN32
+  s_interrupt_handler = handler;
+  SetConsoleCtrlHandler(NULL, FALSE);
+  SetConsoleCtrlHandler(win32_interrupt_handler, FALSE);
+  SetConsoleCtrlHandler(win32_interrupt_handler, TRUE);
+#endif
+
+  return PyOS_setsig(signum, handler);
+
+}
+
+
+static void interrupt_handler(int signum) {
 
   // Tell R that an interrupt is pending. This will cause R to signal an
   // "interrupt" R condition next time R_CheckUserInterrupt() is called
@@ -2819,7 +2843,8 @@ interrupt_handler(int signum) {
   // i.e., if R_CheckUserInterrupt() or PyCheckSignals(), is called first.
 
   // Reinstall this C handler, as it may have been cleared when invoked by the OS
-  PyOS_setsig(signum, interrupt_handler);
+  reticulate_setsig(signum, interrupt_handler);
+
 }
 
 
@@ -2853,7 +2878,7 @@ PyOS_sighandler_t install_interrupt_handlers_() {
   //
   // This *must* be after setting the Python handler, because signal.signal()
   // will also reset the OS C handler to one that is not aware of R.
-  return PyOS_setsig(SIGINT, interrupt_handler);
+  return reticulate_setsig(SIGINT, interrupt_handler);
 }
 
 // [[Rcpp::export]]
@@ -3173,7 +3198,7 @@ void py_initialize(const std::string& python,
     PySys_SetArgv(1, const_cast<char**>(argv));
 
     orig_interrupt_handler = install_interrupt_handlers_();
-    PyOS_setsig(SIGINT, interrupt_handler);
+    reticulate_setsig(SIGINT, interrupt_handler);
   }
 
   s_main_thread = tthread::this_thread::get_id();
@@ -3233,7 +3258,7 @@ void py_finalize() {
     PyGILState_Ensure();
     Py_MakePendingCalls();
     if (orig_interrupt_handler)
-      PyOS_setsig(SIGINT, orig_interrupt_handler);
+      reticulate_setsig(SIGINT, orig_interrupt_handler);
     is_py_finalized = true;
     Py_Finalize();
   }
@@ -4385,7 +4410,7 @@ PyObjectRef r_convert_dataframe(RObject dataframe, bool convert) {
 
     int status = 0;
 
-    if (OBJECT(column) != 0) {
+    if (Rf_isObject(column) != 0) {
       // An object with a class attribute, we dispatch to the S3 method
       // and continue to the next column.
       // see comment in r_to_py() for why indirection in constructor is needed.
@@ -4594,20 +4619,32 @@ PyObjectRef py_capsule(SEXP x) {
 PyObjectRef py_slice(SEXP start = R_NilValue, SEXP stop = R_NilValue, SEXP step = R_NilValue) {
   GILScope _gil;
 
-  PyObjectPtr start_, stop_, step_;
+  auto coerce_slice_arg = [](SEXP x) -> PyObject* {
+    if (x == R_NilValue) {
+      return NULL;
+    }
+    if (TYPEOF(x) == INTSXP || TYPEOF(x) == REALSXP) {
+      return PyLong_FromLong(Rf_asInteger(x));
+    }
+    if (is_py_object(x)) {
+      PyObject* pyobj = PyObjectRef(x, false).get();
+      Py_IncRef(pyobj);
+      return pyobj;
+    }
+    return r_to_py(x, false);
+  };
 
-  if (start != R_NilValue)
-    start_.assign(PyLong_FromLong(Rf_asInteger(start)));
-  if (stop != R_NilValue)
-    stop_.assign(PyLong_FromLong(Rf_asInteger(stop)));
-  if (step != R_NilValue)
-    step_.assign(PyLong_FromLong(Rf_asInteger(step)));
+  PyObjectPtr start_(coerce_slice_arg(start));
+  PyObjectPtr  stop_(coerce_slice_arg(stop));
+  PyObjectPtr  step_(coerce_slice_arg(step));
 
-  PyObject* out(PySlice_New(start_, stop_, step_));
+  PyObject* out = PySlice_New(start_, stop_, step_);
   if (out == NULL)
     throw PythonException(py_fetch_error());
+
   return py_ref(out, false);
 }
+
 
 
 //' @rdname iterate
@@ -4735,7 +4772,7 @@ SEXP py_iterate(PyObjectRef x, Function f, bool simplify = true) {
           {
               SEXP item = list[i];
               if (TYPEOF(item) != outType ||
-                  OBJECT(item) ||
+                  Rf_isObject(item) ||
                   Rf_length(item) != 1)
               {
                   outType = VECSXP;

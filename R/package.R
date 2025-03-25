@@ -87,6 +87,11 @@ ensure_python_initialized <- function(required_module = NULL) {
   if (is.function(callback))
     callback()
 
+  # re-install interrupt handler -- note that RStudio tries to re-install its
+  # own interrupt handler when reticulate is initialized, but reticulate needs
+  # to handle interrupts itself (and it can do so compatibly with RStudio)
+  install_interrupt_handlers()
+
   # call init hooks
   call_init_hooks()
 
@@ -232,8 +237,8 @@ initialize_python <- function(required_module = NULL, use_environment = NULL) {
 
   )
 
-  # allow disabling the Python finalizer
-  if (!tolower(Sys.getenv("RETICULATE_DISABLE_PYTHON_FINALIZER")) %in% c("true", "1", "yes"))
+  # allow enabling the Python finalizer
+  if (tolower(Sys.getenv("RETICULATE_ENABLE_PYTHON_FINALIZER")) %in% c("true", "1", "yes"))
     reg.finalizer(.globals, function(e) py_finalize(), onexit = TRUE)
 
   # set available flag indicating we have py bindings
