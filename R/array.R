@@ -52,6 +52,31 @@ length.numpy.ndarray <- function(x) {
     as_r_value(x$size)
 }
 
+
+#' @export
+dim.numpy.ndarray <- function(x) {
+  if (py_is_null_xptr(x) || !py_available())
+    return(NULL)
+  as.integer(py_to_r(py_get_attr(x, "shape")))
+}
+
+#' @export
+t.numpy.ndarray <- function(x) {
+  if (py_is_null_xptr(x) || !py_available())
+    return(NULL)
+  py_get_attr(x, "T")
+}
+
+#' @exportS3Method utils::str
+str.numpy.ndarray <- function(object, ..., nest.lev = 0) {
+  shape <- paste0(collapse = ",", as.integer(py_to_r(py_get_attr(object, "shape"))))
+  dtype <- as.character(py_to_r(py_get_attr(py_get_attr(object, "dtype"), "name")))
+  cat(sep = "",
+      if (nest.lev > 0) " ",
+      sprintf("<numpy.ndarray shape(%s), dtype=%s>\n", shape, dtype))
+}
+
+
 #' Reshape an Array
 #'
 #' Reshape (reindex) a multi-dimensional array, using row-major (C-style) reshaping
