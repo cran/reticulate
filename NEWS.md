@@ -1,3 +1,33 @@
+# reticulate 1.44.0
+
+- Reticulate now clears its cache automatically every 120 days. Configure the interval
+  in `.Rprofile` with: `options(reticulate.max_cache_age = as.difftime(30, units = "days"))`.
+
+- `install_miniconda()` now installs miniforge instead of miniconda (#1800, #1820).
+
+- New helpers for reading and writing requirements files,
+ `py_write_requirements()` and `py_read_requirements()` (#1846).
+
+- Adds support for requesting Python versions with a wildcard pattern `x.x.*` such as `==3.12.*` in `virtualenv_starter()`, `py_require()`, and related functions (#1825)
+
+- Restored compatability with `uv` versions >= 0.8.0 (#1818).
+
+- `virtualenv_starter()` now discovers Python installations managed by
+  external `uv` installations (#1849).
+
+- `py_require()` now gives a better message when a user erroneously declares
+   a module from the Python standard library as a required package (@lazappi, #1788)
+
+- Positron's reticulate integration will now be automatically enabled when
+  the reticulate package is loaded in Positron (#1822).
+
+- `with()` now forwards errors to Python context manager exit handlers
+  (e.g., so database transactions can roll back cleanly) (#1840, #1841)
+
+- Fixed `!!` in string literals being wrongly expanded to a `%system` magic in
+  `repl_python()`. Added support for assigning `%system` command output to multiple
+  variables via unpacking (#1844).
+
 # reticulate 1.43.0
 
 - Fixed usage of micromamba and mamba, next-generation conda environment management tools.
@@ -12,14 +42,14 @@
 - Fixed error in `install_python()` under R 4.5 when the requested Python
   version has a `":latest"` suffix, as it does by default. (#1792, #1797)
 
-- Fixed error in `get_python_conda_info()` when conda not found through `conda-meta/history` 
+- Fixed error in `get_python_conda_info()` when conda not found through `conda-meta/history`
   and `NULL` is passed to `normalizePath` (#1184)
 
 - Hotfix to pin `uv` version resolved by reticulate to `<0.8.0`. (#1812)
 
-- Python discovery by `uv` is much faster now. The internal utility `uv_python_list()` 
-  searches only for managed python environments by default. Users can request discovery of 
-  system pythons by setting `UV_PYTHON_PREFERENCE`. Also, `uv_python_list()` will now discover 
+- Python discovery by `uv` is much faster now. The internal utility `uv_python_list()`
+  searches only for managed python environments by default. Users can request discovery of
+  system pythons by setting `UV_PYTHON_PREFERENCE`. Also, `uv_python_list()` will now discover
   pyenv pythons and python binaries installed by `install_python()` if a system python is requested. (#1810)
 
 # reticulate 1.42.0

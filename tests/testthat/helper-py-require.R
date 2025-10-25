@@ -9,7 +9,6 @@ r_session <- function(exprs, echo = TRUE, color = FALSE,
     "VIRTUAL_ENV" = NA,
     "RETICULATE_PYTHON" = if (force_managed_python) "managed" else NA,
     "VIRTUAL_ENV_PROMPT" = NA,
-    "RETICULATE_MINICONDA_ENABLED" = NA,
     "RUST_LOG" = NA,
     "PYTHONPATH" = NA,
     "PYTHONIOENCODING" = "utf-8",
@@ -68,6 +67,7 @@ py_require_tested_packages()
 
 uninstall_system_uv <- function() {
   withr::local_envvar(c("NO_COLOR" = "1"))
+  withr::local_path(path.expand("~/.local/bin"), action = "suffix")
   cache_dir <- system("uv cache dir", intern = TRUE) %error% NULL
   python_dir <- system("uv python dir", intern = TRUE) %error% NULL
   tool_dir <- system("uv tool dir", intern = TRUE) %error% NULL

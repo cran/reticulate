@@ -146,26 +146,17 @@ miniconda_installer_url <- function(version = "3") {
   if (!is.null(url))
     return(url)
 
-  # TODO: miniconda does not yet have arm64 binaries for macOS,
-  # so we'll just use miniforge instead
-  info <- as.list(Sys.info())
-  if (info$sysname == "Darwin" && info$machine == "arm64") {
-    base <- "https://github.com/conda-forge/miniforge/releases/latest/download"
-    name <- "Miniforge3-MacOSX-arm64.sh"
-    return(file.path(base, name))
-  }
-
-  base <- "https://repo.anaconda.com/miniconda"
+  base <- "https://github.com/conda-forge/miniforge/releases/latest/download"
 
   info <- as.list(Sys.info())
   arch <- miniconda_installer_arch(info)
   version <- as.character(version)
   name <- if (is_windows())
-    sprintf("Miniconda%s-latest-Windows-%s.exe", version, arch)
+    sprintf("Miniforge%s-Windows-%s.exe", version, arch)
   else if (is_osx())
-    sprintf("Miniconda%s-latest-MacOSX-%s.sh", version, arch)
+    sprintf("Miniforge%s-MacOSX-%s.sh", version, arch)
   else if (is_linux())
-    sprintf("Miniconda%s-latest-Linux-%s.sh", version, arch)
+    sprintf("Miniforge%s-Linux-%s.sh", version, arch)
   else
     stopf("unsupported platform %s", shQuote(Sys.info()[["sysname"]]))
 
@@ -327,84 +318,6 @@ miniconda_envpath <- function(env = NULL, path = miniconda_path()) {
   file.path(path, "envs", env)
 }
 
-miniconda_meta_path <- function() {
-  root <- user_data_dir("r-reticulate")
-  file.path(root, "miniconda.json")
-}
-
-miniconda_meta_read <- function() {
-
-  path <- miniconda_meta_path()
-  if (!file.exists(path))
-    return(list())
-
-  json <- tryCatch(
-    jsonlite::read_json(path),
-    error = warning
-  )
-
-  if (is.list(json))
-    return(json)
-
-  list()
-
-}
-
-miniconda_meta_write <- function(data) {
-  path <- miniconda_meta_path()
-  dir.create(dirname(path), recursive = TRUE)
-  json <- jsonlite::toJSON(data, auto_unbox = TRUE, pretty = TRUE)
-  writeLines(json, con = path)
-}
-
-miniconda_installable <- function() {
-  meta <- miniconda_meta_read()
-  !identical(meta$DisableInstallationPrompt, TRUE)
-}
-
-miniconda_install_prompt <- function() {
-
-  if (!is_interactive())
-    return(FALSE)
-
-  text <- paste(
-    "No non-system installation of Python could be found.",
-    "Would you like to download and install Miniconda?",
-    "Miniconda is an open source environment management system for Python.",
-    "See https://docs.conda.io/en/latest/miniconda.html for more details.",
-    "",
-    sep = "\n"
-  )
-
-  message(text)
-
-  response <- readline("Would you like to install Miniconda? [Y/n]: ")
-  repeat {
-
-    ch <- tolower(substring(response, 1, 1))
-
-    if (ch == "y" || ch == "") {
-      install_miniconda()
-      return(TRUE)
-    }
-
-    if (ch == "n") {
-
-      meta <- miniconda_meta_read()
-      meta$DisableInstallationPrompt <- TRUE
-      miniconda_meta_write(meta)
-
-      message("Installation aborted.")
-      return(FALSE)
-
-    }
-
-    response <- readline("Please answer yes or no: ")
-
-  }
-
-}
-
 # the default environment path to use for miniconda
 miniconda_python_envpath <- function() {
 
@@ -422,14 +335,4 @@ miniconda_python_version <- function() {
 
 miniconda_python_package <- function() {
   paste("python", miniconda_python_version(), sep = "=")
-}
-
-miniconda_enabled <- function() {
-
-  enabled <- Sys.getenv("RETICULATE_MINICONDA_ENABLED", unset = "TRUE")
-  if (tolower(enabled) %in% c("false", "0"))
-    return(FALSE)
-
-  miniconda_installable()
-
 }

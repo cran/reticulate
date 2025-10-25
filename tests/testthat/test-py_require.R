@@ -119,7 +119,7 @@ test_that("Error requesting conflicting Python versions", {
     py_require(python_version = "<3.10")
     uv_get_or_create_env()
   }), transform = function(x) {
-    sub("^Available Python versions found: 3\\.11\\..*",
+    sub("^Available Python versions found: 3\\.1[1-9]\\..*",
         "Available Python versions found: 3.11.xx ....",
         x)
   })
@@ -181,5 +181,15 @@ test_that("Multiple py_require() calls from package are shows in one row", {
     environment(gr_package) <- asNamespace("graphics")
     gr_package()
     py_require()
+  }))
+})
+
+test_that("py_require() standard library module", {
+  local_edition(3)
+  expect_snapshot2(r_session({
+    library(reticulate)
+    py_require("os")
+
+    os <- import("os")
   }))
 })

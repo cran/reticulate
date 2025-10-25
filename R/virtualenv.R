@@ -646,9 +646,20 @@ virtualenv_starter <- function(version = NULL, all = FALSE) {
   # venv to resolve the starter used.
   find_starters(Sys.getenv("RETICULATE_PYTHON"))
   find_starters(Sys.getenv("RETICULATE_PYTHON_ENV"))
-  find_starters(py_exe())
+  suppressWarnings(tryCatch(find_starters(py_exe()), error = identity))
   find_starters(Sys.which("python3"))
   find_starters(Sys.which("python"))
+
+  # If the user has installed uv, we can use its managed Python interpreters.
+  # We skip reticulate-managed uv installs because reticulate deletes their Pythons when it clears its cache.
+  if (!isTRUE(attr(uv_binary(FALSE), "reticulate-managed", TRUE))) {
+    find_starters(uv_exec(c(
+      "python dir --managed-python",
+      "--color never --quiet --offline --no-config --no-progress"),
+      stdout = TRUE
+    ))
+    # lapply(uv_python_list(uv, "only-managed")$path, find_starters)
+  }
 
   # if specific version requested, filter for that.
   if (!is.null(version)) {
@@ -683,23 +694,29 @@ as_version_constraint_checkers <- function(version) {
   version <- unlist(strsplit(version, ",", fixed = TRUE))
 
   # given string like ">=3.8", match two groups, on ">=" and "3.8"
-  pattern <- "^([><=!]{0,2})\\s*([0-9.a-zA-Z]*)"
+  pattern <- "^([><=!]{0,2})\\s*([0-9.a-zA-Z*]*)"
 
   op <- sub(pattern, "\\1",  version)
   op[op == ""] <- "=="
 
   ver_string <- sub(pattern, "\\2",  version)
+
+  ver_string <- sub('\\.\\*$', '', ver_string)
+
   ver <- numeric_version(ver_string, strict = FALSE)
 
-  .mapply(function(op, ver, ver_string) {
+  .mapply(function(op, ver, ver_string, version) {
     op <- as.symbol(op)
     force(ver)
     force(ver_string)
-
+    force(version)
     # return a "checker" function that takes a vector of versions and returns
     # a logical vector of if the version satisfies the constraint.
     rlang::zap_srcref(eval(bquote(function(x) {
-      op <- .(op)
+      op <- try(.(op), silent = TRUE)
+      if (inherits(op, "try-error")) {
+        stop("Version `", version, "` is not valid.")
+      }
       ver <- .(ver)
       if (is.na(ver))
         return(.(ver_string) %in% as.character(x))
@@ -713,7 +730,7 @@ as_version_constraint_checkers <- function(version) {
         }
       op(x, ver)
     })))
-  }, list(op, ver, ver_string), NULL)
+  }, list(op, ver, ver_string, version), NULL)
 }
 
 

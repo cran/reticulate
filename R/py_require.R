@@ -107,11 +107,18 @@
 #' If an existing installation of `uv` is not found, `reticulate` will
 #' automatically download and store it, along with other downloaded artifacts
 #' and ephemeral environments, in the `tools::R_user_dir("reticulate", "cache")`
-#' directory. To clear this cache, delete the directory:
+#' directory. To clear this cache manually, delete the directory:
 #'
 #' ```r
 #' # delete uv, ephemeral virtual environments, and all downloaded artifacts
 #' unlink(tools::R_user_dir("reticulate", "cache"), recursive = TRUE)
+#' ```
+#'
+#' Reticulate also clears its managed cache automatically on an interval,
+#' defaulting to every 120 days. Configure this interval in `.Rprofile` with:
+#'
+#' ```r
+#' options(reticulate.max_cache_age = as.difftime(30, units = "days"))
 #' ```
 #'
 #' @param packages A character vector of Python packages to be available during
@@ -168,7 +175,7 @@ py_require <- function(packages = NULL,
 
   action <- match.arg(action)
   called_from_package <- isNamespace(topenv(parent.frame()))
-  ephemeral_venv_initialized <- is_epheremal_venv_initialized()
+  ephemeral_venv_initialized <- is_ephemeral_venv_initialized()
   if (missing(packages))
     packages <- NULL
 
@@ -318,7 +325,7 @@ print.python_requirements <- function(x, ...) {
   }
   python_version <- x$python_version
   if (is.null(python_version)) {
-    if(is_epheremal_venv_initialized()) {
+    if(is_ephemeral_venv_initialized()) {
       python_version <- paste0(
         "[No Python version specified. Defaulted to '",
         resolve_python_version() , "']"
@@ -551,7 +558,7 @@ py_reqs_get <- function(x = NULL) {
     return(pr)
   }
   if (x == "python_version") {
-    if (is_epheremal_venv_initialized())
+    if (is_ephemeral_venv_initialized())
       return(as.character(py_version(TRUE)))
   }
   pr[[x]]
@@ -561,7 +568,6 @@ py_reqs_get <- function(x = NULL) {
 
 uv_binary <- function(bootstrap_install = TRUE) {
   min_uv_version <- numeric_version("0.6.3")
-  max_uv_version <- numeric_version("0.8.0")
   is_usable_uv <- function(uv) {
     if (is.null(uv) || is.na(uv) || uv == "" || !file.exists(uv)) {
       return(FALSE)
@@ -571,13 +577,18 @@ uv_binary <- function(bootstrap_install = TRUE) {
       return(FALSE)
     }
     ver <- numeric_version(sub("uv ([0-9.]+).*", "\\1", ver), strict = FALSE)
-    !is.na(ver) && ver >= min_uv_version && ver < max_uv_version
+    !is.na(ver) && ver >= min_uv_version
   }
 
   repeat {
     uv <- Sys.getenv("RETICULATE_UV", NA)
     if (!is.na(uv)) {
-      if (uv == "managed") break else return(uv)
+      if (uv == "managed") {
+        on.exit(Sys.setenv(RETICULATE_UV = uv), add = TRUE)
+        break
+      } else {
+        return(uv)
+      }
     }
 
     uv <- getOption("reticulate.uv_binary")
@@ -585,11 +596,12 @@ uv_binary <- function(bootstrap_install = TRUE) {
       if (uv == "managed") break else return(uv)
     }
 
-    # on Windows, the invocation cost of `uv`` is non-negligable.
-    # observed to be 0.2s for just `uv --version`
-    # This is a an approach to avoid paying that cost on each invocation
-    # This is mostly motivated by uv_run_tool(),
-    on.exit(options(reticulate.uv_binary = uv))
+    # on Windows, the invocation cost of `uv` is non-negligible,
+    # observed to be 0.2s for just `uv --version`.
+    # This is an approach to avoid paying that cost on each invocation, mostly
+    # motivated by uv_run_tool()
+    on.exit(options(reticulate.uv_binary = uv), add = TRUE)
+    maybe_clear_reticulate_uv_cache()
 
     uv <- as.character(Sys.which("uv"))
     if (is_usable_uv(uv)) {
@@ -606,13 +618,14 @@ uv_binary <- function(bootstrap_install = TRUE) {
 
   uv <- reticulate_cache_dir("uv", "bin", if (is_windows()) "uv.exe" else "uv")
   attr(uv, "reticulate-managed") <- TRUE
+
   if (is_usable_uv(uv)) {
     return(uv)
   }
 
   if (file.exists(uv)) {
     # exists, but version too old
-    unlink(dirname(uv), recursive = TRUE)
+    unlink(reticulate_cache_dir("uv"), recursive = TRUE, force = TRUE)
     ## We don't do `system2(uv, "self update")` because self update is only
     ## supported on a "managed" uv installations, and uv only supports one
     ## managed installation per system. uv installs and maintains a config file
@@ -623,15 +636,22 @@ uv_binary <- function(bootstrap_install = TRUE) {
   if (bootstrap_install) {
     # Install 'uv' in the 'r-reticulate' sub-folder inside the user's cache directory
     # https://github.com/astral-sh/uv/blob/main/docs/configuration/installer.md
+
+    # Ensure the cache directory is empty, in case an earlier
+    # cache clear action was interrupted.
+    unlink(dirname(dirname(uv)), recursive = TRUE, force = TRUE)
+
     dir.create(dirname(uv), showWarnings = FALSE, recursive = TRUE)
     file_ext <- if (is_windows()) ".ps1" else ".sh"
-    url <- paste0("https://astral.sh/uv/0.7.22/install", file_ext)
+    url <- paste0("https://astral.sh/uv/install", file_ext)
     install_uv <- tempfile("install-uv-", fileext = file_ext)
+    message("Downloading uv...", appendLF = FALSE)
     download.file(url, install_uv, quiet = TRUE)
     if (!file.exists(install_uv)) {
       return(NULL)
       # stop("Unable to download Python dependencies. Please install `uv` manually.")
     }
+    message("Done!")
     if (debug_uv <- Sys.getenv("_RETICULATE_DEBUG_UV_") == "1")
       system2 <- system2t
 
@@ -658,7 +678,9 @@ uv_binary <- function(bootstrap_install = TRUE) {
     }
   }
 
-  if (file.exists(uv)) uv else NULL # print visible
+  # if we bootstrap-installed successfully, return the path to the uv binary
+  # if not, reset `uv` for the on.exit() hook and return NULL visibly
+  if (file.exists(uv)) uv else (uv <- NULL)
 }
 
 uv_get_or_create_env <- function(packages = py_reqs_get("packages"),
@@ -707,9 +729,8 @@ uv_get_or_create_env <- function(packages = py_reqs_get("packages"),
   on.exit(unlink(uv_output_file), add = TRUE)
 
   uv_args <- c(
-    "run",
-    "--no-project",
-    # "--python-preference", "managed",
+    "tool", "run",
+    "--isolated",
     python_version,
     exclude_newer,
     packages,
@@ -737,14 +758,45 @@ uv_get_or_create_env <- function(packages = py_reqs_get("packages"),
         file = stderr()
       )
     }
+
+    if (any(call_args$packages %in% builtin_module_names)) {
+      requested_builtin_modules <- intersect(call_args$packages, builtin_module_names)
+      invalid <- unique(c("sys", "os", requested_builtin_modules))
+      writeLines(con = stderr(), c(
+        "Hint: `py_require()` expects Python package names rather than Python module names.",
+        sprintf(
+          "Modules provided by the Python standard library such as %s should not be passed to `py_require()`.",
+          pc_and("`", invalid, "`")
+        ),
+        strrep("-", 73L)
+      ))
+    }
+
     stop("Call `py_require()` to remove or replace conflicting requirements.")
   }
 
-  ephemeral_python <- readLines(uv_output_file, warn = FALSE)
+  cached_python <- readLines(uv_output_file, warn = FALSE)
   if (debug)
-    message("resolved ephemeral python: ", ephemeral_python)
-  ephemeral_python
+    message("resolved ephemeral python: ", cached_python)
+  cached_python
 }
+
+
+# uv_get_or_create_env(packages = NULL) |>
+#   system2("-", stdout = TRUE, input = '
+# import pkgutil
+#
+# modules = [
+#     module.name
+#     for module in pkgutil.iter_modules()
+#     if not module.name.startswith("_")
+# ]
+#
+# print("c", tuple(sorted(modules)), sep = "")
+# ') |>
+#   clipr::write_clip()
+
+builtin_module_names <- c('abc', 'aifc', 'antigravity', 'argparse', 'ast', 'asynchat', 'asyncio', 'asyncore', 'base64', 'bdb', 'bisect', 'bz2', 'cProfile', 'calendar', 'cgi', 'cgitb', 'chunk', 'cmd', 'code', 'codecs', 'codeop', 'collections', 'colorsys', 'compileall', 'concurrent', 'configparser', 'contextlib', 'contextvars', 'copy', 'copyreg', 'crypt', 'csv', 'ctypes', 'curses', 'dataclasses', 'datetime', 'dbm', 'decimal', 'difflib', 'dis', 'distutils', 'doctest', 'email', 'encodings', 'ensurepip', 'enum', 'filecmp', 'fileinput', 'fnmatch', 'fractions', 'ftplib', 'functools', 'genericpath', 'getopt', 'getpass', 'gettext', 'glob', 'graphlib', 'gzip', 'hashlib', 'heapq', 'hmac', 'html', 'http', 'idlelib', 'imaplib', 'imghdr', 'imp', 'importlib', 'inspect', 'io', 'ipaddress', 'json', 'keyword', 'lib2to3', 'linecache', 'locale', 'logging', 'lzma', 'mailbox', 'mailcap', 'mimetypes', 'modulefinder', 'multiprocessing', 'netrc', 'nntplib', 'ntpath', 'nturl2path', 'numbers', 'opcode', 'operator', 'optparse', 'os', 'pathlib', 'pdb', 'pickle', 'pickletools', 'pip', 'pipes', 'pkg_resources', 'pkgutil', 'platform', 'plistlib', 'poplib', 'posixpath', 'pprint', 'profile', 'pstats', 'pty', 'py_compile', 'pyclbr', 'pydoc', 'pydoc_data', 'queue', 'quopri', 'random', 're', 'reprlib', 'rlcompleter', 'runpy', 'sched', 'secrets', 'selectors', 'setuptools', 'shelve', 'shlex', 'shutil', 'signal', 'site', 'smtpd', 'smtplib', 'sndhdr', 'socket', 'socketserver', 'sqlite3', 'sre_compile', 'sre_constants', 'sre_parse', 'ssl', 'stat', 'statistics', 'string', 'stringprep', 'struct', 'subprocess', 'sunau', 'symtable', 'sysconfig', 'tabnanny', 'tarfile', 'telnetlib', 'tempfile', 'textwrap', 'this', 'threading', 'timeit', 'tkinter', 'tm', 'token', 'tokenize', 'tomllib', 'trace', 'traceback', 'tracemalloc', 'tty', 'turtle', 'turtledemo', 'types', 'typing', 'unittest', 'urllib', 'uu', 'uuid', 'venv', 'warnings', 'wave', 'weakref', 'webbrowser', 'wsgiref', 'xdrlib', 'xml', 'xmlrpc', 'zipapp', 'zipfile', 'zipimport', 'zoneinfo')
 
 #' uv run tool
 #'
@@ -999,8 +1051,8 @@ resolve_python_version <- function(constraints = NULL, uv = uv_binary()) {
     msg <- paste0(
       'Requested Python version constraints could not be satisfied.\n',
       '  constraints: "', constraints, '"\n',
-      'Available Python versions found: ', paste0(all_candidates, collapse = ", "), "\n",
-      'Hint: Call `py_require(python_version = <string>, action = "set")` to replace constraints.'
+      'Hint: Call `py_require(python_version = <string>, action = "set")` to replace constraints.\n',
+      'Available Python versions found: ', paste0(all_candidates, collapse = ", "), "\n"
     )
     stop(msg)
   }
@@ -1042,4 +1094,44 @@ uv_diff_exclude_newer <- function(from = -3L, to = Sys.Date(),
     )
   }
   manifest
+}
+
+
+maybe_clear_reticulate_uv_cache <- function() {
+  uv <- reticulate_cache_dir("uv", "bin", if (is_windows()) "uv.exe" else "uv")
+  if (!file.exists(uv))
+    return()
+
+  max_age <- getOption(
+    "reticulate.max_cache_age",
+    as.difftime(120, units = "days")
+  )
+  if (is.na(max_age))
+    return()
+  if (!inherits(max_age, "difftime"))
+    return()
+
+  uv_ctime <- file.info(uv, extra_cols = FALSE)$ctime
+  actual_age <- difftime(Sys.time(), uv_ctime, units = units(max_age))
+
+  if (actual_age > max_age) {
+    if (Sys.getenv("UV_OFFLINE") == "1")
+      return()
+
+    cache_dir <- reticulate_cache_dir("uv")
+    # best-effort; avoid surfacing errors
+    message("Clearing reticulate's uv cache...", appendLF = FALSE)
+    tryCatch(
+      {
+        # Delete the uv binary first, so if the unlink(cache_dir) call is interrupted,
+        # the cache is still invalidated and we trigger a fresh bootstrap install on next run.
+        # The delete command is re-run before bootstrapping to double-check/confirm
+        # the cache_dir is empty.
+        unlink(uv, force = TRUE)
+        unlink(cache_dir, recursive = TRUE, force = TRUE)
+      },
+      error = warning
+    )
+    message("Done!")
+  }
 }
