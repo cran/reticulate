@@ -262,9 +262,17 @@ py_require <- function(packages = NULL,
             packages <- NULL # no-op, skip activating new env
           } else {
             bare_name <- function(x) sub("^([^[!=><]+).*", "\\1", x)
-            if (any(bare_name(packages) %in% bare_name(pr$packages))) {
-              # e.g., if user calls 'numpy<2' after already initialized with 'numpy>2'
-              signal_and_exit("After Python has initialized, only `action = 'add'` with new packages is supported.")
+            packages <- setdiff(packages, pr$packages)
+            # e.g., if user calls 'numpy<2' after already initialized with 'numpy>2'
+            conflicts <- bare_name(packages) %in% bare_name(pr$packages)
+            if (any(conflicts)) {
+              new <- paste0("`", sort(packages[conflicts]), "`", collapse = ", ")
+              old <- sort(pr$packages[bare_name(pr$packages) %in% bare_name(packages)])
+              old <- paste0("`", old, "`", collapse = ", ")
+              signal_and_exit(paste(
+                "After Python has initialized, only `action = 'add'` with new packages is supported.",
+                "You tried to add", new, "but requirements contain", old, " already."
+              ))
               packages <- NULL
             }
             pr$packages <- unique(c(packages, pr$packages))
@@ -636,7 +644,11 @@ uv_binary <- function(bootstrap_install = TRUE) {
     ## multiple uv installations attempt to modify that config file.
   }
 
-  if (bootstrap_install) {
+  if (!bootstrap_install) {
+    uv <- NULL
+    return()
+  }
+
     # Install 'uv' in the 'r-reticulate' sub-folder inside the user's cache directory
     # https://github.com/astral-sh/uv/blob/main/docs/configuration/installer.md
 
@@ -679,7 +691,6 @@ uv_binary <- function(bootstrap_install = TRUE) {
       })
 
     }
-  }
 
   # if we bootstrap-installed successfully, return the path to the uv binary
   # if not, reset `uv` for the on.exit() hook and return NULL visibly

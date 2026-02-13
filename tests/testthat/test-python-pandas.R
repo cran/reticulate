@@ -1,5 +1,10 @@
 context("pandas")
 
+pandas_version <- function() {
+  pd <- import("pandas", convert = TRUE)
+  numeric_version(pd$`__version__`)
+}
+
 test_that("Simple Pandas data frames can be roundtripped", {
   skip_if_no_pandas()
 
@@ -251,6 +256,18 @@ df = pd.DataFrame({"FCT": pd.Categorical(["No", "Yes"]),
 
 })
 
+test_that("direct pandas categoricals are converted to factors", {
+  skip_if_no_pandas()
+
+  pd <- import("pandas", convert = FALSE)
+  p_cat <- pd$Categorical(list("a", "b", NULL), ordered = TRUE)
+  r_cat <- py_to_r(p_cat)
+
+  expect_true(is.factor(r_cat))
+  expect_true(is.ordered(r_cat))
+  expect_identical(as.character(r_cat), c("a", "b", NA_character_))
+})
+
 test_that("can cast from pandas nullable types", {
   skip_if_no_pandas()
   pd <- import("pandas", convert = FALSE)
@@ -293,12 +310,12 @@ test_that("can cast from pandas nullable types", {
 
 test_that("NA in string columns don't prevent simplification", {
   skip_if_no_pandas()
-
+  
   pd <- import("pandas", convert = FALSE)
   np <- import("numpy", convert = FALSE)
 
   x <- pd$Series(list("a", pd$`NA`, NULL, np$nan))
-  expect_equal(py_to_r(x$dtype$name), "object")
+  expect_equal(py_to_r(x$dtype$name), if (pandas_version() < "3") "object" else "str")
 
   r <- py_to_r(x)
 

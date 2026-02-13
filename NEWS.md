@@ -1,6 +1,35 @@
+# reticulate 1.45.0
+
+## New features
+
+- Positron now supports F1 help for reticulate Python objects (#1866).
+
+- Reticulate now supports pandas 3.0 (#1874, #1875).
+
+- `py_require()` now allows `action = "add"` for already-required packages
+  after Python initialization, while still erroring on true version conflicts
+  (@JBGruber, #1872, #1878).
+
+- `py_to_r()` now converts direct pandas categorical objects (for example,
+  `pd$Categorical(...)`) for pandas 2.x and 3.x (#1883).
+
+## Minor improvements and fixes
+
+- Positron now handles reticulate-backed UI actions, such as restarting or
+  creating a new session, more reliably (#1869, #1871).
+
+- Reticulate now avoids spurious `Error: ignoring SIGPIPE signal` messages on
+  Unix when embedded Python writes to a closed pipe (#1868).
+
+- Reticulate no longer triggers a CRAN NOTE on R-devel (4.6) for relative
+  vignette URLs (#1882).
+
+- `virtualenv_starter()` now excludes free-threaded CPython builds,
+  which are not supported by reticulate (#1883).
+
 # reticulate 1.44.1
 
-- The default Python version in `install_python()` 
+- The default Python version in `install_python()`
   and `conda_create()` is now 3.12 (#1862).
 
 - Fix error in `virtualenv_create()`/`virtualenv_starter()` (#1861).
@@ -36,6 +65,9 @@
 - Fixed `!!` in string literals being wrongly expanded to a `%system` magic in
   `repl_python()`. Added support for assigning `%system` command output to multiple
   variables via unpacking (#1844).
+
+- reticulate now warns when `py_require()`d packages are not found in the selected
+  Python virtual environment. This behavior can be disabled by setting the environment variable `RETICULATE_CHECK_REQUIRED_PACKAGES=0` (#1850).
 
 # reticulate 1.43.0
 
