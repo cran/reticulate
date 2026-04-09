@@ -1,6 +1,6 @@
-3504a9531d38cab2ea09ebfe52832bd1 *DESCRIPTION
+6f73918a8e0c5a04882d918cb2548033 *DESCRIPTION
 2aeb71217419653a09a7520f91bcae3a *NAMESPACE
-f913b0457872a4c1e2f715d8452f1e59 *NEWS.md
+b2679a7dd994ce8541679ffa2e73f44a *NEWS.md
 c0dae7adf968f67975bddd6a1cb47f06 *R/RcppExports.R
 ff46b88c5870e54f65a8654280260bee *R/ark-variables-methods.R
 55c56417eb77601b7eadb376c88223d4 *R/array.R
@@ -20,7 +20,7 @@ f961678b83374a08b26e550bf3b1f44a *R/miniconda.R
 5d359113f5c385b15b91aac4a26c6c6e *R/output.R
 bf44181a72edefe2928d050b9b1ba5ac *R/package.R
 2fe6bd4fb8adf2b5cb7d46ed890e3153 *R/pickle.R
-6500133f443368f2ac1025c84cd05590 *R/pip.R
+935782478f9422bbd4f8d76a56d8c081 *R/pip.R
 958952e106249199ed4c9283c1006fe6 *R/pipenv.R
 0a30bd55a4ec7fd974b78b6870813191 *R/poetry.R
 8770839a0e0f7b740e4b8045751d6cd3 *R/py_func.R
@@ -43,7 +43,7 @@ e9ca26341ae6fa631f288f47c7c20805 *R/utils.R
 208baefab6dfe7f8c42a8035db8d6575 *R/virtualenv.R
 411ec400bfd097d9b4f14c8cc1625255 *R/wrapper.R
 e25783e07363795c58fa659ff86f0148 *R/zzz.R
-59dda7e1acc760b546d843ce5b72c688 *build/vignette.rds
+46db956734de47160c3013d407ae5997 *build/vignette.rds
 2c4db67cf82698fc91e4347e548a3fdd *inst/config/config.py
 ae69da03e2f7081108f39a6a433d52f0 *inst/doc/arrays.Rmd
 af589efc15723f740f4c63059e9f6432 *inst/doc/arrays.html
@@ -165,14 +165,15 @@ ff82b65c5631312b39bef0511a6938aa *man/with.python.builtin.object.Rd
 f0cfd43e31b5a1fa0ad76430f5bc76fd *src/libpython.cpp
 f0454cbfd8368d9210f64b5e2a986601 *src/libpython.h
 a30bb6abe90f5e0659da86b581b42ec8 *src/output.cpp
-060ee82c3889055b0b49e6193e9fd40f *src/pending_py_calls_notifier.cpp
+2d4bc261549fcbb3897b53aeef6a95cd *src/pending_py_calls_notifier.cpp
 8b9493b8fffe7ab75e95a2e264107971 *src/pending_py_calls_notifier.h
-ed8ea243e160331bb1f32c042c87368c *src/python.cpp
+e0a9c0bdf0ee8a8160117a1e680dac63 *src/python.cpp
+e0eef5117a3161fff2c57a418308714b *src/r_api.h
 e488c6bfed8864115ae67dec695a6b36 *src/readline.cpp
-5066b3c03b60414335c62da1085fa79a *src/reticulate_types.h
+ec5977fb78111bf09ffab3d9706b33fb *src/reticulate_types.h
 abd254d04049b53a4afeae385637801e *src/signals.cpp
 5393a862043e666eeb6f1be4705acf68 *src/signals.h
-5f7d12940b4dc2e44008dcb220ce7507 *src/tinythread.h
+3ffc14a4f64e573d5335823ab0140475 *src/tinythread.h
 fde06bed7d927e3e547cecf04009fdf4 *tests/testthat.R
 237a4dba297250fac0d990fa25701bec *tests/testthat/_snaps/py_require.md
 162793d40c9a349beaac588078a171ba *tests/testthat/_snaps/python-knitr-engine/knitr-print.md
@@ -201,6 +202,7 @@ dbda56868b54ca282ca6933c71401f0c *tests/testthat/resources/venv-activate.R
 cc0665a85c121ff9b82fce50b1fd387e *tests/testthat/setup.R
 de58ce3a01ebc3766abfa77af8b6667c *tests/testthat/test-aaa.R
 c1f4b793d4c893c46e31c4a5b93df254 *tests/testthat/test-callable-dynamic-dots.R
+00b9c458ce97e07da3e2f31465589e67 *tests/testthat/test-compiled-code.R
 e7f1899b7aa3993174bb81d212686286 *tests/testthat/test-delay-load.R
 14bfe068dbfb887ac3aa5fa7b6b7c38a *tests/testthat/test-examples.R
 98dec790f2f22aa21268cffe73ca0f9b *tests/testthat/test-finalize.R
@@ -208,7 +210,7 @@ e0a16ceba0dc983ca26b365cc7660aa9 *tests/testthat/test-help-handlers.R
 afe3e4d9e7404bb44dcfc1c059194543 *tests/testthat/test-interrupts.R
 6c4dad279341c8016b32b92c5df3571a *tests/testthat/test-multiprocessing.R
 e334f610093d79a0f5e3169b603c1060 *tests/testthat/test-py_func.R
-2a643aa3318c68897ad2a9211ba3acda *tests/testthat/test-py_require.R
+8147ff75bd0f067a08bebafacaa3a7fb *tests/testthat/test-py_require.R
 c1c20a29e615e39593ec536cfa9da95c *tests/testthat/test-python-arrays.R
 25e88aaa71f6c763921416dadd0b469d *tests/testthat/test-python-base-r-generics.R
 e5275c1d1c204a273c3cb7131bce9153 *tests/testthat/test-python-class.R
@@ -218,7 +220,7 @@ e5275c1d1c204a273c3cb7131bce9153 *tests/testthat/test-python-class.R
 320c17a0bee5dfca0c288f444195f2e3 *tests/testthat/test-python-complex.R
 af7f90dfb3991a7f461fe35cd138e365 *tests/testthat/test-python-datetime.R
 2a5b65db68499cac3478cd56798592c7 *tests/testthat/test-python-dict.R
-412b99c53ebd45bb102621eaee3c9d5b *tests/testthat/test-python-envs.R
+d0384330eabd55784cf67b204ab0720e *tests/testthat/test-python-envs.R
 544f5531994ca4bcd98c1f4517914b89 *tests/testthat/test-python-exceptions.R
 ab6b1d174d8c2f585e0be077e98d2bcf *tests/testthat/test-python-factors.R
 31cddc7a3170158dec34871294f4a3a9 *tests/testthat/test-python-formals.R
